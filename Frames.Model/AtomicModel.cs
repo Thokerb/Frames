@@ -2,7 +2,11 @@
 
 namespace Frames.Model;
 
-public interface IAtomicModel<TState> 
+
+public interface  IState { }
+
+public interface IAtomicModel<TState>
+    where TState : IState  
 {
     public TState State { get; set; }
     public TimeUnit TimeAdvance(TState state);
@@ -53,7 +57,8 @@ public class Bag
     public static Bag Empty => new();
 }
 
-public abstract class AtomicModel<TState> : IAtomicModel<TState>
+public abstract class AtomicModel<TState> : IAtomicModel<TState> 
+    where TState : IState
 {
     public abstract TState State { get; set; }
     public abstract TimeUnit TimeAdvance(TState state);
@@ -61,4 +66,14 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     public abstract TState InternalTransition(TState state);
     public abstract TState ConfluentTransition(TState state, Bag bag);
     public abstract Bag Output(TState state);
+
+    public void AddInPort(Pipe pipe)
+    {
+        
+    }
+    
+    public void AddOutPort(Pipe pipe)
+    {
+        
+    }
 }

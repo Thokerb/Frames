@@ -1,6 +1,54 @@
-﻿namespace Frames.Model;
+﻿using Frames.Model.ValueTypes;
 
-public class CoupledModel
+namespace Frames.Model;
+
+public interface ICoupledModel
 {
+    /// <summary>
+    /// Adds an atomic model to the coupled model and returns the instance of the atomic model.
+    /// </summary>
+    /// <param name="atomicModel"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TState"></typeparam>
+    public T AddAtomicModel<T, TState>() where T : AtomicModel<TState> where TState : IState;
+
+    public void RemoveAtomicModel<T, TState>() where T : AtomicModel<TState> where TState : IState;
     
+    
+    
+    
+    // externally coupled to other models
+    public void AddInPort(Pipe pipe);
+    public void AddOutPort(Pipe pipe);
+    
+    // internally coupled to other models
+    public void AddCoupling<TSource, TTarget>(TSource source, Pipe sourcePort, TTarget target, Pipe targetPort);
+}
+
+public class CoupledModel : ICoupledModel
+{
+    public T AddAtomicModel<T,TState>() where T : AtomicModel<TState> where TState : IState
+    {
+        throw new NotImplementedException();
+    }
+
+    public void RemoveAtomicModel<T,TState>() where T : AtomicModel<TState> where TState : IState
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AddInPort(Pipe pipe)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AddOutPort(Pipe pipe)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AddCoupling<TSource,TTarget>(TSource source, Pipe sourcePort, TTarget target, Pipe targetPort)
+    {
+        throw new NotImplementedException();
+    }
 }
