@@ -16,8 +16,7 @@ hostBuilder.ConfigureServices((context, services) =>
             })
             .WithActors((system, registry, resolver) =>
             {
-                var timerActorProps =
-                    resolver.Props<TimerActor>(); // uses Msft.Ext.DI to inject reference to helloActor
+                var timerActorProps = resolver.Props<TimerActor>(); // uses Msft.Ext.DI to inject reference to helloActor
                 var timerActor = system.ActorOf(timerActorProps, "timer-actor");
                 registry.Register<TimerActor>(timerActor);
             });

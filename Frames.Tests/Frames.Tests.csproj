@@ -8,8 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Akka.Logger.Serilog" Version="1.5.25" />
+        <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.40" />
         <PackageReference Include="coverlet.collector" Version="6.0.2"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
+        <PackageReference Include="Serilog.Sinks.XUnit" Version="3.0.19" />
         <PackageReference Include="xunit" Version="2.9.2"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
     </ItemGroup>
@@ -19,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
       <ProjectReference Include="..\Frames.Model\Frames.Model.csproj" />
     </ItemGroup>
 

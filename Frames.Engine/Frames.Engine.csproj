@@ -8,7 +8,12 @@
 
     <ItemGroup>
         <PackageReference Include="Akka.Hosting" Version="1.5.38"/>
+        <PackageReference Include="Akka.Logger.Serilog" Version="1.5.25" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Frames.Model\Frames.Model.csproj" />
     </ItemGroup>
 
 </Project>

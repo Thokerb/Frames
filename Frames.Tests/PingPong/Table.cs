@@ -6,8 +6,8 @@ public class Table : CoupledModel
 {
     public Table()
     {
-        Player player1 = AddAtomicModel<Player, PlayerSate>();
-        Player player2 = AddAtomicModel<Player, PlayerSate>();
+        Player player1 = AddAtomicModel<Player>();
+        Player player2 = AddAtomicModel<Player>();
         
         
         AddCoupling(player1, Player.Send, player2, Player.Receive);

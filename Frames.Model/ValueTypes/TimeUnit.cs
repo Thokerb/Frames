@@ -43,23 +43,24 @@ public record struct TimeUnit
         return timeUnit.Value;
     }
     
-    //TODO: implement in partial if needed
-    // public static TimeUnit operator +(TimeUnit a, TimeUnit b)
-    // {
-    //     return new TimeUnit(a.Value + b.Value);
-    // }
-    //
-    // public static TimeUnit operator -(TimeUnit a, TimeUnit b)
-    // {
-    //     return new TimeUnit(a.Value - b.Value);
-    // }
-    //
-    // public static TimeUnit operator *(TimeUnit a, int b)
-    // {
-    //     return new TimeUnit(a.Value * b);
-    // }
-    //
-    //
+    public static TimeUnit operator +(TimeUnit a, TimeUnit b)
+    {
+        if (a.IsInfinity || b.IsInfinity)
+        {
+            return Infinity;
+        }
+        return new TimeUnit(a.Value + b.Value);
+    }
+    public static TimeUnit operator -(TimeUnit a, TimeUnit b)
+    {
+        if(a.IsInfinity || b.IsInfinity)
+        { 
+            // TODO: this should not occur I think
+            // because substraction is only needed in elapsed time, which is not infinity
+            throw new NotSupportedException();
+        }
+        return new TimeUnit(a.Value - b.Value);
+    }
     
     // infinity static
     public static TimeUnit Infinity => new(int.MaxValue,true);
@@ -75,4 +76,6 @@ public record struct TimeUnit
     /// Convenience property for smallest time unit
     /// </summary>
     public static TimeUnit Delta => new(1);
+    
+    public static TimeUnit? Undefined => null;
 }

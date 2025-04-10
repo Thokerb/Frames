@@ -7,6 +7,14 @@ namespace Frames.Tests.PingPong;
 public record struct PlayerSate : IState
 {
     public string Name { get; set; }
+    public int CompareTo(object? obj)
+    {
+        if (obj is PlayerSate other)
+        {
+            return string.Compare(Name, other.Name, StringComparison.Ordinal);
+        }
+        throw new ArgumentException("Object is not a PlayerSate");
+    }
 }
 
 /// <summary>
@@ -83,7 +91,7 @@ public class Player : AtomicModel<PlayerSate>
         return State;
     }
 
-    public override PlayerSate ConfluentTransition(PlayerSate state, Bag bag)
+    public new PlayerSate ConfluentTransition(PlayerSate state, Bag bag)
     {
         // run external transition first, also default behavior
         return InternalTransition(ExternalTransition(state, bag));

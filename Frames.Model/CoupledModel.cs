@@ -10,7 +10,7 @@ public interface ICoupledModel
     /// <param name="atomicModel"></param>
     /// <typeparam name="T"></typeparam>
     /// <typeparam name="TState"></typeparam>
-    public T AddAtomicModel<T, TState>() where T : AtomicModel<TState> where TState : IState;
+    public T AddAtomicModel<T>() where T : IAtomicModelBase;
 
     public void RemoveAtomicModel<T, TState>() where T : AtomicModel<TState> where TState : IState;
     
@@ -22,12 +22,12 @@ public interface ICoupledModel
     public void AddOutPort(Pipe pipe);
     
     // internally coupled to other models
-    public void AddCoupling<TSource, TTarget>(TSource source, Pipe sourcePort, TTarget target, Pipe targetPort);
+    public void AddCoupling(IAtomicModelBase source, Pipe sourcePort, IAtomicModelBase target, Pipe targetPort);
 }
 
 public class CoupledModel : ICoupledModel
 {
-    public T AddAtomicModel<T,TState>() where T : AtomicModel<TState> where TState : IState
+    public T AddAtomicModel<T>() where T : IAtomicModelBase
     {
         throw new NotImplementedException();
     }
@@ -47,8 +47,7 @@ public class CoupledModel : ICoupledModel
         throw new NotImplementedException();
     }
 
-    public void AddCoupling<TSource,TTarget>(TSource source, Pipe sourcePort, TTarget target, Pipe targetPort)
+    public void AddCoupling(IAtomicModelBase source, Pipe sourcePort, IAtomicModelBase target, Pipe targetPort)
     {
-        throw new NotImplementedException();
     }
 }
