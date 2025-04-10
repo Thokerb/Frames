@@ -1,4 +1,5 @@
-﻿using Frames.Engine.Messages;
+﻿using Frames.Engine.Exceptions;
+using Frames.Engine.Messages;
 using Frames.Model.ValueTypes;
 
 namespace Frames.Engine;
@@ -62,6 +63,12 @@ public class RootCoordinator : ReceiveActor
 
     private void ReceiveSimulationStart(Simulation.StartSimulation obj)
     {
+
+        if (!_hasStopCondition)
+        {
+            throw new NoStopConditionException();
+        }
+        
         _children = obj.Children;
 
         // Assumption, all children are set

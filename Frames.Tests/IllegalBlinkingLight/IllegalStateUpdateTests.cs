@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.TestKit.Xunit2;
 using Frames.Engine;
+using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
@@ -25,7 +26,7 @@ public class IllegalStateUpdateTests : TestKit
     
     
     [Fact]
-    public async Task ThrowOnIllegalTimeAdvance()
+    public void ThrowOnIllegalTimeAdvance()
     {
         // Arrange root coordinator
         var props = Props.Create<RootCoordinator>();
@@ -38,14 +39,14 @@ public class IllegalStateUpdateTests : TestKit
         
         // Act        
         // Assert that exception is thrown
-        EventFilter.Exception<InvalidOperationException>().ExpectOne(() =>
+        EventFilter.Exception<IllegalStateModificationException>().ExpectOne(() =>
         {
             blinkingLightActor.Tell(new Initialization.StartInitialization(TimeUnit.Zero));
         });
 
     }
     [Fact]
-    public async Task ThrowOnIllegalOutput()
+    public void ThrowOnIllegalOutput()
     {
         // Arrange root coordinator
         var props = Props.Create<RootCoordinator>();
@@ -58,7 +59,7 @@ public class IllegalStateUpdateTests : TestKit
         
         // Act        
         // Assert that exception is thrown
-        EventFilter.Exception<InvalidOperationException>().ExpectOne(() =>
+        EventFilter.Exception<IllegalStateModificationException>().ExpectOne(() =>
         {
             blinkingLightActor.Tell(new ComputeOutput.StartComputeOutput(TimeUnit.Zero));
         });

@@ -1,4 +1,5 @@
-﻿using Frames.Engine.Messages;
+﻿using Frames.Engine.Exceptions;
+using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Serilog;
@@ -69,7 +70,7 @@ public class Simulator : ReceiveActor
         // check if atomicState equals oldState
         if(!state.Equals(_atomicModel.State))
         {
-            throw new InvalidOperationException("Atomic model state has changed during time advance.");
+            throw new IllegalStateModificationException("TimeAdvance");
         }
         
         return timeAdvance;
@@ -80,7 +81,7 @@ public class Simulator : ReceiveActor
         var output = _atomicModel.Output(state);
         if(!state.Equals(_atomicModel.State))
         {
-            throw new InvalidOperationException("Atomic model state has changed during time advance.");
+            throw new IllegalStateModificationException("RunOutput");
         }
         Log.Information("[OUTPUT] Output: {Output}", output);
         return output;
