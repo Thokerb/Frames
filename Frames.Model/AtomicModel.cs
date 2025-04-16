@@ -1,8 +1,9 @@
-﻿using Frames.Model.ValueTypes;
+﻿using System.Text;
+using Frames.Model.ValueTypes;
 
 namespace Frames.Model;
 
-public interface IAtomicModelBase
+public interface IAtomicModelBase : IModel
 {
     /// <summary>
     /// The state of the model.
@@ -78,7 +79,7 @@ public class Bag
     {
     }
 
-    public Bag(params (Pipe key, object? value)[] inputs)
+    public Bag(params (Port key, object? value)[] inputs)
     {
         foreach (var input in inputs)
         {
@@ -86,7 +87,7 @@ public class Bag
         }
     }
 
-    public Bag(params Pipe[] inputs)
+    public Bag(params Port[] inputs)
     {
         foreach (var input in inputs)
         {
@@ -97,25 +98,54 @@ public class Bag
     public bool IsEmpty => Inputs.Count == 0;
 
 
-    public Dictionary<Pipe, object?> Inputs { get; set; } = new();
+    public Dictionary<Port, object?> Inputs { get; set; } = new();
 
-    public void AddInput(Pipe key, object? value)
+    public void AddInput(Port key, object? value)
     {
         Inputs[key] = value;
     }
 
-    public object? GetInput(Pipe key)
+    public object? GetInput(Port key)
     {
         Inputs.TryGetValue(key, out var value);
         return value;
     }
 
-    public bool ContainsKey(Pipe key)
+    public bool ContainsKey(Port key)
     {
         return Inputs.ContainsKey(key);
     }
 
     public static Bag Empty => new();
+
+    public void AddBag(Bag objOutput)
+    {
+        foreach (var input in objOutput.Inputs)
+        {
+            if (Inputs.ContainsKey(input.Key))
+            {
+                // TODO: is this allowed to overwrite?
+                // verify or throw exception
+                Inputs[input.Key] = input.Value;
+            }
+            else
+            {
+                Inputs.Add(input.Key, input.Value);
+            }
+        }
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.Append("Bag: [");
+        foreach (var input in Inputs)
+        {
+            sb.Append($"{input.Key}: {input.Value}, ");
+        }
+        sb.Append("]");
+        return sb.ToString();
+    }
 }
 
 public abstract class AtomicModel<TState> : IAtomicModel<TState>
@@ -137,7 +167,7 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     public abstract TState InternalTransition(TState state);
 
     /// <summary>
-    /// Default behavior of confluent transition is to call external transition and then internal transition.
+    /// Default behavior of confluent transition is to call internal transition first and then external transition.
     /// Can be overridden in derived classes.
     /// </summary>
     /// <param name="state"></param>
@@ -145,16 +175,17 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     /// <returns></returns>
     public TState ConfluentTransition(TState state, Bag bag)
     {
-        return InternalTransition(ExternalTransition(state, bag));
+        return ExternalTransition(InternalTransition(state), bag);
+        // return InternalTransition(ExternalTransition(state, bag));
     }
 
     public abstract Bag Output(TState state);
 
-    public void AddInPort(Pipe pipe)
+    public void AddInPort(Port port)
     {
     }
 
-    public void AddOutPort(Pipe pipe)
+    public void AddOutPort(Port port)
     {
     }
 

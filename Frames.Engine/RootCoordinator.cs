@@ -1,6 +1,8 @@
 ﻿using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
+using Frames.Model;
 using Frames.Model.ValueTypes;
+using Serilog;
 
 namespace Frames.Engine;
 
@@ -9,8 +11,9 @@ namespace Frames.Engine;
 /// Based on the RootCoordinator from Theory of M&S by Zeigler.
 /// Merge of Basic Root Coordinator and Parallel Coordinator
 /// </summary>
-public class RootCoordinator : ReceiveActor
+public class RootCoordinator : ReceiveActor, ILogReceive
 {
+    
     private IActorRef? _children;
     
     private bool _hasStopCondition = false;
@@ -23,6 +26,9 @@ public class RootCoordinator : ReceiveActor
     private TimeUnit _currentTime = TimeUnit.Zero;
     
     private List<IActorRef> _waitingForCompletion = new List<IActorRef>();
+    
+    private TimeSpan _timeOut = TimeSpan.FromSeconds(3);
+    
     public RootCoordinator()
     {
         // Control Messages
@@ -63,6 +69,7 @@ public class RootCoordinator : ReceiveActor
 
     private void ReceiveSimulationStart(Simulation.StartSimulation obj)
     {
+        Log.Information("[ROOT] Starting simulation");
 
         if (!_hasStopCondition)
         {
@@ -94,9 +101,8 @@ public class RootCoordinator : ReceiveActor
         // update the timeNext for the child
         _currentTime = obj.CurrentTime;
         
+        // _children.Tell(new ExecuteTransition.StartExecuteTransition(new Bag(), _currentTime));
         _children.Tell(new ExecuteTransition.StartExecuteTransition(obj.Output, _timeNext));
-        
-
     }
 
     private void ReceiveInitializationCompleted(Initialization.InitializationCompleted obj)
@@ -119,7 +125,12 @@ public class RootCoordinator : ReceiveActor
             
         // set the current time to the minimum of all children
         _currentTime = _timeNext;
+        Log.Information("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
      
+        if(_timeNext == TimeUnit.Infinity)
+        {
+            throw new SimulatorException("TimeNext is infinity");
+        }
         
         
         _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime));

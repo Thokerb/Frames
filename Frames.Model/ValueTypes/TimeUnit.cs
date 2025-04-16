@@ -3,7 +3,7 @@
 /// <summary>
 /// Value type for time units
 /// </summary>
-public record struct TimeUnit
+public record struct TimeUnit : IComparable<TimeUnit>
 {
     public int Value { get; init; }
     public bool IsInfinity { get; init; }
@@ -33,6 +33,12 @@ public record struct TimeUnit
     {
         return $"{Value}";
     }
+
+    public int CompareTo(object? obj)
+    {
+        throw new NotImplementedException();
+    }
+
     public static implicit operator TimeUnit(int value)
     {
         return new TimeUnit(value);
@@ -78,4 +84,21 @@ public record struct TimeUnit
     public static TimeUnit Delta => new(1);
     
     public static TimeUnit? Undefined => null;
+
+    public int CompareTo(TimeUnit other)
+    {
+        if (other.IsInfinity && IsInfinity)
+        {
+            return 0;
+        }
+        if (other.IsInfinity)
+        {
+            return -1;
+        }
+        if (IsInfinity)
+        {
+            return 1;
+        }
+        return other.Value.CompareTo(Value);
+    }
 }

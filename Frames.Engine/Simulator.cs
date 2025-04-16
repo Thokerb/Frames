@@ -10,7 +10,7 @@ namespace Frames.Engine;
 /// Simulator class represents a simulator which is responsible for managing the execution of an atomic model.
 /// Based on the Simulator from Theory of M&S by Zeigler.
 /// </summary>
-public class Simulator : ReceiveActor
+public class Simulator : ReceiveActor, ILogReceive
 {
     private readonly IActorRef _coordinator;
     
@@ -39,26 +39,30 @@ public class Simulator : ReceiveActor
 
     private void RunInternalState(IState state)
     {
-        Log.Information("[INTERNAL] Old state: {OldState}", state);
+        Log.Information("[{Name} - INTERNAL] Old state: {OldState}", Self.Path.Name ,state);
         var newState = _atomicModel.InternalTransition(state);
-        Log.Information("[INTERNAL] New state: {NewState}", newState);
+        Log.Information("[{Name} - INTERNAL] New state: {NewState}", Self.Path.Name, newState);
         _atomicModel.State = newState;
 
     }
     
     private void RunExternalState(IState state, Bag input)
     {
-        Log.Information("[EXTERNAL ]Old state: {OldState}", state);
+        // Log Bag
+        Log.Debug("[External] Bag: {Bag}", input);
+        Log.Information("[{Name} - EXTERNAL ]Old state: {OldState}", Self.Path.Name, state);
         var newState = _atomicModel.ExternalTransition(state, input);
-        Log.Information("[EXTERNAL ]New state: {NewState}", newState);
+        Log.Information("[{Name} - EXTERNAL ]New state: {NewState}", Self.Path.Name, newState);
         _atomicModel.State = newState;
     }
     
     private void RunConfluentState(IState state, Bag input)
     {
-        Log.Information("[CONFLUENT]Old state: {OldState}", state);
+        // Log Bag
+        Log.Debug("[CONFLUENT] Bag: {Bag}", input);
+        Log.Information("[{Name} - CONFLUENT]Old state: {OldState}", Self.Path.Name, state);
         var newState = _atomicModel.ConfluentTransition(state, input);
-        Log.Information("[CONFLUENT]New state: {NewState}", newState);
+        Log.Information("[{Name} - CONFLUENT]New state: {NewState}", Self.Path.Name, newState);
         _atomicModel.State = newState;
     }
     
@@ -94,12 +98,12 @@ public class Simulator : ReceiveActor
             // Internal transition
             RunInternalState(_atomicModel.State);
         }
-        else if(obj.Input.IsEmpty && obj.CurrentTime == _timeNext)
+        else if(!obj.Input.IsEmpty && obj.CurrentTime == _timeNext)
         {
             // Confluent transition
             RunConfluentState(_atomicModel.State, obj.Input);
         }
-        else if(obj.Input.IsEmpty && (_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
+        else if(!obj.Input.IsEmpty && (_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
         {
             // External transition
             _timeElapsed = obj.CurrentTime - _timeLast;
@@ -131,6 +135,7 @@ public class Simulator : ReceiveActor
         }
         else
         {
+            Log.Error("Possible sync error");
             // TODO: is this a sync error and should we throw an exception?
         }
 

@@ -3,11 +3,11 @@
 /// <summary>
 /// Pipe class represents a pipe which maps ports in the coupled model.
 /// </summary>
-public class Pipe
+public class Port
 {
     public string Value { get; }
     
-    public Pipe(string value)
+    public Port(string value)
     {
         Value = value;
     }
@@ -16,13 +16,13 @@ public class Pipe
         return Value;
     }
     
-    public static implicit operator Pipe(string value)
+    public static implicit operator Port(string value)
     {
-        return new Pipe(value);
+        return new Port(value);
     }
     
-    public static implicit operator string(Pipe pipe)
+    public static implicit operator string(Port port)
     {
-        return pipe.Value;
+        return port.Value;
     }
 }

@@ -6,11 +6,17 @@ public class Table : CoupledModel
 {
     public Table()
     {
-        Player player1 = AddAtomicModel<Player>();
-        Player player2 = AddAtomicModel<Player>();
+        AddModel<Player,PlayerState>("player1", new PlayerState()
+        {
+            Name = "Waiting"
+        });        
+        AddModel<Player,PlayerState>("player2", new PlayerState()
+        {
+            Name = "Send"
+        });
         
         
-        AddCoupling(player1, Player.Send, player2, Player.Receive);
-        AddCoupling(player2, Player.Send, player1, Player.Receive);
+        AddCoupling("player1", Player.Send, "player2", Player.Receive);
+        AddCoupling("player2", Player.Send, "player1", Player.Receive);
     }
 }

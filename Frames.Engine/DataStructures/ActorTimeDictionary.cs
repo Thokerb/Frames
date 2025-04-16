@@ -4,8 +4,6 @@ namespace Frames.Engine.DataStructures;
 
 public interface IActorTimeDictionary
 {
-    
-    
     void Update(IActorRef actor, TimeUnit time);
 
     /// <summary>

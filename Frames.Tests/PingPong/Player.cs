@@ -4,12 +4,12 @@ using Frames.Model.ValueTypes;
 
 namespace Frames.Tests.PingPong;
 
-public record struct PlayerSate : IState
+public record struct PlayerState : IState
 {
     public string Name { get; set; }
     public int CompareTo(object? obj)
     {
-        if (obj is PlayerSate other)
+        if (obj is PlayerState other)
         {
             return string.Compare(Name, other.Name, StringComparison.Ordinal);
         }
@@ -20,7 +20,7 @@ public record struct PlayerSate : IState
 /// <summary>
 /// Based ong PingPong example found in Wikipedia
 /// </summary>
-public class Player : AtomicModel<PlayerSate>
+public class Player : AtomicModel<PlayerState>
 {
     public Player()
     {
@@ -29,14 +29,14 @@ public class Player : AtomicModel<PlayerSate>
     }
 
 
-    public static readonly Pipe Send = new Pipe("send");
-    public static readonly Pipe Receive = new Pipe("receive");
+    public static readonly Port Send = new Port("send");
+    public static readonly Port Receive = new Port("receive");
     
-    public override PlayerSate State { get; set; } = new PlayerSate
+    public override PlayerState State { get; set; } = new PlayerState
     {
         Name = "Waiting"
     };
-    public override TimeUnit TimeAdvance(PlayerSate state)
+    public override TimeUnit TimeAdvance(PlayerState state)
     {
         switch (state.Name)
         {
@@ -49,13 +49,13 @@ public class Player : AtomicModel<PlayerSate>
         }
     }
 
-    public override PlayerSate ExternalTransition(PlayerSate state, Bag bag)
+    public override PlayerState ExternalTransition(PlayerState state, Bag bag)
     {
         switch (bag.Inputs.Keys)
         {
             case var keys when keys.Contains(Receive) && state.Name == "Waiting":
                 // 1. Set state
-                State = new PlayerSate()
+                State = new PlayerState()
                 {
                     Name = "Send"
                 };
@@ -69,42 +69,40 @@ public class Player : AtomicModel<PlayerSate>
         return State;
     }
 
-    public override PlayerSate InternalTransition(PlayerSate state)
+    public override PlayerState InternalTransition(PlayerState state)
     {
         switch (state.Name)
         {
             case "Waiting":
                 // do nothing, should not occur
-                throw new IllegalStateException(State.Name);
+
+                break;
             case "Send":
                 // 1. Set state
-                State = new PlayerSate()
+                State = new PlayerState()
                 {
                     Name = "Waiting"
                 };
-                // 2. custom logic
-                {
-                }
                 break;
         }
 
         return State;
     }
 
-    public new PlayerSate ConfluentTransition(PlayerSate state, Bag bag)
+    public new PlayerState ConfluentTransition(PlayerState state, Bag bag)
     {
         // run external transition first, also default behavior
         return InternalTransition(ExternalTransition(state, bag));
     }
 
-    public override Bag Output(PlayerSate state)
+    public override Bag Output(PlayerState state)
     {
         switch (state.Name)
         {
             case "Waiting":
-                return new Bag(Send);
-            case "Send":
                 return Bag.Empty;
+            case "Send":
+                return new Bag(Send);
             default:
                 throw new UnknownStateException(State.Name);
         }

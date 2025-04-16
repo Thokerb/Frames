@@ -26,4 +26,10 @@
       <ProjectReference Include="..\Frames.Model\Frames.Model.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="logConfig.conf">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

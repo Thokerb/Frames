@@ -1,15 +1,28 @@
 ﻿using Frames.Model;
 using Frames.Model.ValueTypes;
 
+
 namespace Frames.Engine.Messages;
 
-/// <summary>
-/// Written as (i,t) in Theory of M S
-/// </summary>
+/**
+ * Implicit responses are required because we are communicating with actors asynchronously.
+ * This means that we cannot expect a direct response to a message we send, but have to listen for a response
+ * and keep track whether we received responses from all children.
+ */
+
+
 public static class Initialization
 {
+    /// <summary>
+    /// Written as (i,t) in Theory of M S
+    /// </summary>
     public sealed record StartInitialization(TimeUnit CurrentTime);
 
+    /// <summary>
+    /// Implicit response, not written in Book because not needed in non actor based communication
+    /// </summary>
+    /// <param name="TimeLast"></param>
+    /// <param name="TimeNext"></param>
     public sealed record InitializationCompleted(TimeUnit TimeLast, TimeUnit TimeNext);
 }
 
@@ -29,12 +42,16 @@ public static class ComputeOutput
     public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime);
 }
 
-/// <summary>
-/// Written as (x,*) in Theory of M S
-/// </summary>
 public static class ExecuteTransition
 {
-    public sealed record StartExecuteTransition(Bag Input, TimeUnit CurrentTime);
+    /// <summary>
+    /// Written as (x,*) in Theory of M S
+    /// </summary>
+    public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime);
 
+    /// <summary>
+    /// Implicit response, not written in Book because not needed in non actor based communication
+    /// </summary>
+    /// <param name="TimeNext"></param>
     public sealed record FinishedExecuteTransition(TimeUnit TimeNext);
 }
