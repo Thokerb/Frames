@@ -5,7 +5,7 @@ namespace Frames.Tests.Generator;
 public class CQueue : CoupledModel
 {
 
-    public CQueue()
+    public CQueue() : base("CQueue")
     {
         AddModel<Generator>("generator");
         AddModel<Queue>("queue");

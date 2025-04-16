@@ -30,19 +30,27 @@ public interface ICoupledModel : IModel
     public List<string> GetInfluencer(string inputModel);
     bool ChildrenAreCoupled(string source, Port entryKey, string target);
     Port GetCouplingOutPort(string source, Port sourcePort, string target);
+    List<(string model, Port port)> GetReceivers(Port key);
 }
 
 public class CoupledModel : ICoupledModel
 {
-    private Dictionary<string, IModel> children { get; set; } = new();
+    public CoupledModel(string name)
+    {
+        this.Name = name;
+    }
+
+    public string Name { get; init; }
+
+    private Dictionary<string, IModel> Children { get; } = new();
     
-    private List<(Port inPort, Port outPort, string inModel, string outModel)> pipes { get; set; } = new();
+    private List<(Port inPort, Port outPort, string inModel, string outModel)> Pipes { get; } = new();
     
     public T AddModel<T>(string id) where T : IModel
     {
         T model = Activator.CreateInstance<T>();
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
-        children.Add(prefix+id, model);
+        Children.Add(prefix+id, model);
         return model;
     }    
     public T AddModel<T,TState>(string id, TState state) 
@@ -50,23 +58,23 @@ public class CoupledModel : ICoupledModel
         where TState : IState
     {
         var model = Activator.CreateInstance<T>();
-        model.State = state;
+        model.StateBr = state;
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
-        children.Add(prefix+id, model);
+        Children.Add(prefix+id, model);
         return model;
     }
     
     public void RemoveModel(string id)
     {
-        if (children.ContainsKey(id))
+        if (Children.ContainsKey(id))
         {
-            children.Remove(id);
+            Children.Remove(id);
         }
     }
 
     public List<(string, IModel)> GetChildren()
     {
-        return children.Select(x => (x.Key, x.Value)).ToList();
+        return Children.Select(x => (x.Key, x.Value)).ToList();
     }
 
     public void AddInPort(Port port)
@@ -81,39 +89,43 @@ public class CoupledModel : ICoupledModel
     
     public void AddCoupling(string sourceId, Port sourcePort, string targetId, Port targetPort)
     {
-        sourceId = children.Keys.Any(x => x.Equals("simulator-"+sourceId)) 
-            ? sourceId = "simulator-"+sourceId 
-            : sourceId = "coordinator-"+sourceId;
-        
-        targetId = children.Keys.Any(x => x.Equals("simulator-"+targetId))
+        if (Name != sourceId)
+        {
+            sourceId = Children.Keys.Any(x => x.Equals("simulator-"+sourceId)) 
+                ? sourceId = "simulator-"+sourceId 
+                : sourceId = "coordinator-"+sourceId;
+
+        }
+
+        targetId = Children.Keys.Any(x => x.Equals("simulator-"+targetId))
             ? targetId = "simulator-"+targetId 
             : targetId = "coordinator-"+targetId;
         
-        if (!children.ContainsKey(sourceId))
+        if (!Children.ContainsKey(sourceId) && Name != sourceId)
         {
             throw new ArgumentException($"Source model with id {sourceId} does not exist.");
         }
-        if (!children.ContainsKey(targetId))
+        if (!Children.ContainsKey(targetId))
         {
             throw new ArgumentException($"Target model with id {targetId} does not exist.");
         }
         
-        pipes.Add((sourcePort, targetPort, sourceId, targetId));
+        Pipes.Add((sourcePort, targetPort, sourceId, targetId));
     }
 
     public List<(Port inPort, Port outPort, string inModel, string outModel)> GetCouplings()
     {
-        return pipes;
+        return Pipes;
     }
 
     public bool HasCoupling(string entryKey, Port inPort)
     {
-        return pipes.Any(x => x.inPort.Equals(inPort) && x.inModel.Equals(entryKey));
+        return Pipes.Any(x => x.inPort.Equals(inPort) && x.inModel.Equals(entryKey));
     }
 
     public List<string> GetInfluencer(string inputModel)
     {
-        var receivers = pipes
+        var receivers = Pipes
             .Where(x => x.outModel.Equals(inputModel))
             .Select(x => x.inModel)
             .ToList();
@@ -123,13 +135,13 @@ public class CoupledModel : ICoupledModel
 
     public bool ChildrenAreCoupled(string source, Port entryKey, string target)
     {
-        return pipes
+        return Pipes
             .Any(x => x.inModel.Equals(source) && x.outModel.Equals(target) && x.inPort.Equals(entryKey));
     }
 
     public Port GetCouplingOutPort(string source, Port sourcePort, string target)
     {
-        var coupling = pipes
+        var coupling = Pipes
             .FirstOrDefault(x => x.inModel.Equals(source) && x.outModel.Equals(target) && x.inPort.Equals(sourcePort));
         
         if (coupling == default)
@@ -138,5 +150,15 @@ public class CoupledModel : ICoupledModel
         }
         
         return coupling.outPort;
+    }
+
+    public List<(string model, Port port)> GetReceivers(Port key)
+    {
+        var receivers = Pipes
+            .Where(x => x.inPort.Equals(key))
+            .Select(x => (x.outModel, x.outPort))
+            .ToList();
+
+        return receivers;
     }
 }

@@ -1,20 +1,20 @@
 ﻿using Akka.Actor;
 using Akka.TestKit.Xunit2;
 using Frames.Engine;
-using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Tests.Generator;
 using Serilog;
 using Xunit.Abstractions;
 
-namespace Frames.Tests.PingPong;
+namespace Frames.Tests.BlinkingLightBR;
 
-public class PingPongTest
+public class CArenaTest
 {
     private TestKit _testKit;
     
-    public PingPongTest(ITestOutputHelper output)
+    public CArenaTest(ITestOutputHelper output)
     {
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
@@ -23,7 +23,6 @@ public class PingPongTest
             // exclude when message contains 'version : "0.0.1 Akka"'
             .Filter.ByExcluding(e => e.MessageTemplate.Text.Contains("version"))
             // enrich with bla
-
             .WriteTo.TestOutput(output)
             .CreateLogger();
         
@@ -37,19 +36,19 @@ public class PingPongTest
     
     
     [Fact]
-    public async Task CreateTable()
+    public async Task CreateCArena()
     {
         // Arrange root coordinator
         var rootProps = Props.Create<Engine.RootCoordinator>();
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
-        ICoupledModel coupledModel = new Table();
+        ICoupledModel coupledModel = new CArena();
         
         var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor));
-        var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-table");
+        var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-carena");
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
         rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
         
@@ -57,7 +56,7 @@ public class PingPongTest
         // Assert
         var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.True(response.ElapsedTime <= new TimeUnit(11));
-        Assert.True(response.ElapsedTime > TimeUnit.Zero);
+        
+        Assert.Equivalent( TimeUnit.Infinity,response.ElapsedTime);
     }
 }

@@ -45,7 +45,7 @@ public interface IAtomicModel<TState> : IAtomicModelBase where TState : IState
     /// <summary>
     /// The state of the model.
     /// </summary>
-    TState State { get; set; }
+    TState StateBr { get; set; }
 
     /// <summary>
     /// The time until the next event.
@@ -151,7 +151,7 @@ public class Bag
 public abstract class AtomicModel<TState> : IAtomicModel<TState>
     where TState : IState
 {
-    public abstract TState State { get; set; }
+    public abstract TState StateBr { get; set; }
     public TimeUnit TimeAdvance(IState state) => TimeAdvance((TState)state);
 
     public IState ExternalTransition(IState state, Bag bag) => ExternalTransition((TState)state, bag);
@@ -191,8 +191,8 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
 
     IState IAtomicModelBase.State
     {
-        get => State;
-        set => State = (TState)value;
+        get => StateBr;
+        set => StateBr = (TState)value;
     }
 
     public static string GetPrefix()

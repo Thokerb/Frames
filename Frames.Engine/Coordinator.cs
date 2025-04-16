@@ -284,17 +284,26 @@ public class Coordinator : ReceiveActor, ILogReceive
         // TODO: verify code
         // 1. determine receivers by checking all children and if they are connected through coupling
 
-        List<string> receivers = obj.Input == null ? new List<string>() :
-        _coupledModel.GetCouplings()
-            .Where(x => obj.Input.Inputs.ContainsKey(x.inPort))
-            .Select(x => x.outModel)
-            .ToList();
-        List<IActorRef> receiverActors = receivers.Select(x => _children[x]).ToList();
+        
+        
+        List<(string outModel,Port outPort)> receivers = obj.Input == null
+            ? new List<(string outModel,Port outPort)>()
+            : _coupledModel.GetReceivers(obj.Input.Inputs.First().Key).ToList();
+            
+        // _coupledModel.GetCouplings()
+        //     .Where(x => obj.Input.Inputs.ContainsKey(x.inPort))
+        //     .Select(x => x.outModel)
+        //     .ToList();
+
         
         // 2. send message to all children coupled to the input
-        foreach (var receiver in receiverActors)
+        foreach (var receiver in receivers)
         {
-            receiver.Tell(new ExecuteTransition.StartExecuteTransition(obj.Input, obj.CurrentTime));
+            
+            // TODO: is first okey ?
+            var transformedBag = new Bag((receiver.outPort, obj.Input.Inputs.First().Value));
+            IActorRef receiverActors = _children[receiver.outModel];
+            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(transformedBag, obj.CurrentTime));
         }
         
         // TODO: verify imminent are set here
@@ -302,7 +311,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         // 3. send all imminent that are not receivers also a x-message with empty bag
         // list of children that are in the imminent list but not in the coupled list
         var imminentButNoReceiver = _imminentChildren
-            .Where(x => !receivers.Contains(x.Key))
+            .Where(x => receivers.All(r => r.outModel != x.Key))
             .ToList();
         foreach (var uncoupledChild in imminentButNoReceiver)
         {

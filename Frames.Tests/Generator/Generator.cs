@@ -21,7 +21,7 @@ public class Generator : AtomicModel<GeneratorState>
     
     public static readonly Port OutputPort = new Port("Output");
     
-    public override GeneratorState State { get; set; } = new GeneratorState()
+    public override GeneratorState StateBr { get; set; } = new GeneratorState()
     {
         State = true
     };

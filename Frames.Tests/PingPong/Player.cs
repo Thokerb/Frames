@@ -32,7 +32,7 @@ public class Player : AtomicModel<PlayerState>
     public static readonly Port Send = new Port("send");
     public static readonly Port Receive = new Port("receive");
     
-    public override PlayerState State { get; set; } = new PlayerState
+    public override PlayerState StateBr { get; set; } = new PlayerState
     {
         Name = "Waiting"
     };
@@ -45,7 +45,7 @@ public class Player : AtomicModel<PlayerState>
             case "Send":
                 return TimeUnit.Delta;
             default:
-                throw new UnknownStateException(State.Name);
+                throw new UnknownStateException(StateBr.Name);
         }
     }
 
@@ -55,7 +55,7 @@ public class Player : AtomicModel<PlayerState>
         {
             case var keys when keys.Contains(Receive) && state.Name == "Waiting":
                 // 1. Set state
-                State = new PlayerState()
+                StateBr = new PlayerState()
                 {
                     Name = "Send"
                 };
@@ -66,7 +66,7 @@ public class Player : AtomicModel<PlayerState>
                 break;
         }
 
-        return State;
+        return StateBr;
     }
 
     public override PlayerState InternalTransition(PlayerState state)
@@ -79,14 +79,14 @@ public class Player : AtomicModel<PlayerState>
                 break;
             case "Send":
                 // 1. Set state
-                State = new PlayerState()
+                StateBr = new PlayerState()
                 {
                     Name = "Waiting"
                 };
                 break;
         }
 
-        return State;
+        return StateBr;
     }
 
     public new PlayerState ConfluentTransition(PlayerState state, Bag bag)
@@ -104,7 +104,7 @@ public class Player : AtomicModel<PlayerState>
             case "Send":
                 return new Bag(Send);
             default:
-                throw new UnknownStateException(State.Name);
+                throw new UnknownStateException(StateBr.Name);
         }
     }
 }

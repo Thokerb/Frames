@@ -4,7 +4,7 @@ namespace Frames.Tests.PingPong;
 
 public class Table : CoupledModel
 {
-    public Table()
+    public Table() : base("table")
     {
         AddModel<Player,PlayerState>("player1", new PlayerState()
         {

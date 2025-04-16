@@ -99,6 +99,6 @@ public record struct TimeUnit : IComparable<TimeUnit>
         {
             return 1;
         }
-        return other.Value.CompareTo(Value);
+        return Value.CompareTo(other.Value);
     }
 }

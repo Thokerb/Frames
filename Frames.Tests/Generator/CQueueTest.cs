@@ -23,7 +23,7 @@ public class CQueueTest : TestKit
             // exclude when message contains 'version : "0.0.1 Akka"'
             .Filter.ByExcluding(e => e.MessageTemplate.Text.Contains("version"))
             // enrich with bla
-            .Enrich.WithProperty("Test", "PingPongTest")
+
             .WriteTo.TestOutput(output)
             .CreateLogger();
         
@@ -59,6 +59,5 @@ public class CQueueTest : TestKit
 
         
         Assert.Equivalent(response.ElapsedTime, TimeUnit.Infinity);
-
     }
 }

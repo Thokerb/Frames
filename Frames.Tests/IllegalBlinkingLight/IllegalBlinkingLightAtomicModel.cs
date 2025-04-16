@@ -28,7 +28,7 @@ public class IllegalBlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
         
     }
 
-    public override BlinkingLightState State { get; set; } = new BlinkingLightState
+    public override BlinkingLightState StateBr { get; set; } = new BlinkingLightState
     {
         Name = "On"
     };
@@ -38,7 +38,7 @@ public class IllegalBlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
         {
             case "On":
                 // SET STATE to Off, which is not allowed in TimeAdvance
-                State = new BlinkingLightState
+                StateBr = new BlinkingLightState
                 {
                     Name = "Off"
                 };
@@ -47,7 +47,7 @@ public class IllegalBlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
             case "Off":
                 return new TimeUnit(1);
             default:
-                throw new UnknownStateException(State.Name);
+                throw new UnknownStateException(StateBr.Name);
         }
     }
 
@@ -72,7 +72,7 @@ public class IllegalBlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
                     Name = "On"
                 };
             default:
-                throw new UnknownStateException(State.Name);
+                throw new UnknownStateException(StateBr.Name);
         }
     }
 
@@ -80,7 +80,7 @@ public class IllegalBlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
     {
         // Blinking light has no output
         // Set state to Off, which is not allowed in Output
-        State = new BlinkingLightState
+        StateBr = new BlinkingLightState
         {
             Name = "Off"
         };
