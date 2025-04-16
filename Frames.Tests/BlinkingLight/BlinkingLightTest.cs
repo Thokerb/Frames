@@ -34,7 +34,7 @@ public class BlinkingLightTest : TestKit
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
         
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model));
-        var blinkingLightActor = Sys.ActorOf(blinkingLightProps);
+        var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
 
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));

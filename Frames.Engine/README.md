@@ -1,5 +1,4 @@
-# Akka.NET Console Template
+# Frames.Engine
 
-This is a simple template designed to incorporate local [Akka.NET](https://getakka.net/) into a console application.
-
-See https://github.com/akkadotnet/akkadotnet-templates/blob/dev/docs/ConsoleTemplate.md for complete and current documentation on this template.
+The Frames.Engine provides the simulator and coordinator based on the abstract simulator concept in M&S.
+It is mapping the atomic and coupled model from Frames.Model to the simulator and coordinator.

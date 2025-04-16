@@ -49,18 +49,18 @@ public class PlayerTest : TestKit
         };
         var playerProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model));
         
-        var playerActor = ActorOf(playerProps,"player");
+        var playerActor = ActorOf(playerProps,"simulator-player");
         
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(playerActor));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
         
         // Assert
         // Act        
         // Assert that exception is thrown
-        EventFilter.Exception<SimulatorException>().ExpectOne(() =>
-        {
-            rootCoordinatorActor.Tell(new Simulation.StartSimulation(playerActor));
-        });
+        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        Assert.Equivalent(response.ElapsedTime, TimeUnit.Infinity);
         
     }
 
@@ -73,7 +73,7 @@ public class PlayerTest : TestKit
             Name = "Waiting"
         };
         var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model));
-        var playerActor = _testKit.ActorOf(playerProps,"player");
+        var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
 
         // needs to be receive, because coupling transforms send to receive
         var input = new Bag(Player.Receive);
@@ -91,7 +91,7 @@ public class PlayerTest : TestKit
             Name = "Waiting"
         };
         var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model));
-        var playerActor = _testKit.ActorOf(playerProps,"player");
+        var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
 
         // needs to be receive, because coupling transforms send to receive
         var input = Bag.Empty;

@@ -19,7 +19,7 @@ public class Simulator : ReceiveActor, ILogReceive
         _coordinator = coordinator;
         _atomicModel = atomicModel;
         
-        Receive<Initialization.StartInitialization>(HandleInitialization);
+        Receive<EngineMessages.StartInitialization>(HandleInitialization);
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
     }
@@ -141,7 +141,7 @@ public class Simulator : ReceiveActor, ILogReceive
 
     }
 
-    private void HandleInitialization(Initialization.StartInitialization msg)
+    private void HandleInitialization(EngineMessages.StartInitialization msg)
     {
         // tl = t −e
         _timeLast = msg.CurrentTime - _timeElapsed;
@@ -149,7 +149,7 @@ public class Simulator : ReceiveActor, ILogReceive
         _timeNext = _timeLast + RunTimeAdvance(_atomicModel.State);
         
         // Send the initialization completed message to the coordinator
-        _coordinator.Tell(new Initialization.InitializationCompleted(_timeLast, _timeNext));
+        _coordinator.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext));
     }
 
     /// <summary>

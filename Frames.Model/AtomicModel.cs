@@ -194,4 +194,9 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
         get => State;
         set => State = (TState)value;
     }
+
+    public static string GetPrefix()
+    {
+        return "simulator-";
+    }
 }

@@ -41,7 +41,7 @@ public class IllegalStateUpdateTests : TestKit
         // Assert that exception is thrown
         EventFilter.Exception<IllegalStateModificationException>().ExpectOne(() =>
         {
-            blinkingLightActor.Tell(new Initialization.StartInitialization(TimeUnit.Zero));
+            blinkingLightActor.Tell(new EngineMessages.StartInitialization(TimeUnit.Zero));
         });
 
     }

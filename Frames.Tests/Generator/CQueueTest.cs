@@ -1,20 +1,20 @@
 ﻿using Akka.Actor;
 using Akka.TestKit.Xunit2;
 using Frames.Engine;
-using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Tests.PingPong;
 using Serilog;
 using Xunit.Abstractions;
 
-namespace Frames.Tests.PingPong;
+namespace Frames.Tests.Generator;
 
-public class PingPongTest
+public class CQueueTest : TestKit
 {
     private TestKit _testKit;
     
-    public PingPongTest(ITestOutputHelper output)
+    public CQueueTest(ITestOutputHelper output)
     {
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
@@ -37,16 +37,16 @@ public class PingPongTest
     
     
     [Fact]
-    public async Task CreateTable()
+    public async Task CreateCQueue()
     {
         // Arrange root coordinator
         var rootProps = Props.Create<Engine.RootCoordinator>();
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
-        ICoupledModel coupledModel = new Table();
+        ICoupledModel coupledModel = new CQueue();
         
         var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor));
-        var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-table");
+        var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-cqueue");
         
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
@@ -57,7 +57,8 @@ public class PingPongTest
         // Assert
         var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.True(response.ElapsedTime <= new TimeUnit(11));
-        Assert.True(response.ElapsedTime > TimeUnit.Zero);
+        
+        Assert.Equivalent(response.ElapsedTime, TimeUnit.Infinity);
+
     }
 }

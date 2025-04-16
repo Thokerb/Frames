@@ -1,5 +1,4 @@
-﻿using Frames.Engine.DataStructures;
-using Frames.Engine.Exceptions;
+﻿using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
@@ -87,8 +86,8 @@ public class Coordinator : ReceiveActor, ILogReceive
 
         
         // Simulation Messages
-        Receive<Initialization.StartInitialization>(HandleInitialization);
-        Receive<Initialization.InitializationCompleted>(HandleInitializationCompleted);
+        Receive<EngineMessages.StartInitialization>(HandleInitialization);
+        Receive<EngineMessages.InitializationCompleted>(HandleInitializationCompleted);
         Receive<ComputeOutput.StartComputeOutput>(HandleStartComputeOutput);
         Receive<ComputeOutput.ComputedOutput>(HandleComputedOutput); // (y,t)
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
@@ -337,7 +336,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         }
     }
 
-    private void HandleInitializationCompleted(Initialization.InitializationCompleted obj)
+    private void HandleInitializationCompleted(EngineMessages.InitializationCompleted obj)
     {
         if (_initializationCompleted)
         {
@@ -358,15 +357,15 @@ public class Coordinator : ReceiveActor, ILogReceive
             _timeNext = _eventList.Values.Min(x => x.timeNext);
             
             // tell parent
-            _parent.Tell(new Initialization.InitializationCompleted(_timeLast, _timeNext));
+            _parent.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext));
         }
     }
 
-    private void HandleInitialization(Initialization.StartInitialization obj)
+    private void HandleInitialization(EngineMessages.StartInitialization obj)
     {
         foreach (var child in _children)
         {
-            child.Value.Tell(new Initialization.StartInitialization(obj.CurrentTime));
+            child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime));
         }
     }
 }

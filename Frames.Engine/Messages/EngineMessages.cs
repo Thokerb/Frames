@@ -11,7 +11,7 @@ namespace Frames.Engine.Messages;
  */
 
 
-public static class Initialization
+public static class EngineMessages
 {
     /// <summary>
     /// Written as (i,t) in Theory of M S

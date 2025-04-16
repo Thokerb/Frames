@@ -1,8 +1,10 @@
-﻿using Frames.Engine.Exceptions;
+﻿using System.Timers;
+using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Serilog;
+using Timer = System.Timers.Timer;
 
 namespace Frames.Engine;
 
@@ -27,7 +29,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     
     private List<IActorRef> _waitingForCompletion = new List<IActorRef>();
     
-    private TimeSpan _timeOut = TimeSpan.FromSeconds(3);
+    private TimeSpan _timeOut = TimeSpan.FromSeconds(30);
+    private Timer _timer;
     
     public RootCoordinator()
     {
@@ -38,11 +41,12 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Receive<Simulation.QueryIsCompleted>(ReceiveIsCompleted);
         
         // Simulation Messages
-        Receive<Initialization.InitializationCompleted>(ReceiveInitializationCompleted);
+        Receive<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
         Receive<ComputeOutput.ComputedOutput>(ReceiveComputationCompleted);
         Receive<ExecuteTransition.FinishedExecuteTransition>(ReceiveFinishedExecuteTransition);
 
     }
+    
 
     private void ReceiveIsCompleted(Simulation.QueryIsCompleted obj)
     {
@@ -71,6 +75,12 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     {
         Log.Information("[ROOT] Starting simulation");
 
+        
+        if(!obj.Children.Path.Name.StartsWith("simulator-") && !obj.Children.Path.Name.StartsWith("coordinator-"))
+        {
+            throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator");
+        }
+        
         if (!_hasStopCondition)
         {
             throw new NoStopConditionException();
@@ -83,8 +93,23 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         
         // initialize _timeNext with children and null
 
+        // Set timeout
+        _timer = new Timer(_timeOut.TotalMilliseconds);
+        _timer.Elapsed += HandleTimeout;
+        _timer.AutoReset = false;
+        _timer.Enabled = true;
+        _timer.Start();
+        
         // Send initialization to all children
-        _children.Tell(new Initialization.StartInitialization(_currentTime));
+        _children.Tell(new EngineMessages.StartInitialization(_currentTime));
+    }
+
+    private void HandleTimeout(object? sender, ElapsedEventArgs e)
+    {
+        Log.Error("[ROOT] Timeout reached, simulation will be interrupted");
+        _timer.Stop();
+        _isCompleted = true;
+        throw new TimeoutException("Simulation timed out after " + _timeOut.TotalMilliseconds + " milliseconds");
     }
 
 
@@ -102,10 +127,23 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _currentTime = obj.CurrentTime;
         
         // _children.Tell(new ExecuteTransition.StartExecuteTransition(new Bag(), _currentTime));
+        // there are 2 cases where we can get the computed output
+        // a: child simulator sends the computed output
+        // b: child coordinator sends the computed output that is not linked to a child of him
+        
+        // when it is send by child coordinator, then we dont want to send it back -> this would create wrong behavior
+        // when it is send by child simulator, then we want to send it back -> this would start execute transition
+        
+        if(Sender.Path.Name.StartsWith("coordinator-"))
+        {
+            // do nothing
+            return;
+        }
+        
         _children.Tell(new ExecuteTransition.StartExecuteTransition(obj.Output, _timeNext));
     }
 
-    private void ReceiveInitializationCompleted(Initialization.InitializationCompleted obj)
+    private void ReceiveInitializationCompleted(EngineMessages.InitializationCompleted obj)
     {
         _timeNext = obj.TimeNext;
         RoundCompleted();
@@ -114,24 +152,24 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     
     private void RoundCompleted()
     {
-        if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
-        {
-            _isCompleted = true;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
-            return;
-        }
+
         
         // children is initialized/computed output
             
         // set the current time to the minimum of all children
+        
         _currentTime = _timeNext;
         Log.Information("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
      
-        if(_timeNext == TimeUnit.Infinity)
-        {
-            throw new SimulatorException("TimeNext is infinity");
-        }
         
+        if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
+        {
+            Log.Information("[ROOT] Stop condition reached, simulation will be interrupted");
+            _timer.Stop();
+            _isCompleted = true;
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
+            return;
+        }
         
         _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime));
     }

@@ -35,7 +35,7 @@ public class RootCoordinatorTest : TestKit
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
         
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model));
-        var blinkingLightActor = Sys.ActorOf(blinkingLightProps);
+        var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
 
         // Assert
         EventFilter.Exception<NoStopConditionException>().ExpectOne(() =>

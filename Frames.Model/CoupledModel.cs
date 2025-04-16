@@ -12,8 +12,6 @@ public interface ICoupledModel : IModel
     /// <typeparam name="T"></typeparam>
     /// <typeparam name="TState"></typeparam>
     public T AddModel<T>(string id) where T : IModel;
-    public T AddModel<T>() where T : IModel;
-    public void RemoveModel<T>() where T : IModel;
     public void RemoveModel(string id);
 
     public List<(string, IModel)> GetChildren();
@@ -42,32 +40,20 @@ public class CoupledModel : ICoupledModel
     
     public T AddModel<T>(string id) where T : IModel
     {
-        var atomicModel = Activator.CreateInstance<T>();
-        children.Add(id, atomicModel);
-        return atomicModel;
+        T model = Activator.CreateInstance<T>();
+        string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
+        children.Add(prefix+id, model);
+        return model;
     }    
     public T AddModel<T,TState>(string id, TState state) 
         where T : IAtomicModel<TState>
         where TState : IState
     {
-        var atomicModel = Activator.CreateInstance<T>();
-        atomicModel.State = state;
-        children.Add(id, atomicModel);
-        return atomicModel;
-    }
-
-    public T AddModel<T>() where T : IModel
-    {
-        throw new NotImplementedException();
-    }
-
-    public void RemoveModel<T>() where T : IModel
-    {
-        var atomicModelKey = children.FirstOrDefault(x => x.Value is T).Key;
-        if (atomicModelKey != null)
-        {
-            children.Remove(atomicModelKey);
-        }
+        var model = Activator.CreateInstance<T>();
+        model.State = state;
+        string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
+        children.Add(prefix+id, model);
+        return model;
     }
     
     public void RemoveModel(string id)
@@ -95,6 +81,14 @@ public class CoupledModel : ICoupledModel
     
     public void AddCoupling(string sourceId, Port sourcePort, string targetId, Port targetPort)
     {
+        sourceId = children.Keys.Any(x => x.Equals("simulator-"+sourceId)) 
+            ? sourceId = "simulator-"+sourceId 
+            : sourceId = "coordinator-"+sourceId;
+        
+        targetId = children.Keys.Any(x => x.Equals("simulator-"+targetId))
+            ? targetId = "simulator-"+targetId 
+            : targetId = "coordinator-"+targetId;
+        
         if (!children.ContainsKey(sourceId))
         {
             throw new ArgumentException($"Source model with id {sourceId} does not exist.");
