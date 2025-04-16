@@ -43,7 +43,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     /// <summary>
     /// Name of the children, can be mapped to address with the _children dictionary
     /// </summary>
-    private Dictionary<string,bool> _imminentChildren;
+    private Dictionary<string,bool> _imminentChildren = new();
 
     /// <summary>
     /// string - sender of the message
@@ -51,7 +51,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     /// </summary>
     private Dictionary<string,Bag> _outputMailBag = new();
     
-    private Bag _outputMessageBagParent;
+    private Bag _outputMessageBagParent = new Bag();
 
     /// <summary>
     /// Key - name of the child
@@ -301,7 +301,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         {
             
             // TODO: is first okey ?
-            var transformedBag = new Bag((receiver.outPort, obj.Input.Inputs.First().Value));
+            var transformedBag = new Bag((receiver.outPort, obj.Input!.Inputs.First().Value));
             IActorRef receiverActors = _children[receiver.outModel];
             receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(transformedBag, obj.CurrentTime));
         }

@@ -30,7 +30,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private List<IActorRef> _waitingForCompletion = new List<IActorRef>();
     
     private TimeSpan _timeOut = TimeSpan.FromSeconds(30);
-    private Timer _timer;
+    private Timer? _timer;
     
     public RootCoordinator()
     {
@@ -107,7 +107,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private void HandleTimeout(object? sender, ElapsedEventArgs e)
     {
         Log.Error("[ROOT] Timeout reached, simulation will be interrupted");
-        _timer.Stop();
+        _timer!.Stop();
         _isCompleted = true;
         throw new TimeoutException("Simulation timed out after " + _timeOut.TotalMilliseconds + " milliseconds");
     }
@@ -165,7 +165,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
         {
             Log.Information("[ROOT] Stop condition reached, simulation will be interrupted");
-            _timer.Stop();
+            _timer!.Stop();
             _isCompleted = true;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
             return;

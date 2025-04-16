@@ -93,21 +93,23 @@ public class Simulator : ReceiveActor, ILogReceive
     
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
     {
-        if(obj.Input.IsEmpty && obj.CurrentTime == _timeNext)
+        var bagIsEmpty = obj.Input?.IsEmpty ?? true;
+        
+        if(bagIsEmpty  && obj.CurrentTime == _timeNext)
         {
             // Internal transition
             RunInternalState(_atomicModel.State);
         }
-        else if(!obj.Input.IsEmpty && obj.CurrentTime == _timeNext)
+        else if(!bagIsEmpty && obj.CurrentTime == _timeNext)
         {
             // Confluent transition
-            RunConfluentState(_atomicModel.State, obj.Input);
+            RunConfluentState(_atomicModel.State, obj.Input ?? Bag.Empty);
         }
-        else if(!obj.Input.IsEmpty && (_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
+        else if(!bagIsEmpty && (_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
         {
             // External transition
             _timeElapsed = obj.CurrentTime - _timeLast;
-            RunExternalState(_atomicModel.State, obj.Input);
+            RunExternalState(_atomicModel.State, obj.Input ?? Bag.Empty);
         }
         _timeLast = obj.CurrentTime;
         _timeNext = _timeLast + RunTimeAdvance(_atomicModel.State);
