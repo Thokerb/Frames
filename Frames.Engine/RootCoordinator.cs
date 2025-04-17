@@ -1,7 +1,6 @@
 ﻿using System.Timers;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
-using Frames.Model;
 using Frames.Model.ValueTypes;
 using Serilog;
 using Timer = System.Timers.Timer;
@@ -10,16 +9,17 @@ namespace Frames.Engine;
 
 /// <summary>
 /// RootCoordinator class represents the root coordinator which is responsible for managing the execution of the whole model
-/// Based on the RootCoordinator from Theory of M&S by Zeigler.
+/// Based on the RootCoordinator from Theory of M S by Zeigler.
 /// Merge of Basic Root Coordinator and Parallel Coordinator
 /// </summary>
+// ReSharper disable once ClassNeverInstantiated.Global
 public class RootCoordinator : ReceiveActor, ILogReceive
 {
     
     private IActorRef? _children;
     
-    private bool _hasStopCondition = false;
-    private bool _isCompleted = false;
+    private bool _hasStopCondition;
+    private bool _isCompleted;
     
     private TimeUnit _timeUntilShutdown = TimeUnit.Infinity;
     
@@ -27,9 +27,9 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     
     private TimeUnit _currentTime = TimeUnit.Zero;
     
-    private List<IActorRef> _waitingForCompletion = new List<IActorRef>();
+    private readonly List<IActorRef> _waitingForCompletion = new();
     
-    private TimeSpan _timeOut = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(30);
     private Timer? _timer;
     
     public RootCoordinator()

@@ -9,11 +9,11 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.BlinkingLightBR;
 
-public class CArenaTest
+public class CSuperArenaTest
 {
     private TestKit _testKit;
     
-    public CArenaTest(ITestOutputHelper output)
+    public CSuperArenaTest(ITestOutputHelper output)
     {
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
@@ -35,13 +35,13 @@ public class CArenaTest
     
     
     [Fact]
-    public async Task CreateCArena()
+    public async Task CreateCSuperArena()
     {
         // Arrange root coordinator
         var rootProps = Props.Create<Engine.RootCoordinator>();
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
-        ICoupledModel coupledModel = new CArena();
+        ICoupledModel coupledModel = new CSuperArena();
         
         var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor));
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-carena");

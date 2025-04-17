@@ -8,7 +8,7 @@ namespace Frames.Engine;
 
 /// <summary>
 /// Simulator class represents a simulator which is responsible for managing the execution of an atomic model.
-/// Based on the Simulator from Theory of M&S by Zeigler.
+/// Based on the Simulator from Theory of M S by Zeigler.
 /// </summary>
 public class Simulator : ReceiveActor, ILogReceive
 {
@@ -178,19 +178,4 @@ public class Simulator : ReceiveActor, ILogReceive
     /// Output message bag
     /// </summary>
     private Bag _outputBag = new Bag();
-
-    protected override void PreStart()
-    {
-        // Initialization logic
-        base.PreStart();
-    }
-
-    protected override void PostStop()
-    {
-        // Cleanup logic
-        base.PostStop();
-    }
-    
-
-
 }

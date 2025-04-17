@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.TestKit.Xunit2;
 using Frames.Engine;
-using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
