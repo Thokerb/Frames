@@ -48,7 +48,7 @@ public class PingPongTest
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-table");
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
         rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
         
@@ -56,7 +56,7 @@ public class PingPongTest
         // Assert
         var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.True(response.ElapsedTime <= new TimeUnit(11));
+        Assert.True(response.ElapsedTime <= new TimeUnit(31));
         Assert.True(response.ElapsedTime > TimeUnit.Zero);
     }
 }

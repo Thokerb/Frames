@@ -180,8 +180,8 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     /// <returns></returns>
     public TState ConfluentTransition(TState state, Bag bag)
     {
-        return ExternalTransition(InternalTransition(state), bag);
-        // return InternalTransition(ExternalTransition(state, bag));
+        // return ExternalTransition(InternalTransition(state), bag);
+        return InternalTransition(ExternalTransition(state, bag));
     }
 
     public abstract Bag Output(TState state);
