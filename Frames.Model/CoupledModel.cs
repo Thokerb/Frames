@@ -29,7 +29,10 @@ public interface ICoupledModel : IModel
     public List<string> GetInfluencer(string inputModel);
     bool ChildrenAreCoupled(string source, Port entryKey, string target);
     Port GetCouplingOutPort(string source, Port sourcePort, string target);
-    List<(string model, Port port)> GetReceivers(Port key);
+    List<(string model, Port port)> GetReceivers(Port inPort);
+
+    void AddCouplingOut(string source, Port inPort, Port outPort);
+    bool HasCouplingOut(Port inPort,out Port outPort);
 }
 
 public class CoupledModel : ICoupledModel
@@ -44,6 +47,7 @@ public class CoupledModel : ICoupledModel
     private Dictionary<string, IModel> Children { get; } = new();
     
     private List<(Port inPort, Port outPort, string inModel, string outModel)> Pipes { get; } = new();
+    private List<(Port inPort, Port outPort)> OutsidePorts { get; } = new();
     
     public T AddModel<T>(string id) where T : IModel
     {
@@ -151,13 +155,48 @@ public class CoupledModel : ICoupledModel
         return coupling.outPort;
     }
 
-    public List<(string model, Port port)> GetReceivers(Port key)
+    public List<(string model, Port port)> GetReceivers(Port inPort)
     {
         var receivers = Pipes
-            .Where(x => x.inPort.Equals(key))
+            .Where(x => x.inPort.Equals(inPort))
             .Select(x => (x.outModel, x.outPort))
             .ToList();
 
         return receivers;
+    }
+
+    public void AddCouplingOut(string source, Port inPort, Port outPort)
+    {
+        // TODO: change pipes to allow outport without model
+        // TODO: evaluate if outModel is needed
+        OutsidePorts.Add((inPort,outPort));
+    }
+    
+    
+    public void AddCouplingFromOutIn(Port sourcePort, string targetModel, Port targetPort)
+    {
+        
+        // TODO: dont use default
+        targetModel = Children.Keys.Any(x => x.Equals("simulator-"+targetModel))
+            ? targetModel = "simulator-"+targetModel 
+            : targetModel = "coordinator-"+targetModel;
+
+        
+        // TODO: is inModel relevant
+        Pipes.Add((sourcePort, targetPort, "NONE", targetModel));
+    }
+    
+    public bool HasCouplingOut(Port inPort,out Port outPort)
+    {
+        var coupling = OutsidePorts
+            .FirstOrDefault(x => x.inPort.Equals(inPort));
+        
+        if (coupling == default)
+        {
+            outPort = null;
+            return false;
+        }
+        outPort = coupling.outPort;
+        return true;
     }
 }

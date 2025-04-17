@@ -2,16 +2,16 @@
 
 namespace Frames.Tests.BlinkingLightBR;
 
-public class CSuperArena : Model.CoupledModel
+public class CSuperArena2 : CoupledModel
 {
 
-    public CSuperArena() : base("csuperarena")
+    public CSuperArena2() : base("csuperarena")
     {
         AddModel<BlinkingLightAtomicModelBR, BlinkingLightStateBR>("bl3",
             new BlinkingLightStateBR
             {
                 Name = "On",
-                MaxCycles = 12
+                MaxCycles = 3 // faster than in CArena
             });
 
         AddModel<CArena>("sub-arena");

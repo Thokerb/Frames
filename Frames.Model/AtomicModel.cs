@@ -146,6 +146,11 @@ public class Bag
         sb.Append("]");
         return sb.ToString();
     }
+
+    public void Clear()
+    {
+        Inputs.Clear();
+    }
 }
 
 public abstract class AtomicModel<TState> : IAtomicModel<TState>

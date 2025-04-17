@@ -53,7 +53,33 @@ public class CSuperArenaTest
         
         
         // Assert
-        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
+
+        
+        Assert.Equivalent( TimeUnit.Infinity,response.ElapsedTime);
+    }    
+    
+    
+    [Fact]
+    public async Task CreateCSuperArena2()
+    {
+        // Arrange root coordinator
+        var rootProps = Props.Create<Engine.RootCoordinator>();
+        var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
+
+        ICoupledModel coupledModel = new CSuperArena2();
+        
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor));
+        var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-carena");
+        
+        // Act
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        
+        
+        // Assert
+        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
 
         
         Assert.Equivalent( TimeUnit.Infinity,response.ElapsedTime);

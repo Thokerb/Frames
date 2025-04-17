@@ -29,7 +29,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     
     private readonly List<IActorRef> _waitingForCompletion = new();
     
-    private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(30);
+    // TODO: for debugging purposes only
+    private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(300);
     private Timer? _timer;
     
     public RootCoordinator()
@@ -131,16 +132,16 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         // a: child simulator sends the computed output
         // b: child coordinator sends the computed output that is not linked to a child of him
         
+        
+        // we are always sending the computed output to the children to initialize the execute transition
+        
+        // OUTDATED
         // when it is send by child coordinator, then we dont want to send it back -> this would create wrong behavior
         // when it is send by child simulator, then we want to send it back -> this would start execute transition
-        
-        if(Sender.Path.Name.StartsWith("coordinator-"))
-        {
-            // do nothing
-            return;
-        }
+ 
         
         _children.Tell(new ExecuteTransition.StartExecuteTransition(obj.Output, _timeNext));
+        
     }
 
     private void ReceiveInitializationCompleted(EngineMessages.InitializationCompleted obj)

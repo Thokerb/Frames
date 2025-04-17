@@ -1,9 +1,12 @@
 ﻿using Frames.Model;
+using Frames.Model.ValueTypes;
 
 namespace Frames.Tests.BlinkingLightBR;
 
 public class CArena : CoupledModel
 {
+    public static  readonly Port OutArena = new Port("out-arena");
+    public static  readonly Port InArena = new Port("in-arena");
 
     public CArena() : base("CArena")
     {
@@ -27,8 +30,12 @@ public class CArena : CoupledModel
         // AddCoupling(this.Name,"in-arena", "bl2", BlinkingLightAtomicModelBR.PortInFinishedByOther);
         
         // TODO: is this required or automatically done by the framework?
-        // AddCoupling("bl1", BlinkingLightAtomicModelBR.PortOutFinished, "CArena", "out-arena");
-        // AddCoupling("bl2", BlinkingLightAtomicModelBR.PortOutFinished, "CArena", "out-arena");
+        AddCouplingOut("bl1", BlinkingLightAtomicModelBR.PortOutFinished, OutArena);
+        AddCouplingOut("bl2", BlinkingLightAtomicModelBR.PortOutFinished, OutArena);
+        
+        // TODO: is this required or automatically done by the framework?
+        AddCouplingFromOutIn( InArena, "bl1",BlinkingLightAtomicModelBR.PortInFinishedByOther);
+        AddCouplingFromOutIn( InArena, "bl2", BlinkingLightAtomicModelBR.PortInFinishedByOther);
     }
-    
+
 }
