@@ -1,6 +1,8 @@
-﻿using System.Timers;
+﻿using System.Diagnostics;
+using System.Timers;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
+using Frames.Engine.Monitoring;
 using Frames.Model.ValueTypes;
 using Serilog;
 using Timer = System.Timers.Timer;
@@ -33,8 +35,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(300);
     private Timer? _timer;
     
-    public RootCoordinator()
+    public RootCoordinator(Instrumentation instrumentation)
     {
+        
+        ActivitySource = instrumentation.ActivitySource;
         // Control Messages
         Receive<Simulation.StartSimulation>(ReceiveSimulationStart);
         Receive<Simulation.InterruptSimulation>(ReceiveSimulationInterrupt);
@@ -47,6 +51,15 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Receive<ExecuteTransition.FinishedExecuteTransition>(ReceiveFinishedExecuteTransition);
 
     }
+    
+    private Activity SimulationRun { get; set; }
+    private Activity SimulationStep { get; set; }
+
+    private ActivitySource ActivitySource { get; set; }
+    
+    private Activity InitializationActivity { get; set; }
+    private Activity ComputeOutputActivity { get; set; }
+    private Activity ExecuteTransitionActivity { get; set; }
     
 
     private void ReceiveIsCompleted(Simulation.QueryIsCompleted obj)
@@ -101,9 +114,17 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _timer.Enabled = true;
         _timer.Start();
         
+        SimulationRun = ActivitySource.StartActivity("SimulationRun") ??
+                        throw new InvalidOperationException("ActivitySource is null");
+        SimulationStep = ActivitySource.StartActivity("SimulationStep", ActivityKind.Internal, parentContext: SimulationRun.Context) ?? 
+                         throw new InvalidOperationException("ActivitySource is null");
+        SimulationStep.SetTag("CurrentTime", _currentTime.Value);
         // Send initialization to all children
+        InitializationActivity = ActivitySource.StartActivity("Initialization", ActivityKind.Client, parentContext: SimulationStep.Context) ??
+                                        throw new InvalidOperationException("ActivitySource is null");
         _children.Tell(new EngineMessages.StartInitialization(_currentTime));
     }
+
 
     private void HandleTimeout(object? sender, ElapsedEventArgs e)
     {
@@ -116,6 +137,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private void ReceiveFinishedExecuteTransition(ExecuteTransition.FinishedExecuteTransition obj)
     {
+        ExecuteTransitionActivity.Dispose();
         // update the timeNext for the child
         _timeNext = obj.TimeNext;
         
@@ -124,8 +146,11 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private void ReceiveComputationCompleted(ComputeOutput.ComputedOutput obj)
     {
+        ComputeOutputActivity.Dispose();
         // update the timeNext for the child
         _currentTime = obj.CurrentTime;
+        
+        
         
         // _children.Tell(new ExecuteTransition.StartExecuteTransition(new Bag(), _currentTime));
         // there are 2 cases where we can get the computed output
@@ -138,14 +163,16 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         // OUTDATED
         // when it is send by child coordinator, then we dont want to send it back -> this would create wrong behavior
         // when it is send by child simulator, then we want to send it back -> this would start execute transition
- 
-        
+        Thread.Sleep(10);
+        ExecuteTransitionActivity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Client, parentContext: SimulationStep.Context) ?? throw new InvalidOperationException("ActivitySource is null");
         _children.Tell(new ExecuteTransition.StartExecuteTransition(obj.Output, _timeNext));
         
     }
 
+
     private void ReceiveInitializationCompleted(EngineMessages.InitializationCompleted obj)
     {
+        InitializationActivity.Dispose();
         _timeNext = obj.TimeNext;
         RoundCompleted();
         
@@ -153,7 +180,6 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     
     private void RoundCompleted()
     {
-
         
         // children is initialized/computed output
             
@@ -165,13 +191,21 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         
         if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
         {
+            SimulationStep.Dispose();
+            SimulationRun.Dispose();
             Log.Information("[ROOT] Stop condition reached, simulation will be interrupted");
             _timer!.Stop();
             _isCompleted = true;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
             return;
         }
-        
+        SimulationStep.Dispose();
+        SimulationStep = ActivitySource.StartActivity("SimulationStep") ??
+                         throw new InvalidOperationException("ActivitySource is null");
+        SimulationStep.SetTag("CurrentTime", _currentTime.Value);
+        ComputeOutputActivity = ActivitySource.StartActivity("ComputeOutput", ActivityKind.Client, parentContext: SimulationStep.Context) ??
+                                        throw new InvalidOperationException("ActivitySource is null");
+
         _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime));
     }
 }

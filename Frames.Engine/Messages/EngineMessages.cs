@@ -1,4 +1,5 @@
-﻿using Frames.Model;
+﻿using System.Diagnostics;
+using Frames.Model;
 using Frames.Model.ValueTypes;
 
 
@@ -16,7 +17,7 @@ public static class EngineMessages
     /// <summary>
     /// Written as (i,t) in Theory of M S
     /// </summary>
-    public sealed record StartInitialization(TimeUnit CurrentTime);
+    public sealed record StartInitialization(TimeUnit CurrentTime)  : WithActivityTrace;
 
     /// <summary>
     /// Implicit response, not written in Book because not needed in non actor based communication
@@ -32,7 +33,7 @@ public static class ComputeOutput
     /// Written as (*,t) in Theory of M S
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record StartComputeOutput(TimeUnit CurrentTime);
+    public sealed record StartComputeOutput(TimeUnit CurrentTime)  : WithActivityTrace;
 
     /// <summary>
     /// Written as (y,t) in Theory of M S
@@ -47,11 +48,17 @@ public static class ExecuteTransition
     /// <summary>
     /// Written as (x,*) in Theory of M S
     /// </summary>
-    public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime);
+    public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime) : WithActivityTrace;
 
     /// <summary>
     /// Implicit response, not written in Book because not needed in non actor based communication
     /// </summary>
     /// <param name="TimeNext"></param>
     public sealed record FinishedExecuteTransition(TimeUnit TimeNext);
+}
+
+public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
+{
+    // TODO: check nullability
+    protected WithActivityTrace() : this( Activity.Current!.TraceId,Activity.Current!.SpanId) { }
 }

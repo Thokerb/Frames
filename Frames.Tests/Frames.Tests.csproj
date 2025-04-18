@@ -10,9 +10,13 @@
     <ItemGroup>
         <PackageReference Include="Akka.Analyzers" Version="0.3.1" />
         <PackageReference Include="Akka.Logger.Serilog" Version="1.5.25" />
+        <PackageReference Include="Akka.Monitoring" Version="1.1.0" />
         <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.40" />
         <PackageReference Include="coverlet.collector" Version="6.0.2"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
+        <PackageReference Include="OpenTelemetry" Version="1.11.2" />
+        <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.2" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
         <PackageReference Include="Serilog.Sinks.XUnit" Version="3.0.19" />
         <PackageReference Include="xunit" Version="2.9.2"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
@@ -31,10 +35,6 @@
       <None Update="logConfig.conf">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="NestedCoordinators\" />
     </ItemGroup>
 
 </Project>

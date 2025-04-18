@@ -1,5 +1,7 @@
-﻿using Frames.Engine.Exceptions;
+﻿using System.Diagnostics;
+using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
+using Frames.Engine.Monitoring;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Serilog;
@@ -12,6 +14,10 @@ namespace Frames.Engine;
 /// </summary>
 public class Coordinator : ReceiveActor, ILogReceive
 {
+    private Instrumentation Instrumentation { get; }
+    
+    private ActivityContext _parentContext;
+
     /// <summary>
     /// Build from coupledModel and Generator
     /// name is from model
@@ -69,8 +75,9 @@ public class Coordinator : ReceiveActor, ILogReceive
             // Create a new actor for each child
             props = child.Item2 switch
             {
-                IAtomicModelBase atomicModel => Props.Create(() => new Simulator(Self, atomicModel)),
-                ICoupledModel coupledModel => Props.Create(() => new Coordinator(coupledModel, Self)),
+                // TODO: DI
+                IAtomicModelBase atomicModel => Props.Create(() => new Simulator(Self, atomicModel, Instrumentation)),
+                ICoupledModel coupledModel => Props.Create(() => new Coordinator(coupledModel, Self, Instrumentation)),
                 _ => throw new ArgumentOutOfRangeException()
             };
 
@@ -79,8 +86,10 @@ public class Coordinator : ReceiveActor, ILogReceive
         }
     }
 
-    public Coordinator(ICoupledModel coupledModel, IActorRef? parent)
+    public Coordinator(ICoupledModel coupledModel, IActorRef? parent, Instrumentation instrumentation)
     {
+        Instrumentation = instrumentation;
+        ActivitySource = instrumentation.ActivitySource;
         _coupledModel = coupledModel;
         this._parent = parent;
         CreateChildren();
@@ -94,6 +103,8 @@ public class Coordinator : ReceiveActor, ILogReceive
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
         Receive<ExecuteTransition.FinishedExecuteTransition>(HandleFinishedExecuteTransition);
     }
+
+    private ActivitySource ActivitySource { get; set; }
 
     private void HandleComputedOutput(ComputeOutput.ComputedOutput obj)
     {
@@ -278,6 +289,8 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
     {
+        _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
+        using var activity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Internal, parentContext: _parentContext);
         if (!(_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
         {
             // TODO: what does this mean? taken from the book
@@ -362,6 +375,8 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private void HandleStartComputeOutput(ComputeOutput.StartComputeOutput obj)
     {
+        _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
+        using var activity = ActivitySource.StartActivity("ComputeOutput", ActivityKind.Internal, parentContext: _parentContext);
         if (!obj.CurrentTime.Equals(_timeNext))
         {
             throw new SynchronisationException("Current time does not match time next");
@@ -406,6 +421,9 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private void HandleInitialization(EngineMessages.StartInitialization obj)
     {
+        // TODO: recorded or none ?
+        _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
+        using var activity = ActivitySource.StartActivity("Initialization", ActivityKind.Client, parentContext: _parentContext);
         foreach (var child in _children)
         {
             child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime));

@@ -9,12 +9,13 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.PingPong;
 
-public class PingPongTest : IClassFixture<OpenTelemetryFixture>
+public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
 {
     private TestKit _testKit;
+    
     private readonly OpenTelemetryFixture _openTelemetryFixture;
-
-    public PingPongTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
+    
+    public PingPongTestOTEL(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
     {
         _openTelemetryFixture = openTelemetryFixture;
         Serilog.Log.Logger = new LoggerConfiguration()
@@ -32,7 +33,6 @@ public class PingPongTest : IClassFixture<OpenTelemetryFixture>
         var system = ActorSystem.Create("my-test-system", File.ReadAllText("logConfig.conf"));
         var testKit = new TestKit(system);
         _testKit = testKit;
-        
     }
 
     [Fact]
@@ -50,12 +50,12 @@ public class PingPongTest : IClassFixture<OpenTelemetryFixture>
     public async Task CreateTable()
     {
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
         ICoupledModel coupledModel = new Table();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor,_openTelemetryFixture.Instrumentation));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-table");
         
         // Act
@@ -68,6 +68,30 @@ public class PingPongTest : IClassFixture<OpenTelemetryFixture>
         var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
         Assert.True(response.ElapsedTime <= new TimeUnit(31));
+        Assert.True(response.ElapsedTime > TimeUnit.Zero);
+    }
+    
+    [Fact]
+    public async Task BaseBlinkingLightTest()
+    {
+        // Arrange root coordinator
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var rootCoordinatorActor = _testKit.ActorOf(props);
+
+        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
+        
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, _openTelemetryFixture.Instrumentation));
+        var blinkingLightActor = _testKit.ActorOf(blinkingLightProps,"simulator-blinking-light");
+
+        // Act
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        
+        // Assert
+        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+
+        Assert.True(response.ElapsedTime <= new TimeUnit(11));
         Assert.True(response.ElapsedTime > TimeUnit.Zero);
     }
 }

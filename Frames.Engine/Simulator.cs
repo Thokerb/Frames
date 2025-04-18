@@ -1,5 +1,7 @@
-﻿using Frames.Engine.Exceptions;
+﻿using System.Diagnostics;
+using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
+using Frames.Engine.Monitoring;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Serilog;
@@ -14,8 +16,11 @@ public class Simulator : ReceiveActor, ILogReceive
 {
     private readonly IActorRef _coordinator;
     
-    public Simulator(IActorRef coordinator, IAtomicModelBase atomicModel)
+    private ActivityContext _parentContext;
+    
+    public Simulator(IActorRef coordinator, IAtomicModelBase atomicModel, Instrumentation instrumentation)
     {
+        ActivitySource = instrumentation.ActivitySource;
         _coordinator = coordinator;
         _atomicModel = atomicModel;
         
@@ -23,6 +28,8 @@ public class Simulator : ReceiveActor, ILogReceive
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
     }
+
+    private ActivitySource ActivitySource { get; set; }
 
     /**
      *  17: if x = EMPTY and t = tn then
@@ -39,10 +46,18 @@ public class Simulator : ReceiveActor, ILogReceive
 
     private void RunInternalState(IState state)
     {
+        using var activity = ActivitySource.StartActivity("RunInternalTransition", ActivityKind.Internal,_parentContext);
+        if(activity == null)
+        {
+            throw new NullReferenceException("Activity is null");
+        }
+        activity.SetTag("Name", Self.Path.Name);
+        activity.SetTag("OldState", state.ToString());
         Log.Information("[{Name} - INTERNAL] Old state: {OldState}", Self.Path.Name ,state);
         var newState = _atomicModel.InternalTransition(state);
         Log.Information("[{Name} - INTERNAL] New state: {NewState}", Self.Path.Name, newState);
         _atomicModel.State = newState;
+        activity.SetTag("NewState", newState.ToString());
 
     }
     
@@ -58,12 +73,20 @@ public class Simulator : ReceiveActor, ILogReceive
     
     private void RunConfluentState(IState state, Bag input)
     {
+        using var activity = ActivitySource.StartActivity("RunConfluentTransition", ActivityKind.Internal,_parentContext);
+        if(activity == null)
+        {
+            throw new NullReferenceException("Activity is null");
+        }
+        activity.SetTag("Name", Self.Path.Name);
+        activity.SetTag("OldState", state.ToString());
         // Log Bag
         Log.Debug("[CONFLUENT] Bag: {Bag}", input);
         Log.Information("[{Name} - CONFLUENT]Old state: {OldState}", Self.Path.Name, state);
         var newState = _atomicModel.ConfluentTransition(state, input);
         Log.Information("[{Name} - CONFLUENT]New state: {NewState}", Self.Path.Name, newState);
         _atomicModel.State = newState;
+        activity.SetTag("NewState", newState.ToString());
     }
     
     private TimeUnit RunTimeAdvance(IState state)
@@ -94,6 +117,8 @@ public class Simulator : ReceiveActor, ILogReceive
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
     {
         var bagIsEmpty = obj.Input?.IsEmpty ?? true;
+        
+        _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
         
         if(bagIsEmpty  && obj.CurrentTime == _timeNext)
         {

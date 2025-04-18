@@ -4,18 +4,21 @@ using Frames.Engine;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
+using Frames.Tests.PingPong;
 using Serilog;
 using Xunit.Abstractions;
 
 namespace Frames.Tests.RootCoordinatorTest;
 
-public class RootCoordinatorTest : TestKit
+public class RootCoordinatorTest : TestKit, IClassFixture<OpenTelemetryFixture>
 {
     public static readonly Akka.Configuration.Config Config = "akka.loglevel=DEBUG";
+    private readonly OpenTelemetryFixture _openTelemetryFixture;
 
     
-    public RootCoordinatorTest(ITestOutputHelper output)
+    public RootCoordinatorTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
     {
+        _openTelemetryFixture = openTelemetryFixture;
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
@@ -28,12 +31,12 @@ public class RootCoordinatorTest : TestKit
     public void FailWhenStartingWithoutStopCondition()
     {
         // Arrange root coordinator
-        var props = Props.Create<Engine.RootCoordinator>();
+        var props = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model));
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model,_openTelemetryFixture.Instrumentation));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
 
         // Assert

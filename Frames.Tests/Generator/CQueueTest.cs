@@ -4,17 +4,20 @@ using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Tests.PingPong;
 using Serilog;
 using Xunit.Abstractions;
 
 namespace Frames.Tests.Generator;
 
-public class CQueueTest : TestKit
+public class CQueueTest : TestKit, IClassFixture<OpenTelemetryFixture>
 {
     private TestKit _testKit;
-    
-    public CQueueTest(ITestOutputHelper output)
+    private readonly OpenTelemetryFixture _openTelemetryFixture;
+
+    public CQueueTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
     {
+        _openTelemetryFixture = openTelemetryFixture;
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
@@ -39,12 +42,12 @@ public class CQueueTest : TestKit
     public async Task CreateCQueue()
     {
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>();
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
         ICoupledModel coupledModel = new CQueue();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-cqueue");
         
         // Act

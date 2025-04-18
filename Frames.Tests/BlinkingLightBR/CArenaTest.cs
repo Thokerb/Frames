@@ -4,17 +4,20 @@ using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Tests.PingPong;
 using Serilog;
 using Xunit.Abstractions;
 
 namespace Frames.Tests.BlinkingLightBR;
 
-public class CArenaTest
+public class CArenaTest : IClassFixture<OpenTelemetryFixture>
 {
     private TestKit _testKit;
-    
-    public CArenaTest(ITestOutputHelper output)
+    private readonly OpenTelemetryFixture _openTelemetryFixture;
+
+    public CArenaTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
     {
+        _openTelemetryFixture = openTelemetryFixture;
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
@@ -38,12 +41,12 @@ public class CArenaTest
     public async Task CreateCArena()
     {
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>();
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
         ICoupledModel coupledModel = new CArena();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-carena");
         
         // Act

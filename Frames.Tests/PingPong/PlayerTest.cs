@@ -9,12 +9,14 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.PingPong;
 
-public class PlayerTest : TestKit
+public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
 {
     private readonly TestKit _testKit;
+    private readonly OpenTelemetryFixture _openTelemetryFixture;
 
-    public PlayerTest(ITestOutputHelper output)
+    public PlayerTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
     {
+        _openTelemetryFixture = openTelemetryFixture;
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
@@ -38,7 +40,7 @@ public class PlayerTest : TestKit
     public async Task TestPlayerWhoWaitsForever()
     {
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>();
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = ActorOf(rootProps,"root-coordinator");
         
         IAtomicModelBase model = new Player();
@@ -46,7 +48,7 @@ public class PlayerTest : TestKit
         {
             Name = "Send"
         };
-        var playerProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model));
+        var playerProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model,_openTelemetryFixture.Instrumentation));
         
         var playerActor = ActorOf(playerProps,"simulator-player");
         
@@ -71,12 +73,13 @@ public class PlayerTest : TestKit
         {
             Name = "Waiting"
         };
-        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model));
+        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model,_openTelemetryFixture.Instrumentation));
         var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
 
         // needs to be receive, because coupling transforms send to receive
         var input = new Bag(Player.Receive);
-        
+        using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
+
         playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero));
         
         var response = await _testKit.ExpectMsgAsync<ExecuteTransition.FinishedExecuteTransition>(TimeSpan.FromSeconds(3));
@@ -89,11 +92,12 @@ public class PlayerTest : TestKit
         {
             Name = "Waiting"
         };
-        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model));
+        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model,_openTelemetryFixture.Instrumentation));
         var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
 
         // needs to be receive, because coupling transforms send to receive
         var input = Bag.Empty;
+        using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
         
         playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero));
         
