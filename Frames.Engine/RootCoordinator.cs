@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text;
 using System.Timers;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -139,9 +140,36 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     {
         ExecuteTransitionActivity.Dispose();
         // update the timeNext for the child
+        
+        
+        Log.Information("================================================================");
+        Log.Information("Round time: {TimeNow}", this._currentTime);
+        Log.Information("Next time: {TimeNext}", obj.TimeNext);
+        string logState = PrintState(obj.ToStringState);
+        if (obj.ToStringState != null)
+        {
+            Log.Information("State:\n{State}",  logState);
+        }
+        
         _timeNext = obj.TimeNext;
         
         RoundCompleted();
+    }
+
+    private string PrintState(Dictionary<string, TraceInformation>? objToStringState)
+    {
+        if (objToStringState == null)
+        {
+            return string.Empty;
+        }
+        
+        StringBuilder builder = new StringBuilder();
+        foreach (var state in objToStringState)
+        {
+            builder.AppendLine($"[{state.Key}] {state.Value.State}");
+        }
+        
+        return builder.ToString();
     }
 
     private void ReceiveComputationCompleted(ComputeOutput.ComputedOutput obj)

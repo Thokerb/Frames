@@ -28,7 +28,7 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
         
     }
 
-    public override BlinkingLightState StateBr { get; set; } = new BlinkingLightState
+    public override BlinkingLightState State { get; set; } = new BlinkingLightState
     {
         Name = "On"
     };
@@ -41,7 +41,7 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
             case "Off":
                 return new TimeUnit(1);
             default:
-                throw new UnknownStateException(StateBr.Name);
+                throw new UnknownStateException(State.Name);
         }
     }
 
@@ -66,7 +66,7 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
                     Name = "On"
                 };
             default:
-                throw new UnknownStateException(StateBr.Name);
+                throw new UnknownStateException(State.Name);
         }
     }
 

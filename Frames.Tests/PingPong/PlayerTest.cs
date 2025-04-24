@@ -42,9 +42,11 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
         // Arrange root coordinator
         var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = ActorOf(rootProps,"root-coordinator");
-        
-        IAtomicModelBase model = new Player();
-        model.State = new PlayerState()
+        IAtomicModelBase model = new Player()
+        {
+            Name = "Player"
+        };
+        model.StateInternal = new PlayerState()
         {
             Name = "Send"
         };
@@ -68,8 +70,10 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
     [Fact]
     public async Task TestExternalTransition()
     {
-        IAtomicModelBase model = new Player();
-        model.State = new PlayerState()
+        IAtomicModelBase model = new Player()
+        {
+            Name = "Player"
+        };        model.StateInternal = new PlayerState()
         {
             Name = "Waiting"
         };
@@ -87,8 +91,11 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
     [Fact]
     public async Task TestInternalTransition()
     {
-        IAtomicModelBase model = new Player();
-        model.State = new PlayerState()
+        IAtomicModelBase model = new Player()
+        {
+            Name = "Player"
+        };
+        model.StateInternal = new PlayerState()
         {
             Name = "Waiting"
         };

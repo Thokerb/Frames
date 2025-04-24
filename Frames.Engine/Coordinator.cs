@@ -43,7 +43,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     private readonly IDictionary<string, (TimeUnit timeLast, TimeUnit timeNext)> _eventList =
         new Dictionary<string, (TimeUnit timeLast, TimeUnit timeNext)>();
 
-    private Dictionary<string, TimeUnit> _timeNextExecuteTransition = new();
+    private Dictionary<string, ExecuteTransition.FinishedExecuteTransition> _timeNextExecuteTransition = new();
     private int _timeNextExecuteTransitionCount;
 
     /// <summary>
@@ -108,8 +108,6 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private void HandleComputedOutput(ComputeOutput.ComputedOutput obj)
     {
-        // if this is not the last d in IMM then
-        // TODO: why not for last ?
 
         // mark d as reporting
         var name = _children.FirstOrDefault(x => x.Value.Equals(Sender)).Key;
@@ -119,19 +117,18 @@ public class Coordinator : ReceiveActor, ILogReceive
         // add (yd, d) to mail
         _outputMailBag.Add(name, obj.Output);
 
-        // TODO: should we return if we have not received all responses?
-
-        Log.Information("RECEIVED OUTPUT FROM CHILDREN {Child}, Bag {Bag}", name, obj.Output);
+        Log.Debug("Received output from children {Child}, with content {Bag}", name, obj.Output);
 
         // else if this the last d in IMM then -> check external coupling to form sub-bag of parent output
         if (_imminentChildren.Any(x => !x.Value))
         {
-            Log.Information("NOT ALL CHILDREN HAVE RESPONDED");
+            // if this is not the last d in IMM then
+            Log.Debug("Not all children have reported yet");
             return;
         }
         else
         {
-            Log.Information("RECEIVED OUTPUT FROM ALL CHILDREN");
+            Log.Debug("All children have reported");
             _outputMessageBagParent = new Bag();
         }
 
@@ -147,105 +144,50 @@ public class Coordinator : ReceiveActor, ILogReceive
                 }
             }
         }
+        
         // send y-message (yparent , t) to parent
-
-
-        // here we got all messages from our childs and send relevant messages to parent
-        // otherwise we send an empty bag so the parent knows that we are finished bagging
-        // TODO: put this at the end of the method
-
-        // if (!_outputMessageBagParent.IsEmpty)
-        // {
-        // ReSharper disable once UseWithExpressionToCopyRecord. This is an independent command. Dont want to create confusion by fancy syntax
-
         Log.Debug("Sending output to parent {Parent}, Bag {Bag}", _parent.Path.Name, _outputMessageBagParent);
         _parent.Tell(new ComputeOutput.ComputedOutput(_outputMessageBagParent, obj.CurrentTime));
-        // }
-
+        
 
         // according to M S, here we should create bag yr, which contains all messages that can be sent to the children and execute their transition
         // this does not seem to be correct, since we don't know yet if the parent is sending anything to us
         // therefore we just create the bag for the children and that is it
+        // parent coordinator will trigger either executeTransition or give us additional messages
 
 
         // line 54
         // for each child check if message can be sent to by its influencers
-        // naming d_child, is so that it matches the book with single letter variable names
+        _outputMessageBagChildren = CreateOutputMessageBagChildrenFromMail(_outputMailBag);
+        _outputMailBag.Clear();
+    }
 
-        _outputMessageBagChildren.Clear();
 
-
+    private Bag CreateOutputMessageBagChildrenFromMail(Dictionary<string,Bag> mail)
+    {
+        Bag outputMessageBagChildren = new Bag();
+        
+        // naming r_child, is so that it matches the book with single letter variable names
         foreach (var r_child in _children)
         {
             // for d such that d ∈ Ir do (=  receiver of the child)
-            var influencers = _coupledModel.GetInfluencer(r_child.Key);
-            // TODO: why we need influencers, when we know the Sender? => try using sender from messages in mailbag
-
-            foreach (var message in _outputMailBag)
+            // we kept track of senders, therefore we can just check if the child is in the list
+            
+            foreach (var message in mail)
             {
                 // if Z_d,_r(yd) is not empty (= if message can be sent from influencer to child)
-
-                // TODO: can Bag have more than one input?
-
-                if (!message.Value.IsEmpty)
+                if (message.Value.IsEmpty) continue;
+                
+                foreach (var entry in message.Value.Inputs)
                 {
-                    foreach (var entry in message.Value.Inputs)
+                    if (_coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
                     {
-                        if (_coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
-                        {
-                            // TODO: do we need to merge the bags?
-
-                            // var transformedBag = new Bag((_coupledModel.GetCouplingOutPort(message.Key, entry.Key, r_child.Key), entry.Value));
-                            _outputMessageBagChildren.AddBag(message.Value);
-                        }
+                        outputMessageBagChildren.AddBag(message.Value);
                     }
                 }
             }
         }
-
-        _outputMailBag.Clear();
-
-
-        // not sending to the children
-
-        // // receivers = {r | r ∈ children, yr ≠ Φ}
-        // var receivers = _outputMessageBagChildren
-        //     .Where(x => x.Value.Inputs.Count > 0)
-        //     .Select(x => x.Key)
-        //     .ToList();
-        //
-        // foreach (var receiver in receivers)
-        // {
-        //     // send x-messages (yr, t) to r
-        //     var actor = _children[receiver];
-        //     actor.Tell(new ExecuteTransition.StartExecuteTransition(_outputMessageBagChildren[receiver], obj.CurrentTime));
-        //     
-        // }
-        //
-        // //  for r ∈ IMM and not in receivers do
-        //
-        // var uncoupledChildren = _imminentChildren
-        //     .Where(x => !receivers.Contains(x.Key))
-        //     .ToList();
-        // foreach (var uncoupledChild in uncoupledChildren)
-        // {
-        //     // send x-messages (Φ, t) to r
-        //     var actor = _children[uncoupledChild.Key];
-        //     actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime));
-        // }
-        //
-        //
-        //    // This is done in the HandleFinishedExecuteTransition method
-        //    
-        //    _timeLast = obj.CurrentTime;
-        //
-        //    // TODO: can we have a conflict here, since it is also used by other method
-        //    Log.Information("GETTING READY TO RECEIVE RESPONSES BY HANDLE COMPUTEOUTPUT");
-        //    _timeNextExecuteTransition.Clear();
-        //    _timeNextExecuteTransitionCount = receivers.Count + uncoupledChildren.Count;
-        //
-        //    // clean up
-        //    _outputMailBag.Clear();
+        return outputMessageBagChildren;
     }
 
     private void HandleFinishedExecuteTransition(ExecuteTransition.FinishedExecuteTransition obj)
@@ -254,11 +196,11 @@ public class Coordinator : ReceiveActor, ILogReceive
 
         var name = _children.First(x => x.Value.Equals(Sender)).Key;
 
-        _timeNextExecuteTransition.Add(name, obj.TimeNext);
+        _timeNextExecuteTransition.Add(name, obj);
 
         if (_timeNextExecuteTransition.Count == _timeNextExecuteTransitionCount)
         {
-            Log.Information("RECEIVED ALL RESPONSES {Sender}", Self.Path.Name);
+            Log.Debug("Received all responses  Self: {Sender}", Self.Path.Name);
 
 
             // update event list
@@ -269,7 +211,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
                 if (_eventList.ContainsKey(nameChild))
                 {
-                    _eventList[nameChild] = (_eventList[nameChild].timeNext, timeNext);
+                    _eventList[nameChild] = (_eventList[nameChild].timeNext, timeNext.TimeNext);
                 }
                 else
                 {
@@ -280,10 +222,14 @@ public class Coordinator : ReceiveActor, ILogReceive
             // received all responses
             _timeNext = _eventList.Values.Min(x => x.timeNext);
 
-
-            // send to parent
-            // TODO check if this is correct
-            _parent.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext));
+            var result = new ExecuteTransition.FinishedExecuteTransition(_timeNext)
+            {
+                // merge all States to one
+                ToStringState = _timeNextExecuteTransition.Values.SelectMany(x => x.ToStringState ?? new Dictionary<string, TraceInformation>()).ToDictionary(x => x.Key, x => x.Value),
+                StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached)
+            };  
+            
+            _parent.Tell(result);
         }
     }
 
@@ -291,16 +237,17 @@ public class Coordinator : ReceiveActor, ILogReceive
     {
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
         using var activity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Internal, parentContext: _parentContext);
+        activity?.SetTag("Name", Self.Path.Name);
+        activity?.SetTag("Model", _coupledModel.GetType().Name);
+        activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
+        activity?.SetTag("Input", obj.Input?.ToString() ?? "null");
         if (!(_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
         {
             // TODO: what does this mean? taken from the book
             throw new SynchronisationException(
                 "error: bad synchronization consult external input coupling to get children influenced by the input");
         }
-
-        // TODO: verify code
-        // 1. determine receivers by checking all children and if they are connected through coupling
-
+        
         // execute transition by using bagged messages in _outputMessageBagChildren
         // merge sent messages with the bagged messages
 
@@ -317,6 +264,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         // each port can have multiple outPorts
         // each outPort can have a receiver
 
+        // 2. send message to all children coupled to the input
         Dictionary<string, Bag> receivers = new Dictionary<string, Bag>();
         foreach (var bagChild in _outputMessageBagChildren.Inputs)
         {
@@ -334,43 +282,34 @@ public class Coordinator : ReceiveActor, ILogReceive
             }
         }
 
-
-        // (obj.Input == null || obj.Input.IsEmpty)
-        // ? new List<(string outModel,Port outPort)>()
-        // : _coupledModel.GetReceivers(obj.Input.Inputs.First().Key).ToList();
-
-
-        // _coupledModel.GetCouplings()
-        //     .Where(x => obj.Input.Inputs.ContainsKey(x.inPort))
-        //     .Select(x => x.outModel)
-        //     .ToList();
-
-
-        // 2. send message to all children coupled to the input
-        foreach (var receiver in receivers)
-        {
-            IActorRef receiverActors = _children[receiver.Key];
-            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime));
-        }
-
-        // TODO: verify imminent are set here
-
+        
         // 3. send all imminent that are not receivers also a x-message with empty bag
         // list of children that are in the imminent list but not in the coupled list
         var imminentButNoReceiver = _imminentChildren
             .Where(x => receivers.All(r => r.Key != x.Key))
             .ToList();
+        
+        //  implicit response, line 40 is handled in the FinishedExecuteTransition method
+        _timeNextExecuteTransition.Clear();
+        _timeNextExecuteTransitionCount = imminentButNoReceiver.Count + receivers.Count;
+        _timeLast = obj.CurrentTime;
+        
+        
+        
+        // trigger execute transition for all selected at the end, because otherwise there are potential race conditions
+        
+        foreach (var receiver in receivers)
+        {
+            var receiverActors = _children[receiver.Key];
+            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime));
+        }
+        
         foreach (var uncoupledChild in imminentButNoReceiver)
         {
             var actor = _children[uncoupledChild.Key];
             actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime));
         }
 
-        _timeLast = obj.CurrentTime;
-        // TODO: implicit response, line 40 is handled in the FinishedExecuteTransition method
-        Log.Information("GETTING READY TO RECEIVE RESPONSES BY HANDLE EXECUTETRANSITION");
-        _timeNextExecuteTransition.Clear();
-        _timeNextExecuteTransitionCount = imminentButNoReceiver.Count + receivers.Count;
     }
 
     private void HandleStartComputeOutput(ComputeOutput.StartComputeOutput obj)
@@ -421,11 +360,14 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private void HandleInitialization(EngineMessages.StartInitialization obj)
     {
-        // TODO: recorded or none ?
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
-        using var activity = ActivitySource.StartActivity("Initialization", ActivityKind.Client, parentContext: _parentContext);
+        using var activity = ActivitySource.StartActivity("Initialization", ActivityKind.Internal, parentContext: _parentContext);
+        activity?.SetTag("Name", Self.Path.Name);
+        activity?.SetTag("Model", _coupledModel.GetType().Name);
+        activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         foreach (var child in _children)
         {
+            activity?.SetTag("Child", child.Key);
             child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime));
         }
     }

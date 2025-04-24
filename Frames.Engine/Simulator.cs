@@ -46,18 +46,10 @@ public class Simulator : ReceiveActor, ILogReceive
 
     private void RunInternalState(IState state)
     {
-        using var activity = ActivitySource.StartActivity("RunInternalTransition", ActivityKind.Internal,_parentContext);
-        if(activity == null)
-        {
-            throw new NullReferenceException("Activity is null");
-        }
-        activity.SetTag("Name", Self.Path.Name);
-        activity.SetTag("OldState", state.ToString());
-        Log.Information("[{Name} - INTERNAL] Old state: {OldState}", Self.Path.Name ,state);
+        Log.Debug("[{Name} - INTERNAL] Old state: {OldState}", Self.Path.Name ,state);
         var newState = _atomicModel.InternalTransition(state);
-        Log.Information("[{Name} - INTERNAL] New state: {NewState}", Self.Path.Name, newState);
-        _atomicModel.State = newState;
-        activity.SetTag("NewState", newState.ToString());
+        Log.Debug("[{Name} - INTERNAL] New state: {NewState}", Self.Path.Name, newState);
+        _atomicModel.StateInternal = newState;
 
     }
     
@@ -65,37 +57,29 @@ public class Simulator : ReceiveActor, ILogReceive
     {
         // Log Bag
         Log.Debug("[External] Bag: {Bag}", input);
-        Log.Information("[{Name} - EXTERNAL ]Old state: {OldState}", Self.Path.Name, state);
+        Log.Debug("[{Name} - EXTERNAL ]Old state: {OldState}", Self.Path.Name, state);
         var newState = _atomicModel.ExternalTransition(state, input);
-        Log.Information("[{Name} - EXTERNAL ]New state: {NewState}", Self.Path.Name, newState);
-        _atomicModel.State = newState;
+        Log.Debug("[{Name} - EXTERNAL ]New state: {NewState}", Self.Path.Name, newState);
+        _atomicModel.StateInternal = newState;
     }
     
     private void RunConfluentState(IState state, Bag input)
     {
-        using var activity = ActivitySource.StartActivity("RunConfluentTransition", ActivityKind.Internal,_parentContext);
-        if(activity == null)
-        {
-            throw new NullReferenceException("Activity is null");
-        }
-        activity.SetTag("Name", Self.Path.Name);
-        activity.SetTag("OldState", state.ToString());
         // Log Bag
         Log.Debug("[CONFLUENT] Bag: {Bag}", input);
-        Log.Information("[{Name} - CONFLUENT]Old state: {OldState}", Self.Path.Name, state);
+        Log.Debug("[{Name} - CONFLUENT]Old state: {OldState}", Self.Path.Name, state);
         var newState = _atomicModel.ConfluentTransition(state, input);
-        Log.Information("[{Name} - CONFLUENT]New state: {NewState}", Self.Path.Name, newState);
-        _atomicModel.State = newState;
-        activity.SetTag("NewState", newState.ToString());
+        Log.Debug("[{Name} - CONFLUENT]New state: {NewState}", Self.Path.Name, newState);
+        _atomicModel.StateInternal = newState;
     }
     
     private TimeUnit RunTimeAdvance(IState state)
     {
         var timeAdvance = _atomicModel.TimeAdvance(state);
-        Log.Information("[TIME ADVANCE] Time advance: {TimeAdvance}", timeAdvance);
+        Log.Debug("[TIME ADVANCE] Time advance: {TimeAdvance}", timeAdvance);
         
         // check if atomicState equals oldState
-        if(!state.Equals(_atomicModel.State))
+        if(!state.Equals(_atomicModel.StateInternal))
         {
             throw new IllegalStateModificationException("TimeAdvance");
         }
@@ -106,41 +90,55 @@ public class Simulator : ReceiveActor, ILogReceive
     private Bag RunOutput(IState state)
     {
         var output = _atomicModel.Output(state);
-        if(!state.Equals(_atomicModel.State))
+        if(!state.Equals(_atomicModel.StateInternal))
         {
             throw new IllegalStateModificationException("RunOutput");
         }
-        Log.Information("[OUTPUT] Output: {Output}", output);
+        Log.Debug("[OUTPUT] Output: {Output}", output);
         return output;
     }
     
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
     {
-        var bagIsEmpty = obj.Input?.IsEmpty ?? true;
-        
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
+
+        using var activity = ActivitySource.StartActivity("RunExecuteTransition", ActivityKind.Internal,_parentContext);
+        activity?.SetTag("Name", Self.Path.Name);
+        activity?.SetTag("Model", _atomicModel.GetType().Name);
+        activity?.SetTag("OldState", _atomicModel.StateInternal.ToString());
+        activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
+        activity?.SetTag("Input", obj.Input?.ToString() ?? "null");
+        var bagIsEmpty = obj.Input?.IsEmpty ?? true;
         
         if(bagIsEmpty  && obj.CurrentTime == _timeNext)
         {
+            activity?.SetTag("Transition", "Internal");
             // Internal transition
-            RunInternalState(_atomicModel.State);
+            RunInternalState(_atomicModel.StateInternal);
         }
         else if(!bagIsEmpty && obj.CurrentTime == _timeNext)
         {
+            activity?.SetTag("Transition", "Confluent");
             // Confluent transition
-            RunConfluentState(_atomicModel.State, obj.Input ?? Bag.Empty);
+            RunConfluentState(_atomicModel.StateInternal, obj.Input ?? Bag.Empty);
         }
         else if(!bagIsEmpty && (_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
         {
+            activity?.SetTag("Transition", "External");
             // External transition
             _timeElapsed = obj.CurrentTime - _timeLast;
-            RunExternalState(_atomicModel.State, obj.Input ?? Bag.Empty);
+            RunExternalState(_atomicModel.StateInternal, obj.Input ?? Bag.Empty);
         }
+        activity?.SetTag("NewState", _atomicModel.StateInternal.ToString());
         _timeLast = obj.CurrentTime;
-        _timeNext = _timeLast + RunTimeAdvance(_atomicModel.State);
+        _timeNext = _timeLast + RunTimeAdvance(_atomicModel.StateInternal);
+        activity?.SetTag("TimeNext", _timeNext.ToString());
         
         // Send the finished execute transition message to the coordinator
-        _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext));
+        _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext)
+        {
+            ToStringState = new Dictionary<string, TraceInformation>([new KeyValuePair<string, TraceInformation>(this._atomicModel.Name,new TraceInformation(this._atomicModel.StateInternal.ToString() ?? string.Empty))])
+        });
     }
 
     /**
@@ -151,11 +149,19 @@ public class Simulator : ReceiveActor, ILogReceive
      */
     private void HandleComputeOutput(ComputeOutput.StartComputeOutput obj)
     {
+        _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
+        using var activity = ActivitySource.StartActivity("RunComputeOutput", ActivityKind.Internal,_parentContext);
+        activity?.SetTag("Name", Self.Path.Name);
+        activity?.SetTag("Model", _atomicModel.GetType().Name);
+        activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
+        
         // Check if the current time is equal to the next time
         if (obj.CurrentTime == _timeNext)
         {
             // Compute the output
-            _outputBag = RunOutput(_atomicModel.State);
+            _outputBag = RunOutput(_atomicModel.StateInternal);
+            
+            activity?.SetTag("Output", _outputBag.ToString());
             
             // Send the output message to the coordinator
             _coordinator.Tell(new ComputeOutput.ComputedOutput(_outputBag, obj.CurrentTime));
@@ -170,10 +176,19 @@ public class Simulator : ReceiveActor, ILogReceive
 
     private void HandleInitialization(EngineMessages.StartInitialization msg)
     {
+        _parentContext = new ActivityContext(msg.TraceId, msg.SpanId, ActivityTraceFlags.Recorded);
+        using var activity = ActivitySource.StartActivity("RunInitialization", ActivityKind.Internal,_parentContext);
+        activity?.SetTag("Name", Self.Path.Name);
+        activity?.SetTag("Model", _atomicModel.GetType().Name);
+        activity?.SetTag("CurrentTime", msg.CurrentTime.ToString());
+        
         // tl = t −e
         _timeLast = msg.CurrentTime - _timeElapsed;
         // tn = tl + ta(s)
-        _timeNext = _timeLast + RunTimeAdvance(_atomicModel.State);
+        _timeNext = _timeLast + RunTimeAdvance(_atomicModel.StateInternal);
+       
+        activity?.SetTag("TimeNext", _timeNext.ToString());
+        activity?.SetTag("TimeLast", _timeLast.ToString());
         
         // Send the initialization completed message to the coordinator
         _coordinator.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext));

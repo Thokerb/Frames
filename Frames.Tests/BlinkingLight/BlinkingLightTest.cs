@@ -34,7 +34,10 @@ public class BlinkingLightTest : TestKit, IClassFixture<OpenTelemetryFixture>
         var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
-        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
+        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
+        {
+            Name = "blinking-light",
+        };
         
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, _openTelemetryFixture.Instrumentation));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");

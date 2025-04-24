@@ -42,7 +42,7 @@ public class BlinkingLightAtomicModelBR : AtomicModel<BlinkingLightStateBR>
         
     }
 
-    public override BlinkingLightStateBR StateBr { get; set; } = new BlinkingLightStateBR
+    public override BlinkingLightStateBR State { get; set; } = new BlinkingLightStateBR
     {
         Name = "On"
         
@@ -62,7 +62,7 @@ public class BlinkingLightAtomicModelBR : AtomicModel<BlinkingLightStateBR>
             case "TransitionFinishedByItself":
                 return new TimeUnit(1); // TODO: lets see
             default:
-                throw new UnknownStateException(StateBr.Name);
+                throw new UnknownStateException(State.Name);
         }
     }
 

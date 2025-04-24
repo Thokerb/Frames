@@ -78,7 +78,10 @@ public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
         var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
         var rootCoordinatorActor = _testKit.ActorOf(props);
 
-        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
+        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
+        {
+            Name = "blinking-light",
+        };
         
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, _openTelemetryFixture.Instrumentation));
         var blinkingLightActor = _testKit.ActorOf(blinkingLightProps,"simulator-blinking-light");

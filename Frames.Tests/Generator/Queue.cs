@@ -17,7 +17,7 @@ public record QueueState : IState
 
 public class Queue : AtomicModel<QueueState>
 {
-    public override QueueState StateBr { get; set; } = new QueueState()
+    public override QueueState State { get; set; } = new QueueState()
     {
         Size = null
     };

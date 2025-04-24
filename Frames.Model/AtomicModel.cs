@@ -5,10 +5,12 @@ namespace Frames.Model;
 
 public interface IAtomicModelBase : IModel
 {
+    string Name { get; set; }
+    
     /// <summary>
     /// The state of the model.
     /// </summary>
-    IState State { get; set; }
+    IState StateInternal { get; set; }
 
     /// <summary>
     /// The time until the next event.
@@ -45,7 +47,7 @@ public interface IAtomicModel<TState> : IAtomicModelBase where TState : IState
     /// <summary>
     /// The state of the model.
     /// </summary>
-    TState StateBr { get; set; }
+    TState State { get; set; }
 
     /// <summary>
     /// The time until the next event.
@@ -156,7 +158,12 @@ public class Bag
 public abstract class AtomicModel<TState> : IAtomicModel<TState>
     where TState : IState
 {
-    public abstract TState StateBr { get; set; }
+    public string Name { get; set; }
+    
+    /// <summary>
+    /// State of the model.
+    /// </summary>
+    public abstract TState State { get; set; }
     public TimeUnit TimeAdvance(IState state) => TimeAdvance((TState)state);
 
     public IState ExternalTransition(IState state, Bag bag) => ExternalTransition((TState)state, bag);
@@ -194,10 +201,13 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     {
     }
 
-    IState IAtomicModelBase.State
+    /// <summary>
+    /// This should only be used internally.
+    /// </summary>
+    IState IAtomicModelBase.StateInternal
     {
-        get => StateBr;
-        set => StateBr = (TState)value;
+        get => State;
+        set => State = (TState)value;
     }
 
     public static string GetPrefix()

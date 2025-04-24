@@ -42,7 +42,7 @@ public class CoupledModel : ICoupledModel
         this.Name = name;
     }
 
-    public string Name { get; init; }
+    public string Name { get; set; }
 
     private Dictionary<string, IModel> Children { get; } = new();
     
@@ -53,6 +53,7 @@ public class CoupledModel : ICoupledModel
     {
         T model = Activator.CreateInstance<T>();
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
+        model.Name = id;
         Children.Add(prefix+id, model);
         return model;
     }    
@@ -61,7 +62,8 @@ public class CoupledModel : ICoupledModel
         where TState : IState
     {
         var model = Activator.CreateInstance<T>();
-        model.StateBr = state;
+        model.State = state;
+        model.Name = id;
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
         Children.Add(prefix+id, model);
         return model;

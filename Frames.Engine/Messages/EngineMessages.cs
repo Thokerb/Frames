@@ -40,7 +40,7 @@ public static class ComputeOutput
     /// <param name="Output">y</param>
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime);
+    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : WithOutputTrace;
 }
 
 public static class ExecuteTransition
@@ -54,7 +54,7 @@ public static class ExecuteTransition
     /// Implicit response, not written in Book because not needed in non actor based communication
     /// </summary>
     /// <param name="TimeNext"></param>
-    public sealed record FinishedExecuteTransition(TimeUnit TimeNext);
+    public sealed record FinishedExecuteTransition(TimeUnit TimeNext) : WithSimulatorInformation;
 }
 
 public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
@@ -62,3 +62,8 @@ public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
     // TODO: check nullability
     protected WithActivityTrace() : this( Activity.Current!.TraceId,Activity.Current!.SpanId) { }
 }
+
+public record WithSimulatorInformation(bool StopConditionReached = false, Dictionary<string, TraceInformation>? ToStringState = null);
+public record WithOutputTrace(string ToStringOutput = "");
+
+public record TraceInformation(string State);
