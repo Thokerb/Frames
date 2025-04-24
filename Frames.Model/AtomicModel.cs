@@ -5,6 +5,8 @@ namespace Frames.Model;
 
 public interface IAtomicModelBase : IModel
 {
+    bool StopCondition(IState state, Bag bag);
+    
     string Name { get; set; }
     
     /// <summary>
@@ -44,6 +46,13 @@ public interface IState : IComparable
 
 public interface IAtomicModel<TState> : IAtomicModelBase where TState : IState
 {
+    
+    /// <summary>
+    /// This is the default stop condition.
+    /// First parameter is the old state, second is the new state and third is the bag.
+    /// </summary>
+    public Func<TState, Bag, bool> StopCondition { get; set; }
+    
     /// <summary>
     /// The state of the model.
     /// </summary>
@@ -158,8 +167,14 @@ public class Bag
 public abstract class AtomicModel<TState> : IAtomicModel<TState>
     where TState : IState
 {
+    bool IAtomicModelBase.StopCondition(IState state, Bag bag)
+    {
+        return StopCondition((TState)state, bag);
+    }
+
     public string Name { get; set; }
-    
+    public bool HasStopCondition { get; set; } = false;
+
     /// <summary>
     /// State of the model.
     /// </summary>
@@ -177,7 +192,13 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     public abstract TimeUnit TimeAdvance(TState state);
     public abstract TState ExternalTransition(TState state, Bag bag);
     public abstract TState InternalTransition(TState state);
-
+    
+    /// <summary>
+    /// This is the default stop condition.
+    /// First parameter is the old state, second is the new state and third is the bag.
+    /// </summary>
+    public virtual Func<TState, Bag, bool> StopCondition { get; set; } = (_, _) => false;
+    
     /// <summary>
     /// Default behavior of confluent transition is to call internal transition first and then external transition.
     /// Can be overridden in derived classes.

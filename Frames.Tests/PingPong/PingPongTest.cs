@@ -20,12 +20,12 @@ public class PingPongTest : IClassFixture<OpenTelemetryFixture>
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
-            .MinimumLevel.Verbose()
+            .MinimumLevel.Information()
             // exclude when message contains 'version : "0.0.1 Akka"'
             .Filter.ByExcluding(e => e.MessageTemplate.Text.Contains("version"))
             // enrich with bla
             // .Enrich.WithProperty("TestName", "PingPongTest")
-            .WriteTo.TestOutput(output,outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{Properties}{NewLine}{Exception}")
+            .WriteTo.TestOutput(output)
             .CreateLogger();
         
         

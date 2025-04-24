@@ -102,6 +102,8 @@ public class Coordinator : ReceiveActor, ILogReceive
         Receive<ComputeOutput.ComputedOutput>(HandleComputedOutput); // (y,t)
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
         Receive<ExecuteTransition.FinishedExecuteTransition>(HandleFinishedExecuteTransition);
+        
+        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_coupledModel.HasStopCondition)));
     }
 
     private ActivitySource ActivitySource { get; set; }

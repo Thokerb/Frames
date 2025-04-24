@@ -14,13 +14,15 @@ public class CArena : CoupledModel
             new BlinkingLightStateBR
             {
                 Name = "On",
-                MaxCycles = 5
+                MaxCycles = 5,
+                WaitingTime = 3
             });
         AddModel<BlinkingLightAtomicModelBR, BlinkingLightStateBR>("bl2",
             new BlinkingLightStateBR
             {
                 Name = "On",
-                MaxCycles = 20
+                MaxCycles = 20,
+                WaitingTime = 5
             });
         
         AddCoupling("bl1", BlinkingLightAtomicModelBR.PortOutFinished, "bl2", BlinkingLightAtomicModelBR.PortInFinishedByOther);

@@ -27,6 +27,7 @@ public class Simulator : ReceiveActor, ILogReceive
         Receive<EngineMessages.StartInitialization>(HandleInitialization);
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
+        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel.HasStopCondition)));
     }
 
     private ActivitySource ActivitySource { get; set; }
@@ -137,6 +138,7 @@ public class Simulator : ReceiveActor, ILogReceive
         // Send the finished execute transition message to the coordinator
         _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext)
         {
+            StopConditionReached = _atomicModel.StopCondition(_atomicModel.StateInternal, obj.Input ?? Bag.Empty),
             ToStringState = new Dictionary<string, TraceInformation>([new KeyValuePair<string, TraceInformation>(this._atomicModel.Name,new TraceInformation(this._atomicModel.StateInternal.ToString() ?? string.Empty))])
         });
     }

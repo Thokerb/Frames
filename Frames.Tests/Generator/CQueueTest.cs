@@ -21,11 +21,7 @@ public class CQueueTest : TestKit, IClassFixture<OpenTelemetryFixture>
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
-            .MinimumLevel.Verbose()
-            // exclude when message contains 'version : "0.0.1 Akka"'
-            .Filter.ByExcluding(e => e.MessageTemplate.Text.Contains("version"))
-            // enrich with bla
-
+            .MinimumLevel.Information()
             .WriteTo.TestOutput(output)
             .CreateLogger();
         

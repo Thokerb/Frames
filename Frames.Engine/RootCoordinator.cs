@@ -4,6 +4,7 @@ using System.Timers;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
+using Frames.Model;
 using Frames.Model.ValueTypes;
 using Serilog;
 using Timer = System.Timers.Timer;
@@ -96,6 +97,9 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator");
         }
         
+        var childrenHasStopCondition = obj.Children.Ask<bool>(new Simulation.HasStopCondition()).Result;
+        _hasStopCondition = _hasStopCondition || obj.Children.Ask<bool>(new Simulation.HasStopCondition()).Result;
+        
         if (!_hasStopCondition)
         {
             throw new NoStopConditionException();
@@ -141,10 +145,11 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         ExecuteTransitionActivity.Dispose();
         // update the timeNext for the child
         
+        StopConditionReached = obj.StopConditionReached;
         
         Log.Information("================================================================");
         Log.Information("Round time: {TimeNow}", this._currentTime);
-        Log.Information("Next time: {TimeNext}", obj.TimeNext);
+        Log.Information("Next time: {TimeNext}", obj.TimeNext.IsInfinity ? "Infinity" : obj.TimeNext.ToString());
         string logState = PrintState(obj.ToStringState);
         if (obj.ToStringState != null)
         {
@@ -164,7 +169,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         }
         
         StringBuilder builder = new StringBuilder();
-        foreach (var state in objToStringState)
+        foreach (var state in objToStringState.OrderBy(x => x.Key))
         {
             builder.AppendLine($"[{state.Key}] {state.Value.State}");
         }
@@ -186,14 +191,14 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         // b: child coordinator sends the computed output that is not linked to a child of him
         
         
-        // we are always sending the computed output to the children to initialize the execute transition
+        // we are always sending the computed output to the children to initialize the execute transition (but with empty bag, since there is no coupling defined)
         
         // OUTDATED
         // when it is send by child coordinator, then we dont want to send it back -> this would create wrong behavior
         // when it is send by child simulator, then we want to send it back -> this would start execute transition
         Thread.Sleep(10);
         ExecuteTransitionActivity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Client, parentContext: SimulationStep.Context) ?? throw new InvalidOperationException("ActivitySource is null");
-        _children.Tell(new ExecuteTransition.StartExecuteTransition(obj.Output, _timeNext));
+        _children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _timeNext));
         
     }
 
@@ -214,10 +219,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         // set the current time to the minimum of all children
         
         _currentTime = _timeNext;
-        Log.Information("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
+        Log.Debug("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
      
         
-        if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
+        if ((_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown) || StopConditionReached)
         {
             SimulationStep.Dispose();
             SimulationRun.Dispose();
@@ -236,4 +241,6 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime));
     }
+
+    private bool StopConditionReached { get; set; } = false;
 }

@@ -23,10 +23,7 @@ public record struct BlinkingLightState : IState
 /// </summary>
 public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
 {
-    public BlinkingLightAtomicModel()
-    {
-        
-    }
+    public static readonly Port OutPort = new Port("Out");
 
     public override BlinkingLightState State { get; set; } = new BlinkingLightState
     {
@@ -72,7 +69,14 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
 
     public override Bag Output(BlinkingLightState state)
     {
-        // Blinking light has no output
-        return new Bag();
+        switch (state.Name)
+        {
+            case "On":
+                return new Bag((OutPort, 1));
+            case "Off":
+                return Bag.Empty;
+            default:
+                throw new UnknownStateException(State.Name);
+        }
     }
 }

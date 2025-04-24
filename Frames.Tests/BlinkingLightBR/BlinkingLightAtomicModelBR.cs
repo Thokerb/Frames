@@ -19,6 +19,8 @@ public record struct BlinkingLightStateBR : IState
     
     public int CurrentCycle { get; set; } = 0;
     
+    public int WaitingTime { get; set; } = 2;
+    
     public int CompareTo(object? obj)
     {
         if (obj is BlinkingLightStateBR other)
@@ -54,7 +56,7 @@ public class BlinkingLightAtomicModelBR : AtomicModel<BlinkingLightStateBR>
             case "On":
                 return new TimeUnit(2);
             case "Off":
-                return new TimeUnit(1);
+                return new TimeUnit(stateBr.WaitingTime);
             case "FinishedByItself":
                 return TimeUnit.Infinity;
             case "FinishedByOther":
