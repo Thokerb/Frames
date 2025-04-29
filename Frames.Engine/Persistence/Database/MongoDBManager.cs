@@ -25,7 +25,8 @@ public class MongoDBManager : IDatabaseManager
         var database = Client.GetDatabase(DatabaseName);
         // TODO: make collection name configurable
         var collection = database.GetCollection<SnapshotWithMetadata>("snapshots");
-        var filter = Builders<SnapshotWithMetadata>.Filter.Eq(s => s.CheckpointName, snapshot.CheckpointName);
+        var filter = Builders<SnapshotWithMetadata>.Filter.Eq(s => s.CheckpointName, snapshot.CheckpointName) &
+                     Builders<SnapshotWithMetadata>.Filter.Eq(s => s.ActorName, snapshot.ActorName);
         var update = Builders<SnapshotWithMetadata>.Update
             .Set(s => s.SerializedSnapshot, snapshot.SerializedSnapshot)
             .Set(s => s.Timestamp, snapshot.Timestamp)
@@ -33,7 +34,7 @@ public class MongoDBManager : IDatabaseManager
             .Set(s => s.ActorName, snapshot.ActorName);
         var options = new UpdateOptions { IsUpsert = true };
         var res = await collection.UpdateOneAsync(filter, update, options);
-        Log.Debug("MongoDBManager: Persisted snapshot with key {Key} and result {Result}", snapshot.CheckpointName, res);
+        Log.Information("MongoDBManager: Persisted snapshot with key {Key} and result {Result} for actor {Actor}", snapshot.CheckpointName, res, snapshot.ActorName);
     }
 
     public async Task<SnapshotWithMetadata> RetrieveEntry(string key,string actor)

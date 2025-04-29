@@ -282,7 +282,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private async Task SaveCheckpoint(string checkpoint, TimeUnit timeUnit)
     {
         Log.Debug("[ROOT] Saving checkpoint {Checkpoint} at time {Time}", checkpoint, timeUnit);
-        await SnapshotManager.SaveSnapshot(checkpoint, new CoordinatorSnapshotObject()
+        await SnapshotManager.SaveSnapshotAsync(checkpoint, new CoordinatorSnapshotObject()
         {
             TimeLast = _currentTime,
             TimeNext = _timeNext,

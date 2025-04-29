@@ -53,7 +53,7 @@ public class CSuperArenaTest : IClassFixture<OpenTelemetryFixture>
         
         // Act
         
-        rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("My-Checkpoint",new TimeUnit(3)));
+        rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("My-Checkpoint3",new TimeUnit(10)));
         
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));

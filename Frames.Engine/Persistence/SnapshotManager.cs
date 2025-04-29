@@ -7,8 +7,8 @@ namespace Frames.Engine.Persistence;
 
 public interface ISnapshotManager
 {
-    Task SaveSnapshot(string checkpoint, SimulatorSnapshotObject snapshot, string actorName);
-    Task SaveSnapshot(string checkpoint, CoordinatorSnapshotObject snapshot, string actorName);
+    Task SaveSnapshotAsync(string checkpoint, SimulatorSnapshotObject snapshot, string actorName);
+    Task SaveSnapshotAsync(string checkpoint, CoordinatorSnapshotObject snapshot, string actorName);
     Task<CoordinatorSnapshotObject?> GetSnapshotCoordinatorAsync(string key, string actorName);
     Task<SimulatorSnapshotObject?> GetSnapshotSimulatorAsync(string key, string actorName);
 }
@@ -24,7 +24,7 @@ public class SnapshotManager : ISnapshotManager
     public IDatabaseManager DatabaseManager { get; set; }
 
     
-    public async Task SaveSnapshot(string checkpoint, SimulatorSnapshotObject snapshot, string actorName)
+    public async Task SaveSnapshotAsync(string checkpoint, SimulatorSnapshotObject snapshot, string actorName)
     {
         var serialized = System.Text.Json.JsonSerializer.Serialize(snapshot);
      
@@ -39,7 +39,7 @@ public class SnapshotManager : ISnapshotManager
         await DatabaseManager.PersistAsync(entry);
     }
 
-    public async Task SaveSnapshot(string checkpoint, CoordinatorSnapshotObject snapshot, string actorName)
+    public async Task SaveSnapshotAsync(string checkpoint, CoordinatorSnapshotObject snapshot, string actorName)
     {
         var serialized = System.Text.Json.JsonSerializer.Serialize(snapshot);
      

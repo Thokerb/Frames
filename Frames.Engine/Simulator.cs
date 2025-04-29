@@ -59,10 +59,10 @@ public class Simulator : ReceiveActor, ILogReceive
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
         Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel.HasStopCondition)));
-        Receive<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
+        ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
     }
 
-    private void HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
+    private async Task HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
     {
         if (!( obj.CurrentTime <= _timeNext))
         {
@@ -71,7 +71,7 @@ public class Simulator : ReceiveActor, ILogReceive
         }
 
         // save the checkpoint n 
-        SnapshotManager.SaveSnapshot(obj.Name, new SimulatorSnapshotObject()
+        await SnapshotManager.SaveSnapshotAsync(obj.Name, new SimulatorSnapshotObject()
         {
             OutputBag = _outputBag,
             TimeElapsed = _timeElapsed,

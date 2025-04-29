@@ -120,7 +120,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         Receive<ExecuteTransition.FinishedExecuteTransition>(HandleFinishedExecuteTransition);
 
         Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_coupledModel.HasStopCondition)));
-        Receive<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
+        ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
         Receive<Simulation.FinishedSaveCheckpoint>(HandleFinishedSaveCheckpoint);
     }
 
@@ -137,13 +137,13 @@ public class Coordinator : ReceiveActor, ILogReceive
         }
     }
 
-    private void HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
+    private async Task HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
     {
         if (!(obj.CurrentTime <= _timeNext))
         {
             throw new SynchronisationException("error: bad synchronization");
         }
-        SaveCheckpoint(obj.Name);
+        await SaveCheckpointAsync(obj.Name);
         
         ChildrenSaveCheckpointCount = 0;
         foreach (var child in _children)
@@ -154,7 +154,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private int ChildrenSaveCheckpointCount { get; set; }
 
-    private void SaveCheckpoint(string checkpointName)
+    private async Task SaveCheckpointAsync(string checkpointName)
     {
         var snapshot = new CoordinatorSnapshotObject()
         {
@@ -164,7 +164,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
         };
         
-        SnapshotManager.SaveSnapshot(checkpointName, snapshot, Self.Path.Name);
+        await SnapshotManager.SaveSnapshotAsync(checkpointName, snapshot, Self.Path.Name);
     }
 
     private ActivitySource ActivitySource { get; set; }
