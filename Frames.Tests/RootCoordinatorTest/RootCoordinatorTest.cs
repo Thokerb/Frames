@@ -5,6 +5,7 @@ using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Tests.PingPong;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
@@ -31,12 +32,13 @@ public class RootCoordinatorTest : TestKit, IClassFixture<OpenTelemetryFixture>
     public void FailWhenStartingWithoutStopCondition()
     {
         // Arrange root coordinator
-        var props = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var props = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model,_openTelemetryFixture.Instrumentation));
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
 
         // Assert

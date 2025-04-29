@@ -2,8 +2,10 @@
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
+using Frames.Engine.Persistence;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace Frames.Engine;
@@ -14,20 +16,72 @@ namespace Frames.Engine;
 /// </summary>
 public class Simulator : ReceiveActor, ILogReceive
 {
+    private IServiceProvider ServiceProvider { get; init; }
+    private ISnapshotManager SnapshotManager { get; }
+
+    protected override SupervisorStrategy SupervisorStrategy()
+    {
+        return new OneForOneStrategy(
+            maxNrOfRetries: 10,
+            withinTimeMilliseconds: 30 * 1000,
+            localOnlyDecider: ex =>
+            {
+                switch (ex)
+                {
+                    case SimulatorException:
+                        return Directive.Escalate;
+                    case SynchronisationException:
+                        return Directive.Escalate;
+                    default:
+                        return Directive.Restart;
+                }
+            },
+            loggingEnabled: true
+        );
+    }
+
     private readonly IActorRef _coordinator;
     
     private ActivityContext _parentContext;
     
-    public Simulator(IActorRef coordinator, IAtomicModelBase atomicModel, Instrumentation instrumentation)
+    
+    public Simulator(IActorRef coordinator, IAtomicModelBase atomicModel, IServiceProvider serviceProvider)
     {
-        ActivitySource = instrumentation.ActivitySource;
+        ServiceProvider = serviceProvider;
+        SnapshotManager = ServiceProvider.GetRequiredService<ISnapshotManager>();
+        ActivitySource = ServiceProvider.GetRequiredService<Instrumentation>().ActivitySource;
+        
         _coordinator = coordinator;
         _atomicModel = atomicModel;
+        
         
         Receive<EngineMessages.StartInitialization>(HandleInitialization);
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
         Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel.HasStopCondition)));
+        Receive<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
+    }
+
+    private void HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
+    {
+        if (!( obj.CurrentTime <= _timeNext))
+        {
+            Log.Error("Checkpoint time is not in the range of last and next time");
+            throw new SynchronisationException("Checkpoint time is not in the range of last and next time");
+        }
+
+        // save the checkpoint n 
+        SnapshotManager.SaveSnapshot(obj.Name, new SimulatorSnapshotObject()
+        {
+            OutputBag = _outputBag,
+            TimeElapsed = _timeElapsed,
+            TimeLast = _timeLast,
+            TimeNext = _timeNext,
+            AtomicModelState = _atomicModel.StateInternal
+        }, Self.Path.Name);
+        
+        Log.Debug("[{Name} - CHECKPOINT] Checkpoint saved: {Checkpoint}", Self.Path.Name, obj.Name);
+        _coordinator.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime));
     }
 
     private ActivitySource ActivitySource { get; set; }
@@ -134,7 +188,6 @@ public class Simulator : ReceiveActor, ILogReceive
         _timeLast = obj.CurrentTime;
         _timeNext = _timeLast + RunTimeAdvance(_atomicModel.StateInternal);
         activity?.SetTag("TimeNext", _timeNext.ToString());
-        
         // Send the finished execute transition message to the coordinator
         _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext)
         {

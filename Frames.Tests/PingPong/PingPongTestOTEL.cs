@@ -4,6 +4,7 @@ using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
@@ -49,13 +50,15 @@ public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
     [Fact]
     public async Task CreateTable()
     {
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var rootProps = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
         ICoupledModel coupledModel = new Table();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, coupledModel, serviceProviderMock));
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-table");
         
         // Act
@@ -74,8 +77,10 @@ public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
     [Fact]
     public async Task BaseBlinkingLightTest()
     {
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = _testKit.ActorOf(props);
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
@@ -83,7 +88,7 @@ public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
             Name = "blinking-light",
         };
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, _openTelemetryFixture.Instrumentation));
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = _testKit.ActorOf(blinkingLightProps,"simulator-blinking-light");
 
         // Act

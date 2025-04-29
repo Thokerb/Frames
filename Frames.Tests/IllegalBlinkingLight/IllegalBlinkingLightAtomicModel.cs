@@ -16,6 +16,7 @@ public record struct BlinkingLightState : IState
         }
         throw new ArgumentException("Object is not a BlinkingLightState");
     }
+
 }
 
 /// <summary>

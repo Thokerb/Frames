@@ -1,4 +1,5 @@
-﻿using Frames.Model;
+﻿using System.Runtime.Serialization;
+using Frames.Model;
 using Frames.Model.Exceptions;
 using Frames.Model.ValueTypes;
 
@@ -15,6 +16,11 @@ public record struct BlinkingLightState : IState
             return string.Compare(Name, other.Name, StringComparison.Ordinal);
         }
         throw new ArgumentException("Object is not a BlinkingLightState");
+    }
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        info.AddValue(nameof(Name), Name);
     }
 }
 

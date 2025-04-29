@@ -5,6 +5,7 @@ using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.Tests.PingPong;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
@@ -26,12 +27,12 @@ public class BlinkingLightTest : TestKit, IClassFixture<OpenTelemetryFixture>
             .CreateLogger();
     }
     
-    
     [Fact]
     public async Task BaseBlinkingLightTest()
     {
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
@@ -39,7 +40,7 @@ public class BlinkingLightTest : TestKit, IClassFixture<OpenTelemetryFixture>
             Name = "blinking-light",
         };
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, _openTelemetryFixture.Instrumentation));
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
 
         // Act
@@ -53,6 +54,4 @@ public class BlinkingLightTest : TestKit, IClassFixture<OpenTelemetryFixture>
         Assert.True(response.ElapsedTime <= new TimeUnit(11));
         Assert.True(response.ElapsedTime > TimeUnit.Zero);
     }
-    
-    
 }

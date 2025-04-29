@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.Serialization;
+using System.Text;
 using Frames.Model.ValueTypes;
 
 namespace Frames.Model;
@@ -84,7 +85,7 @@ public interface IAtomicModel<TState> : IAtomicModelBase where TState : IState
     Bag Output(TState state);
 }
 
-public class Bag
+public record struct Bag
 {
     public Bag()
     {

@@ -5,6 +5,7 @@ using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.Tests.PingPong;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
@@ -41,12 +42,13 @@ public class CArenaTest : IClassFixture<OpenTelemetryFixture>
     public async Task CreateCArena()
     {
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
 
         ICoupledModel coupledModel = new CArena();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(coupledModel, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, coupledModel, serviceProviderMock));
         var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-carena");
         
         // Act

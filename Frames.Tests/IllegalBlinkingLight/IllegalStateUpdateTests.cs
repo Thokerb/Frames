@@ -6,6 +6,7 @@ using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.Tests.PingPong;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
@@ -23,6 +24,7 @@ public class IllegalStateUpdateTests : TestKit, IClassFixture<OpenTelemetryFixtu
         Serilog.Log.Logger = new LoggerConfiguration()
             // add the xunit test output sink to the serilog logger
             // https://github.com/trbenning/serilog-sinks-xunit#serilog-sinks-xunit
+            .MinimumLevel.Verbose()
             .WriteTo.TestOutput(output)
             .CreateLogger();
     }
@@ -32,12 +34,12 @@ public class IllegalStateUpdateTests : TestKit, IClassFixture<OpenTelemetryFixtu
     public void ThrowOnIllegalTimeAdvance()
     {
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         IAtomicModelBase model = new IllegalBlinkingLightAtomicModel();
-        
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model,_openTelemetryFixture.Instrumentation));
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps);
         
         // Act        
@@ -56,12 +58,12 @@ public class IllegalStateUpdateTests : TestKit, IClassFixture<OpenTelemetryFixtu
     public void ThrowOnIllegalOutput()
     {
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         IAtomicModelBase model = new IllegalBlinkingLightAtomicModel();
-        
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model,_openTelemetryFixture.Instrumentation));
+        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps);
         
         // Act        

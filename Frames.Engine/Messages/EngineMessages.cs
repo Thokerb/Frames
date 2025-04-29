@@ -63,6 +63,16 @@ public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
     protected WithActivityTrace() : this( Activity.Current!.TraceId,Activity.Current!.SpanId) { }
 }
 
+public static class StateSnapshot
+{
+    public sealed record SaveSnapshot(string CheckpointName);
+    public sealed record SnapshotSaved();
+    
+    public sealed record LoadSnapshot(string CheckpointName);
+    public sealed record SnapshotLoaded();
+}
+
+
 public record WithSimulatorInformation(bool StopConditionReached = false, Dictionary<string, TraceInformation>? ToStringState = null);
 public record WithOutputTrace(string ToStringOutput = "");
 

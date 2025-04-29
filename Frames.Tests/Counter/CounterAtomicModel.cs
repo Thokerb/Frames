@@ -21,7 +21,7 @@ public class CounterAtomicModel : AtomicModel<CounterState>
 {
     
     public static readonly Port InPort = new Port("In");
-    public override CounterState State { get; set; } 
+    public override CounterState State { get; set; }  = new CounterState();
     public override TimeUnit TimeAdvance(CounterState state)
     {
         return TimeUnit.Infinity;

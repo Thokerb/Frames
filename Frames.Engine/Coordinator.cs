@@ -1,9 +1,12 @@
 ﻿using System.Diagnostics;
+using Akka.DependencyInjection;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
+using Frames.Engine.Persistence;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace Frames.Engine;
@@ -15,7 +18,8 @@ namespace Frames.Engine;
 public class Coordinator : ReceiveActor, ILogReceive
 {
     private Instrumentation Instrumentation { get; }
-    
+    private IServiceProvider ServiceProvider { get; }
+
     private ActivityContext _parentContext;
 
     /// <summary>
@@ -24,11 +28,11 @@ public class Coordinator : ReceiveActor, ILogReceive
     /// ActorRef is the address of the actor
     /// Is a 1:1 mapping
     /// </summary>
-    private Dictionary<string, IActorRef> _children = new();
+    private readonly Dictionary<string, IActorRef> _children = new();
 
-    private ICoupledModel _coupledModel;
+    private readonly ICoupledModel _coupledModel;
 
-    private IActorRef? _parent;
+    private readonly IActorRef _parent;
 
     private TimeUnit _timeLast;
 
@@ -69,27 +73,39 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private void CreateChildren()
     {
+        // Create a new actor for each child
         foreach (var child in _coupledModel.GetChildren())
         {
             Props props;
-            // Create a new actor for each child
-            props = child.Item2 switch
+            switch (child.Item2)
             {
                 // TODO: DI
-                IAtomicModelBase atomicModel => Props.Create(() => new Simulator(Self, atomicModel, Instrumentation)),
-                ICoupledModel coupledModel => Props.Create(() => new Coordinator(coupledModel, Self, Instrumentation)),
-                _ => throw new ArgumentOutOfRangeException()
-            };
+                case IAtomicModelBase atomicModel:
+                    props = Props.Create(() => 
+                        new Simulator(Self, atomicModel, ServiceProvider));
+                    break;
+                case ICoupledModel coupledModel:
+                    props = Props.Create<Coordinator>(() => 
+                        new Coordinator(Self, coupledModel, ServiceProvider));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
             var actor = Context.ActorOf(props, child.Item1);
             _children.Add(child.Item1, actor);
         }
     }
+    
+    private ISnapshotManager SnapshotManager { get; }
 
-    public Coordinator(ICoupledModel coupledModel, IActorRef? parent, Instrumentation instrumentation)
+    public Coordinator(IActorRef parent, ICoupledModel coupledModel,
+        IServiceProvider serviceProvider)
     {
-        Instrumentation = instrumentation;
-        ActivitySource = instrumentation.ActivitySource;
+        ServiceProvider = serviceProvider;
+        SnapshotManager = ServiceProvider.GetRequiredService<ISnapshotManager>();
+        Instrumentation = ServiceProvider.GetRequiredService<Instrumentation>();
+        ActivitySource = Instrumentation.ActivitySource;
         _coupledModel = coupledModel;
         this._parent = parent;
         CreateChildren();
@@ -102,15 +118,59 @@ public class Coordinator : ReceiveActor, ILogReceive
         Receive<ComputeOutput.ComputedOutput>(HandleComputedOutput); // (y,t)
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
         Receive<ExecuteTransition.FinishedExecuteTransition>(HandleFinishedExecuteTransition);
-        
+
         Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_coupledModel.HasStopCondition)));
+        Receive<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
+        Receive<Simulation.FinishedSaveCheckpoint>(HandleFinishedSaveCheckpoint);
+    }
+
+    private void HandleFinishedSaveCheckpoint(Simulation.FinishedSaveCheckpoint obj)
+    {
+        if (!(obj.CurrentTime <= _timeNext))
+        {
+            throw new SynchronisationException("error: bad synchronization");
+        }
+        ChildrenSaveCheckpointCount += 1;
+        if (ChildrenSaveCheckpointCount == _children.Count)
+        {
+            _parent.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime));
+        }
+    }
+
+    private void HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
+    {
+        if (!(obj.CurrentTime <= _timeNext))
+        {
+            throw new SynchronisationException("error: bad synchronization");
+        }
+        SaveCheckpoint(obj.Name);
+        
+        ChildrenSaveCheckpointCount = 0;
+        foreach (var child in _children)
+        {
+            child.Value.Tell(obj);
+        }
+    }
+
+    private int ChildrenSaveCheckpointCount { get; set; }
+
+    private void SaveCheckpoint(string checkpointName)
+    {
+        var snapshot = new CoordinatorSnapshotObject()
+        {
+            TimeLast =  _timeLast,
+            TimeNext = _timeNext,
+            EventList = _eventList,
+
+        };
+        
+        SnapshotManager.SaveSnapshot(checkpointName, snapshot, Self.Path.Name);
     }
 
     private ActivitySource ActivitySource { get; set; }
 
     private void HandleComputedOutput(ComputeOutput.ComputedOutput obj)
     {
-
         // mark d as reporting
         var name = _children.FirstOrDefault(x => x.Value.Equals(Sender)).Key;
         _imminentChildren[name] = true;
@@ -146,11 +206,11 @@ public class Coordinator : ReceiveActor, ILogReceive
                 }
             }
         }
-        
+
         // send y-message (yparent , t) to parent
         Log.Debug("Sending output to parent {Parent}, Bag {Bag}", _parent.Path.Name, _outputMessageBagParent);
         _parent.Tell(new ComputeOutput.ComputedOutput(_outputMessageBagParent, obj.CurrentTime));
-        
+
 
         // according to M S, here we should create bag yr, which contains all messages that can be sent to the children and execute their transition
         // this does not seem to be correct, since we don't know yet if the parent is sending anything to us
@@ -165,21 +225,21 @@ public class Coordinator : ReceiveActor, ILogReceive
     }
 
 
-    private Bag CreateOutputMessageBagChildrenFromMail(Dictionary<string,Bag> mail)
+    private Bag CreateOutputMessageBagChildrenFromMail(Dictionary<string, Bag> mail)
     {
         Bag outputMessageBagChildren = new Bag();
-        
+
         // naming r_child, is so that it matches the book with single letter variable names
         foreach (var r_child in _children)
         {
             // for d such that d ∈ Ir do (=  receiver of the child)
             // we kept track of senders, therefore we can just check if the child is in the list
-            
+
             foreach (var message in mail)
             {
                 // if Z_d,_r(yd) is not empty (= if message can be sent from influencer to child)
                 if (message.Value.IsEmpty) continue;
-                
+
                 foreach (var entry in message.Value.Inputs)
                 {
                     if (_coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
@@ -189,6 +249,7 @@ public class Coordinator : ReceiveActor, ILogReceive
                 }
             }
         }
+
         return outputMessageBagChildren;
     }
 
@@ -227,10 +288,12 @@ public class Coordinator : ReceiveActor, ILogReceive
             var result = new ExecuteTransition.FinishedExecuteTransition(_timeNext)
             {
                 // merge all States to one
-                ToStringState = _timeNextExecuteTransition.Values.SelectMany(x => x.ToStringState ?? new Dictionary<string, TraceInformation>()).ToDictionary(x => x.Key, x => x.Value),
+                ToStringState = _timeNextExecuteTransition.Values
+                    .SelectMany(x => x.ToStringState ?? new Dictionary<string, TraceInformation>())
+                    .ToDictionary(x => x.Key, x => x.Value),
                 StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached)
-            };  
-            
+            };
+
             _parent.Tell(result);
         }
     }
@@ -238,7 +301,8 @@ public class Coordinator : ReceiveActor, ILogReceive
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
     {
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
-        using var activity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Internal, parentContext: _parentContext);
+        using var activity =
+            ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Internal, parentContext: _parentContext);
         activity?.SetTag("Name", Self.Path.Name);
         activity?.SetTag("Model", _coupledModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
@@ -249,13 +313,13 @@ public class Coordinator : ReceiveActor, ILogReceive
             throw new SynchronisationException(
                 "error: bad synchronization consult external input coupling to get children influenced by the input");
         }
-        
+
         // execute transition by using bagged messages in _outputMessageBagChildren
         // merge sent messages with the bagged messages
 
-        if (obj.Input != null && !obj.Input.IsEmpty)
+        if (obj.Input is { IsEmpty: false })
         {
-            foreach (var entry in obj.Input.Inputs)
+            foreach (var entry in obj.Input.Value.Inputs)
             {
                 _outputMessageBagChildren.AddInput(entry.Key, entry.Value);
             }
@@ -284,40 +348,39 @@ public class Coordinator : ReceiveActor, ILogReceive
             }
         }
 
-        
+
         // 3. send all imminent that are not receivers also a x-message with empty bag
         // list of children that are in the imminent list but not in the coupled list
         var imminentButNoReceiver = _imminentChildren
             .Where(x => receivers.All(r => r.Key != x.Key))
             .ToList();
-        
+
         //  implicit response, line 40 is handled in the FinishedExecuteTransition method
         _timeNextExecuteTransition.Clear();
         _timeNextExecuteTransitionCount = imminentButNoReceiver.Count + receivers.Count;
         _timeLast = obj.CurrentTime;
-        
-        
-        
+
+
         // trigger execute transition for all selected at the end, because otherwise there are potential race conditions
-        
+
         foreach (var receiver in receivers)
         {
             var receiverActors = _children[receiver.Key];
             receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime));
         }
-        
+
         foreach (var uncoupledChild in imminentButNoReceiver)
         {
             var actor = _children[uncoupledChild.Key];
             actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime));
         }
-
     }
 
     private void HandleStartComputeOutput(ComputeOutput.StartComputeOutput obj)
     {
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
-        using var activity = ActivitySource.StartActivity("ComputeOutput", ActivityKind.Internal, parentContext: _parentContext);
+        using var activity =
+            ActivitySource.StartActivity("ComputeOutput", ActivityKind.Internal, parentContext: _parentContext);
         if (!obj.CurrentTime.Equals(_timeNext))
         {
             throw new SynchronisationException("Current time does not match time next");
@@ -363,7 +426,8 @@ public class Coordinator : ReceiveActor, ILogReceive
     private void HandleInitialization(EngineMessages.StartInitialization obj)
     {
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
-        using var activity = ActivitySource.StartActivity("Initialization", ActivityKind.Internal, parentContext: _parentContext);
+        using var activity =
+            ActivitySource.StartActivity("Initialization", ActivityKind.Internal, parentContext: _parentContext);
         activity?.SetTag("Name", Self.Path.Name);
         activity?.SetTag("Model", _coupledModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());

@@ -4,6 +4,7 @@ using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
@@ -40,7 +41,8 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
     public async Task TestPlayerWhoWaitsForever()
     {
         // Arrange root coordinator
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = ActorOf(rootProps,"root-coordinator");
         IAtomicModelBase model = new Player()
         {
@@ -50,8 +52,8 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
         {
             Name = "Send"
         };
-        var playerProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model,_openTelemetryFixture.Instrumentation));
-        
+
+        var playerProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var playerActor = ActorOf(playerProps,"simulator-player");
         
         // Act
@@ -77,7 +79,9 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
         {
             Name = "Waiting"
         };
-        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model,_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+
+        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model, serviceProviderMock));
         var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
 
         // needs to be receive, because coupling transforms send to receive
@@ -99,7 +103,9 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
         {
             Name = "Waiting"
         };
-        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model,_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+
+        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model, serviceProviderMock));
         var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
 
         // needs to be receive, because coupling transforms send to receive

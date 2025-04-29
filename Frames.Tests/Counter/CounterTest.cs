@@ -5,15 +5,15 @@ using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.Tests.PingPong;
+using Frames.Tests.TestUtils;
 using Serilog;
 using Xunit.Abstractions;
 
 namespace Frames.Tests.Counter;
 
-public class CounterTest  : TestKit, IClassFixture<OpenTelemetryFixture>
+public class CounterTest : TestKit, IClassFixture<OpenTelemetryFixture>
 {
     public static readonly Akka.Configuration.Config Config = "akka.loglevel=DEBUG";
-
     private readonly OpenTelemetryFixture _openTelemetryFixture;
 
     public CounterTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
@@ -32,12 +32,13 @@ public class CounterTest  : TestKit, IClassFixture<OpenTelemetryFixture>
     public async Task CCounterTest()
     {
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         ICoupledModel model = new CCounter();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(model, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, model, serviceProviderMock));
         var coupledModelActor = Sys.ActorOf(coupledModelProps,"coordinator-counter");
 
         // Act
@@ -55,12 +56,13 @@ public class CounterTest  : TestKit, IClassFixture<OpenTelemetryFixture>
     public async Task CCounterWithStopConditionTest()
     {
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(_openTelemetryFixture.Instrumentation));
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
         ICoupledModel model = new CCounterWithStopCondition();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(model, rootCoordinatorActor, _openTelemetryFixture.Instrumentation));
+        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, model, serviceProviderMock));
         var coupledModelActor = Sys.ActorOf(coupledModelProps,"coordinator-CCounterWithStopCondition");
 
         // Act
@@ -72,5 +74,4 @@ public class CounterTest  : TestKit, IClassFixture<OpenTelemetryFixture>
 
         Assert.Equal(new TimeUnit(30).Value, response.ElapsedTime.Value);
     }
-
 }
