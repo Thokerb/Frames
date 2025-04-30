@@ -328,7 +328,7 @@ public class Coordinator : ReceiveActor, ILogReceive
             {
                 // merge all States to one
                 ToStringState = _timeNextExecuteTransition.Values
-                    .SelectMany(x => x.ToStringState ?? new Dictionary<string, TraceInformation>())
+                    .SelectMany(x => x.ToStringState ?? new Dictionary<string, Guid>())
                     .ToDictionary(x => x.Key, x => x.Value),
                 StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached)
             };

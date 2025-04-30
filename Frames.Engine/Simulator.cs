@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
@@ -62,6 +63,8 @@ public class Simulator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpointAsync);
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
     }
+
+    public IActorRef TracingStreamActor => ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
 
     private async Task HandleSaveCheckpointAsync(Simulation.SaveCheckpoint obj)
     {
@@ -214,12 +217,15 @@ public class Simulator : ReceiveActor, ILogReceive
         _timeNext = _timeLast + RunTimeAdvance(_atomicModel.StateInternal);
         activity?.SetTag("TimeNext", _timeNext.ToString());
         // Send the finished execute transition message to the coordinator
+        
+        var msgId = Guid.NewGuid();
+        
+        TracingStreamActor.Tell(new Messages.Tracing.MessageWithId(this._atomicModel.StateInternal.ToString() ?? string.Empty,msgId));
         _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext)
         {
             StopConditionReached = _atomicModel.StopCondition(_atomicModel.StateInternal, obj.Input ?? Bag.Empty),
-            ToStringState = new Dictionary<string, TraceInformation>([
-                new KeyValuePair<string, TraceInformation>(this._atomicModel.Name,
-                    new TraceInformation(this._atomicModel.StateInternal.ToString() ?? string.Empty))
+            ToStringState = new Dictionary<string, Guid>([
+                new KeyValuePair<string, Guid>(this._atomicModel.Name,msgId)
             ])
         });
     }

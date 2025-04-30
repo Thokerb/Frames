@@ -1,11 +1,14 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Timers;
+using Akka.Streams;
+using Akka.Streams.Dsl;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Engine.Persistence;
+using Frames.Engine.Tracing;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +27,7 @@ namespace Frames.Engine;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class RootCoordinator : ReceiveActor, ILogReceive
 {
+    private IServiceProvider ServiceProvider { get; }
     private IActorRef? _children;
 
     private bool _hasStopCondition;
@@ -49,9 +53,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     
     public RootCoordinator(IServiceProvider serviceProvider)
     {
-        var instrumentation = serviceProvider.GetRequiredService<Instrumentation>();
-        SnapshotManager = serviceProvider.GetRequiredService<ISnapshotManager>();
-        ActivitySource = instrumentation.ActivitySource;
+        ServiceProvider = serviceProvider;
+        Instrumentation = ServiceProvider.GetRequiredService<Instrumentation>();
+        SnapshotManager = ServiceProvider.GetRequiredService<ISnapshotManager>();
+        ActivitySource = Instrumentation.ActivitySource;
         // Control Messages
         ReceiveAsync<Simulation.StartSimulation>(ReceiveSimulationStart);
         Receive<Simulation.InterruptSimulation>(ReceiveSimulationInterrupt);
@@ -77,6 +82,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
         });
     }
+
+    private Instrumentation Instrumentation { get; set; }
 
     private void ReceiveFinishedLoadCheckpoint(Simulation.FinishedLoadCheckpoint obj)
     {
@@ -183,6 +190,25 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Information("[ROOT] Starting simulation");
      
         _isCompleted = false;
+
+        var actorRef = 
+            Source
+                .ActorRef<Messages.Tracing.StreamElement>(1000, OverflowStrategy.DropHead)
+                .Via(TracingFlow.GroupByStepFlow())
+                .To(Sink.ForEach<List<Messages.Tracing.MessageWithId>>(group =>
+                {
+                    Console.WriteLine("Processing group:");
+                    Log.Information("[ROOT] Processing group:");
+                    foreach (var message in group)
+                    {
+                        Log.Information("[ROOT] Message: {Message}", message);
+                    }
+                }))
+                .Run(Context.System);
+        
+        // Save this actorRef in DI
+        Instrumentation.SetTracingActor(actorRef);
+        
         
         if (obj.CheckpointName is not null && obj.CheckpointName != RestoredCheckpointName)
         {
@@ -276,18 +302,20 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Information("================================================================");
         Log.Information("Round time: {TimeNow}", this._currentTime);
         Log.Information("Next time: {TimeNext}", obj.TimeNext.IsInfinity ? "Infinity" : obj.TimeNext.ToString());
-        string logState = PrintState(obj.ToStringState);
-        if (obj.ToStringState != null)
-        {
-            Log.Information("State:\n{State}", logState);
-        }
+        
+        ServiceProvider.GetRequiredService<Instrumentation>().TracingActor.Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>())));
+        // string logState = PrintState(obj.ToStringState);
+        // if (obj.ToStringState != null)
+        // {
+        //     Log.Information("State:\n{State}", logState);
+        // }
 
         _timeNext = obj.TimeNext;
 
         await RoundCompleted();
     }
 
-    private static string PrintState(Dictionary<string, TraceInformation>? objToStringState)
+    private static string PrintState(Dictionary<string, Guid>? objToStringState)
     {
         if (objToStringState == null)
         {
@@ -297,7 +325,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         StringBuilder builder = new StringBuilder();
         foreach (var state in objToStringState.OrderBy(x => x.Key))
         {
-            builder.AppendLine($"[{state.Key}] {state.Value.State}");
+            builder.AppendLine($"[{state.Key}] {state.Value}");
         }
 
         return builder.ToString();

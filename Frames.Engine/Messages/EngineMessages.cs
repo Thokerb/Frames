@@ -73,7 +73,7 @@ public static class StateSnapshot
 }
 
 
-public record WithSimulatorInformation(bool StopConditionReached = false, Dictionary<string, TraceInformation>? ToStringState = null);
+public record WithSimulatorInformation(bool StopConditionReached = false, Dictionary<string, Guid>? ToStringState = null);
 public record WithOutputTrace(string ToStringOutput = "");
 
 public record TraceInformation(string State);
