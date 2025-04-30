@@ -36,7 +36,10 @@ public class RootCoordinatorTest : TestKit, IClassFixture<OpenTelemetryFixture>
         var props = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
-        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel();
+        IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
+        {
+            Name = "blinking-light",
+        };
         
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");

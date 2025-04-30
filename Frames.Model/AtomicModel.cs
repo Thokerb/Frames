@@ -6,9 +6,7 @@ namespace Frames.Model;
 
 public interface IAtomicModelBase : IModel
 {
-    bool StopCondition(IState state, Bag bag);
-    
-    string Name { get; set; }
+    bool StopConditionCheck(IState state, Bag bag);
     
     /// <summary>
     /// The state of the model.
@@ -170,12 +168,12 @@ public record struct Bag
 public abstract class AtomicModel<TState> : IAtomicModel<TState>
     where TState : IState
 {
-    bool IAtomicModelBase.StopCondition(IState state, Bag bag)
+    bool IAtomicModelBase.StopConditionCheck(IState state, Bag bag)
     {
         return StopCondition((TState)state, bag);
     }
 
-    public string Name { get; set; }
+    public required string Name { get; set; }
     public bool HasStopCondition { get; set; } = false;
 
     /// <summary>

@@ -104,7 +104,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         }
     }
 
-    private string RestoredCheckpointName { get; set; }
+    private string? RestoredCheckpointName { get; set; }
 
     private async Task ReceiveLoadCheckpoint(Simulation.LoadCheckpoint arg)
     {

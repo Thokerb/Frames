@@ -223,7 +223,7 @@ public class Simulator : ReceiveActor, ILogReceive
         TracingStreamActor.Tell(new Messages.Tracing.MessageWithId(this._atomicModel.StateInternal.ToString() ?? string.Empty,msgId));
         _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext)
         {
-            StopConditionReached = _atomicModel.StopCondition(_atomicModel.StateInternal, obj.Input ?? Bag.Empty),
+            StopConditionReached = _atomicModel.StopConditionCheck(_atomicModel.StateInternal, obj.Input ?? Bag.Empty),
             ToStringState = new Dictionary<string, Guid>([
                 new KeyValuePair<string, Guid>(this._atomicModel.Name,msgId)
             ])

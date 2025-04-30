@@ -241,7 +241,11 @@ public class Coordinator : ReceiveActor, ILogReceive
             {
                 if (_coupledModel.HasCouplingOut(input.Key, out var outPort))
                 {
-                    _outputMessageBagParent.AddInput(outPort, input.Value);
+                    if (outPort != null)
+                    {
+                        _outputMessageBagParent.AddInput(outPort, input.Value);
+
+                    }
                 }
             }
         }

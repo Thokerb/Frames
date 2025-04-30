@@ -38,7 +38,10 @@ public class IllegalStateUpdateTests : TestKit, IClassFixture<OpenTelemetryFixtu
         var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
-        IAtomicModelBase model = new IllegalBlinkingLightAtomicModel();
+        IAtomicModelBase model = new IllegalBlinkingLightAtomicModel()
+        {
+            Name = "blinking-light",
+        };
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps);
         
@@ -62,12 +65,15 @@ public class IllegalStateUpdateTests : TestKit, IClassFixture<OpenTelemetryFixtu
         var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = Sys.ActorOf(props);
 
-        IAtomicModelBase model = new IllegalBlinkingLightAtomicModel();
+        IAtomicModelBase model = new IllegalBlinkingLightAtomicModel()
+        {
+            Name = "blinking-light",
+        };
         var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
         var blinkingLightActor = Sys.ActorOf(blinkingLightProps);
         
-        // Act        
-        // Assert that exception is thrown
+        // Act
+        // // Assert that exception is thrown
         EventFilter.Exception<IllegalStateModificationException>().ExpectOne(() =>
         {
             using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");

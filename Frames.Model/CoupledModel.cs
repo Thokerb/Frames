@@ -32,7 +32,7 @@ public interface ICoupledModel : IModel
     List<(string model, Port port)> GetReceivers(Port inPort);
 
     void AddCouplingOut(string source, Port inPort, Port outPort);
-    bool HasCouplingOut(Port inPort,out Port outPort);
+    bool HasCouplingOut(Port inPort,out Port? outPort);
 }
 
 public class CoupledModel : ICoupledModel
@@ -205,7 +205,7 @@ public class CoupledModel : ICoupledModel
         Pipes.Add((sourcePort, targetPort, "NONE", targetModel));
     }
     
-    public bool HasCouplingOut(Port inPort,out Port outPort)
+    public bool HasCouplingOut(Port inPort,out Port? outPort)
     {
         var coupling = OutsidePorts
             .FirstOrDefault(x => x.inPort.Equals(inPort));
