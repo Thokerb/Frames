@@ -39,7 +39,7 @@ public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
 
 
 
-    [Fact]
+    [SkipForGithubAction]
     public async Task CreateCSuperArena()
     {
         // Arrange root coordinator
