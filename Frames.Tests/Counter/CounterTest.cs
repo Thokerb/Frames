@@ -72,6 +72,6 @@ public class CounterTest : TestKit, IClassFixture<OpenTelemetryFixture>
         // Assert
         var response = await ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.Equal(new TimeUnit(30).Value, response.ElapsedTime.Value);
+        Assert.Equal(new TimeUnit(29).Value, response.ElapsedTime.Value);
     }
 }

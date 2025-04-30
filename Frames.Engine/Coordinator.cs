@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Akka.DependencyInjection;
+using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
@@ -44,8 +45,8 @@ public class Coordinator : ReceiveActor, ILogReceive
     /// key - name of the child
     /// Can be mapped to address with the _children dictionary
     /// </summary>
-    private readonly IDictionary<string, (TimeUnit timeLast, TimeUnit timeNext)> _eventList =
-        new Dictionary<string, (TimeUnit timeLast, TimeUnit timeNext)>();
+    private IDictionary<string, TimeEventTuple> _eventList =
+        new Dictionary<string, TimeEventTuple>();
 
     private Dictionary<string, ExecuteTransition.FinishedExecuteTransition> _timeNextExecuteTransition = new();
     private int _timeNextExecuteTransitionCount;
@@ -122,6 +123,44 @@ public class Coordinator : ReceiveActor, ILogReceive
         Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_coupledModel.HasStopCondition)));
         ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
         Receive<Simulation.FinishedSaveCheckpoint>(HandleFinishedSaveCheckpoint);
+        ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpoint);
+        Receive<Simulation.FinishedLoadCheckpoint>(HandleFinishedLoadCheckpoint);
+    }
+    
+    private int ChildrenLoadCheckpointCount { get; set; }
+    
+    private async Task HandleLoadCheckpoint(Simulation.LoadCheckpoint obj)
+    {
+        await LoadCheckpointAsync(obj.Name);
+        
+        ChildrenLoadCheckpointCount = 0;
+        foreach (var child in _children)
+        {
+            child.Value.Tell(obj);
+        }
+    }
+    
+    private async Task LoadCheckpointAsync(string checkpointName)
+    {
+        var snapshot = await SnapshotManager.GetSnapshotCoordinatorAsync(checkpointName, Self.Path.Name);
+
+        if (snapshot is null)
+        {
+            throw new SynchronisationException("error: checkpoint not found");
+        }
+        
+        _timeLast = snapshot.TimeLast;
+        _timeNext = snapshot.TimeNext;
+        _eventList = snapshot.EventList;
+    }
+    
+    private void HandleFinishedLoadCheckpoint(Simulation.FinishedLoadCheckpoint obj)
+    {
+        ChildrenLoadCheckpointCount += 1;
+        if (ChildrenLoadCheckpointCount == _children.Count)
+        {
+            _parent.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name));
+        }
     }
 
     private void HandleFinishedSaveCheckpoint(Simulation.FinishedSaveCheckpoint obj)
@@ -274,7 +313,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
                 if (_eventList.ContainsKey(nameChild))
                 {
-                    _eventList[nameChild] = (_eventList[nameChild].timeNext, timeNext.TimeNext);
+                    _eventList[nameChild] = new TimeEventTuple(_eventList[nameChild].TimeNext, timeNext.TimeNext);
                 }
                 else
                 {
@@ -283,7 +322,7 @@ public class Coordinator : ReceiveActor, ILogReceive
             }
 
             // received all responses
-            _timeNext = _eventList.Values.Min(x => x.timeNext);
+            _timeNext = _eventList.Values.Min(x => x.TimeNext);
 
             var result = new ExecuteTransition.FinishedExecuteTransition(_timeNext)
             {
@@ -379,15 +418,14 @@ public class Coordinator : ReceiveActor, ILogReceive
     private void HandleStartComputeOutput(ComputeOutput.StartComputeOutput obj)
     {
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
-        using var activity =
-            ActivitySource.StartActivity("ComputeOutput", ActivityKind.Internal, parentContext: _parentContext);
+        using var activity = ActivitySource.StartActivity("ComputeOutput", ActivityKind.Internal, parentContext: _parentContext);
         if (!obj.CurrentTime.Equals(_timeNext))
         {
             throw new SynchronisationException("Current time does not match time next");
         }
 
         _imminentChildren = _eventList
-            .Where(x => x.Value.timeNext.Equals(_timeNext))
+            .Where(x => x.Value.TimeNext.Equals(_timeNext))
             .Select(x => (x.Key, false)) // at this point none have reported
             .ToDictionary(x => x.Key, x => x.Item2);
 
@@ -408,15 +446,15 @@ public class Coordinator : ReceiveActor, ILogReceive
         // Get the sender name
         var name = _children.FirstOrDefault(x => x.Value.Equals(Sender)).Key;
 
-        _eventList.Add(name, (obj.TimeLast, obj.TimeNext));
+        _eventList.Add(name, new TimeEventTuple(obj.TimeLast, obj.TimeNext));
 
         if (_eventList.Count == _children.Count)
         {
             _initializationCompleted = true;
 
             // TODO: why max ?
-            _timeLast = _eventList.Values.Max(x => x.timeLast);
-            _timeNext = _eventList.Values.Min(x => x.timeNext);
+            _timeLast = _eventList.Values.Max(x => x.TimeLast);
+            _timeNext = _eventList.Values.Min(x => x.TimeNext);
 
             // tell parent
             _parent.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext));

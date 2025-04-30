@@ -41,8 +41,7 @@ public class MongoDBManager : IDatabaseManager
     {
         var database = Client.GetDatabase(DatabaseName);
         var collection = database.GetCollection<SnapshotWithMetadata>("snapshots");
-        var filter = Builders<SnapshotWithMetadata>.Filter
-            .Eq(s => s.CheckpointName, key) & 
+        var filter = Builders<SnapshotWithMetadata>.Filter.Eq(s => s.CheckpointName, key) &
                      Builders<SnapshotWithMetadata>.Filter.Eq(s => s.ActorName, actor);
         var result = await collection.FindAsync(filter);
         var snapshot = await result.FirstOrDefaultAsync();

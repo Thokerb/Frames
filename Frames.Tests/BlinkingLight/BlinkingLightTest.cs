@@ -51,7 +51,6 @@ public class BlinkingLightTest : TestKit, IClassFixture<OpenTelemetryFixture>
         // Assert
         var response = await ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.True(response.ElapsedTime <= new TimeUnit(11));
-        Assert.True(response.ElapsedTime > TimeUnit.Zero);
+        Assert.InRange(response.ElapsedTime.Value, new TimeUnit(11).Value, new TimeUnit(11).Value);
     }
 }

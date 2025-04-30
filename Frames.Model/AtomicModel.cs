@@ -39,6 +39,8 @@ public interface IAtomicModelBase : IModel
     /// Output function.
     /// </summary>
     Bag Output(IState state);
+    
+    Type GetStateType();
 }
 
 public interface IState : IComparable
@@ -189,6 +191,10 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     public IState ConfluentTransition(IState state, Bag bag) => ConfluentTransition((TState)state, bag);
 
     public Bag Output(IState state) => Output((TState)state);
+    public Type GetStateType()
+    {
+        return typeof(TState);
+    }
 
     public abstract TimeUnit TimeAdvance(TState state);
     public abstract TState ExternalTransition(TState state, Bag bag);

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Timers;
+using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
@@ -41,6 +42,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     // TODO: for debugging purposes only
     private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(300);
     private Timer? _timer;
+    private bool _isRunning;
+    private bool _isLoadingCheckpoint = false;
 
     private ISnapshotManager SnapshotManager { get; }
     
@@ -50,17 +53,20 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         SnapshotManager = serviceProvider.GetRequiredService<ISnapshotManager>();
         ActivitySource = instrumentation.ActivitySource;
         // Control Messages
-        Receive<Simulation.StartSimulation>(ReceiveSimulationStart);
+        ReceiveAsync<Simulation.StartSimulation>(ReceiveSimulationStart);
         Receive<Simulation.InterruptSimulation>(ReceiveSimulationInterrupt);
         Receive<Simulation.SetStopAfterTime>(ReceiveSetStopAfterTime);
         Receive<Simulation.QueryIsCompleted>(ReceiveIsCompleted);
         Receive<Simulation.SetCheckpoint>(ReceiveSetCheckpoint);
         ReceiveAsync<Simulation.FinishedSaveCheckpoint>(ReceiveFinishedSaveCheckpoint);
-
+        ReceiveAsync<Simulation.LoadCheckpoint>(ReceiveLoadCheckpoint);
+        Receive<Simulation.FinishedLoadCheckpoint>(ReceiveFinishedLoadCheckpoint);
+        
         // Simulation Messages
         ReceiveAsync<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
         Receive<ComputeOutput.ComputedOutput>(ReceiveComputationCompleted);
         ReceiveAsync<ExecuteTransition.FinishedExecuteTransition>(ReceiveFinishedExecuteTransition);
+        
 
 
         Receive<Exception>(ex =>
@@ -70,6 +76,55 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _isCompleted = true;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
         });
+    }
+
+    private void ReceiveFinishedLoadCheckpoint(Simulation.FinishedLoadCheckpoint obj)
+    {
+        Log.Debug("[ROOT] Checkpoint loaded");
+        RestoredCheckpointName = obj.Name;
+        _isLoadingCheckpoint = false;
+
+        if (StartSimulationAfterLoadingCheckpoint)
+        {
+            StartSimulationAfterLoadingCheckpoint = false;
+            
+            if(_children == null)
+            {
+                throw new SimulatorException("Simulation was not setup properly");
+            }
+            
+            Self.Tell(new Simulation.StartSimulation(_children, RestoredCheckpointName));
+        }
+    }
+
+    private string RestoredCheckpointName { get; set; }
+
+    private async Task ReceiveLoadCheckpoint(Simulation.LoadCheckpoint arg)
+    {
+        // check if simulation is running
+        if (_isRunning)
+        {
+            throw new SimulatorException("Simulation is already running");
+        }
+
+        if (_isLoadingCheckpoint)
+        {
+            throw new SimulatorException("Checkpoint is already loading");
+        }
+        
+        var state = await SnapshotManager.GetSnapshotCoordinatorAsync(arg.Name, Self.Path.Name);
+        
+        if (state == null)
+        {
+            throw new SimulatorException("Checkpoint not found");
+        }
+        
+        _currentTime = state.TimeLast;
+        _timeNext = state.TimeNext;
+        
+        _isLoadingCheckpoint = true;
+        Log.Debug("[ROOT] Loading checkpoint {Checkpoint}", arg.Name);
+        _children.Tell(new Simulation.LoadCheckpoint(arg.Name));
     }
 
     private async Task ReceiveFinishedSaveCheckpoint(Simulation.FinishedSaveCheckpoint obj)
@@ -123,9 +178,24 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         throw new NotImplementedException();
     }
 
-    private void ReceiveSimulationStart(Simulation.StartSimulation obj)
+    private async Task ReceiveSimulationStart(Simulation.StartSimulation obj)
     {
         Log.Information("[ROOT] Starting simulation");
+     
+        _isCompleted = false;
+        
+        if (obj.CheckpointName is not null && obj.CheckpointName != RestoredCheckpointName)
+        {
+            if (_isLoadingCheckpoint)
+            {
+                StartSimulationAfterLoadingCheckpoint = true;
+                Log.Information("[ROOT] Simulation will start after loading checkpoint");
+                return;
+            }
+            
+            throw new SimulatorException("Checkpoint name is not the same as the restored checkpoint name");
+        }
+
 
 
         if (!obj.Children.Path.Name.StartsWith("simulator-") && !obj.Children.Path.Name.StartsWith("coordinator-"))
@@ -154,20 +224,37 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _timer.Enabled = true;
         _timer.Start();
 
-        SimulationRun = ActivitySource.StartActivity(name: "SimulationRun") ??
-                        throw new InvalidOperationException("ActivitySource is null");
+        SimulationRun = ActivitySource.StartActivity(name: "SimulationRun");
         SimulationStep =
             ActivitySource.StartActivity("SimulationStep", ActivityKind.Internal,
-                parentContext: SimulationRun.Context) ??
-            throw new InvalidOperationException("ActivitySource is null");
-        SimulationStep.SetTag("CurrentTime", _currentTime.Value);
+                parentContext: SimulationRun?.Context ?? new ActivityContext());
+        SimulationStep?.SetTag("CurrentTime", _currentTime.Value);
         // Send initialization to all children
         InitializationActivity =
             ActivitySource.StartActivity("Initialization", ActivityKind.Client,
-                parentContext: SimulationStep.Context) ??
-            throw new InvalidOperationException("ActivitySource is null");
+                parentContext: SimulationStep?.Context ?? new ActivityContext());
+
+
+
+        if (obj.CheckpointName is not null && obj.CheckpointName == RestoredCheckpointName && !_isRunning)
+        {
+            Log.Information("[ROOT] Simulation starts from checkpoint {Checkpoint}", obj.CheckpointName);
+            _isRunning = true;
+            RestoredCheckpointName = string.Empty;
+            await RoundCompleted();
+            return;
+        }
+        
+        // reset coordinator
+        _timeNext = TimeUnit.Zero;
+        _currentTime = TimeUnit.Zero;
+        
+        _isRunning = true;
+        RestoredCheckpointName = string.Empty;
         _children.Tell(new EngineMessages.StartInitialization(_currentTime));
     }
+
+    private bool StartSimulationAfterLoadingCheckpoint { get; set; }
 
 
     private void HandleTimeout(object? sender, ElapsedEventArgs e)
@@ -200,7 +287,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         await RoundCompleted();
     }
 
-    private string PrintState(Dictionary<string, TraceInformation>? objToStringState)
+    private static string PrintState(Dictionary<string, TraceInformation>? objToStringState)
     {
         if (objToStringState == null)
         {
@@ -255,8 +342,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         // set the current time to the minimum of all children
 
-        _currentTime = _timeNext;
-        Log.Debug("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
+
 
 
         if ((_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown) || StopConditionReached)
@@ -266,10 +352,13 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             Log.Information("[ROOT] Stop condition reached, simulation will be interrupted");
             _timer!.Stop();
             _isCompleted = true;
+            _isRunning = false;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
             return;
         }
-
+        _currentTime = _timeNext;
+        Log.Debug("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
+        
         SimulationStep?.Dispose();
         SimulationStep = ActivitySource.StartActivity("SimulationStep");
         SimulationStep?.SetTag("CurrentTime", _currentTime.Value);
@@ -286,7 +375,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         {
             TimeLast = _currentTime,
             TimeNext = _timeNext,
-            EventList = new Dictionary<string, (TimeUnit timeLast, TimeUnit timeNext)>()
+            EventList = new Dictionary<string, TimeEventTuple>()
         }, Self.Path.Name);
     }
 

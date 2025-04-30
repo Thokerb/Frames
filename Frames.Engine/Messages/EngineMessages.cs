@@ -60,7 +60,7 @@ public static class ExecuteTransition
 public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
 {
     // TODO: check nullability
-    protected WithActivityTrace() : this( Activity.Current!.TraceId,Activity.Current!.SpanId) { }
+    protected WithActivityTrace() : this( Activity.Current?.TraceId ?? new ActivityTraceId(),Activity.Current?.SpanId ?? new ActivitySpanId()) { }
 }
 
 public static class StateSnapshot
