@@ -3,6 +3,7 @@ using System.Text;
 using System.Timers;
 using Akka.Streams;
 using Akka.Streams.Dsl;
+using Akka.Streams.Implementation;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -48,6 +49,14 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private Timer? _timer;
     private bool _isRunning;
     private bool _isLoadingCheckpoint = false;
+    
+    private CompletionType CompletionType {get; set; } = CompletionType.NotCompleted;
+    
+    private int? _timeUnitInMilliseconds = null;
+
+    private Stopwatch _stopwatch = new Stopwatch();
+    private bool _manualStop = false;
+    private bool _manualPause = false;
 
     private ISnapshotManager SnapshotManager { get; }
     
@@ -58,19 +67,23 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         SnapshotManager = ServiceProvider.GetRequiredService<ISnapshotManager>();
         ActivitySource = Instrumentation.ActivitySource;
         // Control Messages
-        ReceiveAsync<Simulation.StartSimulation>(ReceiveSimulationStart);
-        Receive<Simulation.InterruptSimulation>(ReceiveSimulationInterrupt);
+        ReceiveAsync<Simulation.StartSimulation>(ReceiveSimulationStartAsync);
         Receive<Simulation.SetStopAfterTime>(ReceiveSetStopAfterTime);
         Receive<Simulation.QueryIsCompleted>(ReceiveIsCompleted);
         Receive<Simulation.SetCheckpoint>(ReceiveSetCheckpoint);
-        ReceiveAsync<Simulation.FinishedSaveCheckpoint>(ReceiveFinishedSaveCheckpoint);
-        ReceiveAsync<Simulation.LoadCheckpoint>(ReceiveLoadCheckpoint);
+        ReceiveAsync<Simulation.FinishedSaveCheckpoint>(ReceiveFinishedSaveCheckpointAsync);
+        ReceiveAsync<Simulation.LoadCheckpoint>(ReceiveLoadCheckpointAsync);
         Receive<Simulation.FinishedLoadCheckpoint>(ReceiveFinishedLoadCheckpoint);
+        Receive<Simulation.SetSpeedControl>(ReceiveSetSpeedControl);
+        Receive<Simulation.PauseSimulation>(ReceivePauseSimulation);
+        Receive<Simulation.StopSimulation>(ReceiveStopSimulation);
+        ReceiveAsync<Simulation.ResumeSimulation>(ReceiveResumeSimulationAsync);
         
         // Simulation Messages
         ReceiveAsync<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
         Receive<ComputeOutput.ComputedOutput>(ReceiveComputationCompleted);
         ReceiveAsync<ExecuteTransition.FinishedExecuteTransition>(ReceiveFinishedExecuteTransition);
+        
         
 
 
@@ -79,8 +92,55 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             Log.Error(ex, "[ROOT] Exception in RootCoordinator");
             _timer?.Stop();
             _isCompleted = true;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
+            this.CompletionType = CompletionType.Error;
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime,CompletionType)));
         });
+    }
+
+    private async Task ReceiveResumeSimulationAsync(Simulation.ResumeSimulation obj)
+    {
+        Log.Information("[ROOT] Simulation resumed");
+        if (!_manualPause)
+        {
+            throw new SimulatorException("Simulation is not paused");
+        }
+        _timer?.Start();
+        _manualPause = false;
+        _isRunning = true;
+        _isCompleted = false;
+        _stopwatch.Start();
+        await RoundCompleted();
+
+    }
+
+    private void ReceiveStopSimulation(Simulation.StopSimulation obj)
+    {
+        Log.Information("[ROOT] Simulation stopped");
+        _timer?.Stop();
+        _manualStop = true;
+    }
+
+    private void ReceivePauseSimulation(Simulation.PauseSimulation obj)
+    {
+        Log.Information("[ROOT] Received Simulation paused");
+        _timer?.Stop();
+        _manualPause = true;
+    }
+
+    private void ReceiveSetSpeedControl(Simulation.SetSpeedControl obj)
+    {
+        if (obj.AsFastAsPossible)
+        {
+            _timeUnitInMilliseconds = null;
+            return;
+        }
+
+        if (obj.TimeUnitInMilliseconds <= 0)
+        {
+            throw new SimulatorException("Time unit must be greater than 0");
+        }
+
+        _timeUnitInMilliseconds = obj.TimeUnitInMilliseconds;
     }
 
     private Instrumentation Instrumentation { get; set; }
@@ -106,7 +166,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private string? RestoredCheckpointName { get; set; }
 
-    private async Task ReceiveLoadCheckpoint(Simulation.LoadCheckpoint arg)
+    private async Task ReceiveLoadCheckpointAsync(Simulation.LoadCheckpoint arg)
     {
         // check if simulation is running
         if (_isRunning)
@@ -134,7 +194,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _children.Tell(new Simulation.LoadCheckpoint(arg.Name));
     }
 
-    private async Task ReceiveFinishedSaveCheckpoint(Simulation.FinishedSaveCheckpoint obj)
+    private async Task ReceiveFinishedSaveCheckpointAsync(Simulation.FinishedSaveCheckpoint obj)
     {
         Log.Debug("[ROOT] Checkpoint saved at time {Time}", obj.CurrentTime);
 
@@ -161,12 +221,11 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private Activity? ComputeOutputActivity { get; set; }
     private Activity? ExecuteTransitionActivity { get; set; }
 
-
     private void ReceiveIsCompleted(Simulation.QueryIsCompleted obj)
     {
         if (_isCompleted)
         {
-            Sender.Tell(new Simulation.IsCompleted(_currentTime));
+            Sender.Tell(new Simulation.IsCompleted(_currentTime, CompletionType));
         }
         else
         {
@@ -180,12 +239,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _timeUntilShutdown = obj.Time;
     }
 
-    private void ReceiveSimulationInterrupt(Simulation.InterruptSimulation obj)
-    {
-        throw new NotImplementedException();
-    }
-
-    private async Task ReceiveSimulationStart(Simulation.StartSimulation obj)
+    private async Task ReceiveSimulationStartAsync(Simulation.StartSimulation obj)
     {
         Log.Information("[ROOT] Starting simulation");
      
@@ -277,6 +331,12 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         
         _isRunning = true;
         RestoredCheckpointName = string.Empty;
+
+        if (_timeUnitInMilliseconds.HasValue)
+        {
+            _stopwatch.Start();
+        }
+        
         _children.Tell(new EngineMessages.StartInitialization(_currentTime));
     }
 
@@ -288,6 +348,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Error("[ROOT] Timeout reached, simulation will be interrupted");
         _timer!.Stop();
         _isCompleted = true;
+        CompletionType = CompletionType.Timeout;
         throw new TimeoutException("Simulation timed out after " + _timeOut.TotalMilliseconds + " milliseconds");
     }
 
@@ -372,20 +433,98 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
 
 
-
-        if ((_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown) || StopConditionReached)
+        if (StopConditionReached)
         {
             SimulationStep?.Dispose();
             SimulationRun?.Dispose();
             Log.Information("[ROOT] Stop condition reached, simulation will be interrupted");
-            _timer!.Stop();
+            _timer?.Stop();
             _isCompleted = true;
+            CompletionType = CompletionType.StopAfterCondition;
             _isRunning = false;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime)));
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
             return;
         }
-        _currentTime = _timeNext;
-        Log.Debug("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
+
+        if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
+        {
+            SimulationStep?.Dispose();
+            SimulationRun?.Dispose();
+            Log.Information("[ROOT] Time Stop condition reached, simulation will be interrupted");
+            _timer?.Stop();
+            _isCompleted = true;
+            CompletionType = CompletionType.StopAfterTime;
+            _isRunning = false;
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            return;
+        }
+
+        if (_manualStop)
+        {
+            Log.Information("[ROOT] Simulation stopped");
+            SimulationStep?.Dispose();
+            SimulationRun?.Dispose();
+            _manualStop = false;
+            _isCompleted = true;
+            _isRunning = false;
+            CompletionType = CompletionType.ManualStop;
+            _timer?.Stop();
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            return;
+        }
+
+
+        
+        
+        
+        if (_manualPause)
+        {
+            Log.Information("[ROOT] Simulation paused");
+            SimulationStep?.Dispose();
+            SimulationRun?.Dispose();
+            _isCompleted = true;
+            _isRunning = false;
+            CompletionType = CompletionType.ManualPause;
+            _timer?.Stop();
+            _stopwatch.Stop();
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            return;
+        }
+        
+        Log.Information("[ROOT] Round completed, next time: {TimeNext}", _timeNext);
+
+        // speed control section
+        if (_timeUnitInMilliseconds.HasValue && !_timeNext.IsInfinity)
+        {
+            // either we wait
+            // a) before we start the next round
+            // b) after we start the next round
+            
+            // here we wait before we start the next round
+            var delay =  (_timeNext.Value - _currentTime.Value) * _timeUnitInMilliseconds.Value;
+            var actualRunTime = _stopwatch.ElapsedMilliseconds;
+            var delayTime = delay - actualRunTime;
+            
+            if (delayTime > 0)
+            {
+                Log.Information("[ROOT] Waiting for {Delay} milliseconds",delayTime);
+                
+                // cast delayTime to int or throw exception
+                if (delayTime > int.MaxValue)
+                {
+                    throw new SimulatorException("Delay time is too long");
+                }
+                
+                await Task.Delay((int)delayTime);
+            }
+            else
+            {
+                Log.Warning("[ROOT] Delay time is negative, actual run time is greater than delay time. This can happen when calculations of the next round take longer than actual clock time.");
+            }
+            _stopwatch.Restart();
+        }
+        
+
         
         SimulationStep?.Dispose();
         SimulationStep = ActivitySource.StartActivity("SimulationStep");
@@ -393,6 +532,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         ComputeOutputActivity = ActivitySource.StartActivity("ComputeOutput", ActivityKind.Client,
             parentContext: SimulationStep?.Context ?? new ActivityContext());
 
+        
+        _currentTime = _timeNext;
         _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime));
     }
 

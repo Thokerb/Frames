@@ -39,6 +39,10 @@ public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
 
 
 
+    /// <summary>
+    /// This test only works, when MongoDB is running and the connection string is set in the config file.
+    /// Config file path: <see cref="TestUtils.ConfigurationMock"/>
+    /// </summary>
     [SkipForGithubAction]
     public async Task CreateCSuperArena()
     {
