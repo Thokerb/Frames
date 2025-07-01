@@ -28,6 +28,7 @@ public class InteractionControlTest : TestKit, IClassFixture<OpenTelemetryFixtur
             .CreateLogger();
     }
     
+    // long running test
     [Fact]
     public async Task BaseInteractionControlTest()
     {

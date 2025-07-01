@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.Model", "Frames.Mode
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.Tests", "Frames.Tests\Frames.Tests.csproj", "{E30C999E-F7C1-46E2-9853-D164D043F8BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.Museum", "Frames.Museum\Frames.Museum.csproj", "{22DC8369-9D58-4EB5-91B3-0FEC9185E633}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{E30C999E-F7C1-46E2-9853-D164D043F8BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E30C999E-F7C1-46E2-9853-D164D043F8BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E30C999E-F7C1-46E2-9853-D164D043F8BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22DC8369-9D58-4EB5-91B3-0FEC9185E633}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22DC8369-9D58-4EB5-91B3-0FEC9185E633}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22DC8369-9D58-4EB5-91B3-0FEC9185E633}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22DC8369-9D58-4EB5-91B3-0FEC9185E633}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
