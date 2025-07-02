@@ -3,6 +3,7 @@ using Akka.HealthCheck.Hosting.Web;
 using Frames.Engine.DependencyInjection;
 using Frames.Museum;
 using Frames.Museum.HelloWorld;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,32 @@ builder.Configuration
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+
+var swaggerHost = Environment.GetEnvironmentVariable("SWAGGER_HOST");
+
+if (string.IsNullOrEmpty(swaggerHost))
+{
+    builder.Services.AddOpenApi();
+}
+else
+{
+    builder.Services.AddOpenApi(c =>
+    {
+        c.AddDocumentTransformer((document, context, cancellationToken) =>
+        {
+            document.Servers = new List<OpenApiServer>()
+            {
+                new()
+                {
+                    Url = swaggerHost
+                }
+            };
+
+            return Task.CompletedTask;
+        });
+    });
+}
+
 builder.Services.WithAkkaHealthCheck(HealthCheckType.All);
 builder.Services.ConfigureWebApiAkka(builder.Configuration, (akkaConfigurationBuilder, serviceProvider) =>
 {
@@ -35,11 +61,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/openapi/v1.json", "v1");
-    });
+    app.UseSwaggerUI(options => { options.SwaggerEndpoint("/openapi/v1.json", "v1"); });
 }
+
 app.MapHelloWorld();
 
 

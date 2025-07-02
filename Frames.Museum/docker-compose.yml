@@ -1,0 +1,112 @@
+﻿version: '3.9'
+
+services:
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    environment:
+      - MONGODB_INITDB_ROOT_USERNAME=user
+      - MONGODB_INITDB_ROOT_PASSWORD=pass
+    ports:
+      - "27017:27017"
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data/db
+  museum1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: museum1
+    environment:
+      APP_UID: "1000"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
+      AkkaSettings__ActorSystemName: "AkkaWebApi"
+      AkkaSettings__UseClustering: "true"
+      AkkaSettings__RemoteOptions__HostName: "museum1"
+      AkkaSettings__RemoteOptions__Port: "8081"
+      AkkaSettings__ClusterOptions__Roles__0: "root"
+      AkkaSettings__ClusterOptions__Roles__1: "root-compute"
+      AkkaSettings__ClusterOptions__Roles__2: "compute"
+      AkkaSettings__ShardOptions__StateStoreMode: "DData"
+      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__Role: "root"
+      AkkaSettings__AkkaManagementOptions__Enabled: "true"
+      AkkaSettings__AkkaManagementOptions__Hostname: "museum1"
+      AkkaSettings__AkkaManagementOptions__PortName: "management"
+      AkkaSettings__AkkaManagementOptions__ServiceName: "akka-management"
+      AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "1"
+      AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
+      AkkaSettings__PersistenceMode: "InMemory"
+      SWAGGER_HOST: "http://localhost:8080"
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      - mongodb
+
+  museum2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: museum2
+    environment:
+      APP_UID: "1000"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
+      AkkaSettings__ActorSystemName: "AkkaWebApi"
+      AkkaSettings__UseClustering: "true"
+      AkkaSettings__RemoteOptions__HostName: "museum2"
+      AkkaSettings__RemoteOptions__Port: "8081"
+      AkkaSettings__ClusterOptions__Roles__0: "root"
+      AkkaSettings__ClusterOptions__Roles__1: "root-compute"
+      AkkaSettings__ClusterOptions__Roles__2: "compute"
+      AkkaSettings__ShardOptions__StateStoreMode: "DData"
+      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__Role: "root"
+      AkkaSettings__AkkaManagementOptions__Enabled: "true"
+      AkkaSettings__AkkaManagementOptions__Hostname: "museum2"
+      AkkaSettings__AkkaManagementOptions__PortName: "management"
+      AkkaSettings__AkkaManagementOptions__ServiceName: "akka-management"
+      AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "1"
+      AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
+      AkkaSettings__PersistenceMode: "InMemory"
+      SWAGGER_HOST: "http://localhost:8082"
+    ports:
+      - "8082:8080"
+      - "8083:8081"
+    depends_on:
+      - mongodb
+
+  museum3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: museum3
+    environment:
+      APP_UID: "1000"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
+      AkkaSettings__ActorSystemName: "AkkaWebApi"
+      AkkaSettings__UseClustering: "true"
+      AkkaSettings__RemoteOptions__HostName: "museum3"
+      AkkaSettings__RemoteOptions__Port: "8081"
+      AkkaSettings__ClusterOptions__Roles__0: "root"
+      AkkaSettings__ClusterOptions__Roles__1: "root-compute"
+      AkkaSettings__ClusterOptions__Roles__2: "compute"
+      AkkaSettings__ShardOptions__StateStoreMode: "DData"
+      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__Role: "root"
+      AkkaSettings__AkkaManagementOptions__Enabled: "true"
+      AkkaSettings__AkkaManagementOptions__Hostname: "museum3"
+      AkkaSettings__AkkaManagementOptions__PortName: "management"
+      AkkaSettings__AkkaManagementOptions__ServiceName: "akka-management"
+      AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "1"
+      AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
+      AkkaSettings__PersistenceMode: "InMemory"
+      SWAGGER_HOST: "http://localhost:8084"
+    ports:
+      - "8084:8080"
+      - "8085:8081"
+    depends_on:
+      - mongodb

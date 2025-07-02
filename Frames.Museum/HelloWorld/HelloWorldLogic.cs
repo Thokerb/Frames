@@ -24,9 +24,11 @@ public static class HelloWorldLogic
     {
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
         
+        var uniqueId = Guid.NewGuid().ToString();
+        
         ICoupledModel coupledModel = new CArena();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena"));
+        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-carena-{uniqueId}"));
       
         
         // Act
