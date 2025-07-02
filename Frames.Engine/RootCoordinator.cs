@@ -10,6 +10,7 @@ using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Engine.Persistence;
 using Frames.Engine.Tracing;
+using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +30,7 @@ namespace Frames.Engine;
 public class RootCoordinator : ReceiveActor, ILogReceive
 {
     private IServiceProvider ServiceProvider { get; }
-    private IActorRef? _children;
+    private IActorRef _children;
 
     private bool _hasStopCondition;
     private bool _isCompleted;
@@ -78,6 +79,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Receive<Simulation.PauseSimulation>(ReceivePauseSimulation);
         Receive<Simulation.StopSimulation>(ReceiveStopSimulation);
         ReceiveAsync<Simulation.ResumeSimulation>(ReceiveResumeSimulationAsync);
+
+        Receive<Simulation.CreateModel>(ReceiveCreateModel);
         
         // Simulation Messages
         ReceiveAsync<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
@@ -95,6 +98,30 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             this.CompletionType = CompletionType.Error;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime,CompletionType)));
         });
+    }
+
+    private void ReceiveCreateModel(Simulation.CreateModel arg)
+    {
+        Props props;
+        switch (arg.Model)
+        {
+            // TODO: DI
+            case IAtomicModelBase atomicModel:
+                props = Props.Create(() => 
+                    new Simulator(Self, atomicModel, ServiceProvider));
+                break;
+            case ICoupledModel coupledModel:
+                props = Props.Create<Coordinator>(() => 
+                    new Coordinator(Self, coupledModel, ServiceProvider));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        var actor = Context.ActorOf(props, arg.Name);
+        _children = actor;
+        
+        Sender.Tell(actor);
     }
 
     private async Task ReceiveResumeSimulationAsync(Simulation.ResumeSimulation obj)
@@ -278,7 +305,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
 
 
-        if (!obj.Children.Path.Name.StartsWith("simulator-") && !obj.Children.Path.Name.StartsWith("coordinator-"))
+        if (!ActorHelper.IsSimulator(obj.Children) && !ActorHelper.IsCoordinator(obj.Children))
         {
             throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator");
         }
@@ -337,7 +364,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _stopwatch.Start();
         }
         
-        _children.Tell(new EngineMessages.StartInitialization(_currentTime));
+        _children.Tell(new EngineMessages.StartInitialization(_currentTime)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _children)
+        });
     }
 
     private bool StartSimulationAfterLoadingCheckpoint { get; set; }
@@ -401,7 +431,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Thread.Sleep(10);
         ExecuteTransitionActivity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Client,
             parentContext: SimulationStep?.Context ?? new ActivityContext());
-        _children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _timeNext));
+        _children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _timeNext)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _children)
+        });
     }
 
 
@@ -534,7 +567,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         
         _currentTime = _timeNext;
-        _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime));
+        _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _children)
+        });
     }
 
     private async Task SaveCheckpoint(string checkpoint, TimeUnit timeUnit)

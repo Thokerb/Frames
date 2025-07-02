@@ -50,7 +50,10 @@ public class IllegalStateUpdateTests : TestKit, IClassFixture<OpenTelemetryFixtu
         EventFilter.Exception<IllegalStateModificationException>().ExpectOne(() =>
         {
             using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
-            blinkingLightActor.Tell(new EngineMessages.StartInitialization(TimeUnit.Zero));
+            blinkingLightActor.Tell(new EngineMessages.StartInitialization(TimeUnit.Zero)
+            {
+                ShardId = "root"
+            });
         });
 
     }

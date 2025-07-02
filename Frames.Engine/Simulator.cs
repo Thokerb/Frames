@@ -4,6 +4,7 @@ using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Engine.Persistence;
+using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Microsoft.Extensions.DependencyInjection;
@@ -223,10 +224,13 @@ public class Simulator : ReceiveActor, ILogReceive
         TracingStreamActor.Tell(new Messages.Tracing.MessageWithId(this._atomicModel.StateInternal.ToString() ?? string.Empty,msgId));
         _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_timeNext)
         {
-            StopConditionReached = _atomicModel.StopConditionCheck(_atomicModel.StateInternal, obj.Input ?? Bag.Empty),
+            StopConditionReached = _atomicModel.StopConditionCheck(_atomicModel.StateInternal,
+                obj.Input ?? Bag.Empty),
             ToStringState = new Dictionary<string, Guid>([
-                new KeyValuePair<string, Guid>(this._atomicModel.Name,msgId)
-            ])
+                new KeyValuePair<string, Guid>(this._atomicModel.Name,
+                    msgId)
+            ]),
+            ShardId = ActorHelper.GetShardId(Self, _coordinator)
         });
     }
 
@@ -253,7 +257,10 @@ public class Simulator : ReceiveActor, ILogReceive
             activity?.SetTag("Output", _outputBag.ToString());
 
             // Send the output message to the coordinator
-            _coordinator.Tell(new ComputeOutput.ComputedOutput(_outputBag, obj.CurrentTime));
+            _coordinator.Tell(new ComputeOutput.ComputedOutput(_outputBag, obj.CurrentTime)
+            {
+                 ShardId = ActorHelper.GetShardId(Self, _coordinator)
+            });
         }
         else
         {
@@ -279,7 +286,10 @@ public class Simulator : ReceiveActor, ILogReceive
         activity?.SetTag("TimeLast", _timeLast.ToString());
 
         // Send the initialization completed message to the coordinator
-        _coordinator.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext));
+        _coordinator.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+        });
     }
 
     /// <summary>

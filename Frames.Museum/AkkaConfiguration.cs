@@ -13,10 +13,11 @@ using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Hosting;
 using Akka.Remote.Hosting;
 using Akka.Util;
+using Frames.Engine;
+using Frames.Engine.Messages;
 
 
 namespace Frames.Museum;
-
 
 public static class AkkaConfiguration
 {
@@ -28,17 +29,17 @@ public static class AkkaConfiguration
 
         services.AddSingleton(akkaSettings);
 
-        return services.AddAkka(akkaSettings.ActorSystemName, (builder, sp) =>
+        return services.AddAkka(akkaSettings.ActorSystemName, (builder, serviceProvider) =>
         {
-            builder.ConfigureActorSystem(sp);
-            additionalConfig(builder, sp);
+            builder.ConfigureActorSystem(serviceProvider);
+            additionalConfig(builder, serviceProvider);
         });
     }
 
     public static AkkaConfigurationBuilder ConfigureActorSystem(this AkkaConfigurationBuilder builder,
-        IServiceProvider sp)
+        IServiceProvider serviceProvider)
     {
-        var settings = sp.GetRequiredService<AkkaSettings>();
+        var settings = serviceProvider.GetRequiredService<AkkaSettings>();
 
         return builder
             .ConfigureLoggers(configBuilder =>
@@ -46,9 +47,9 @@ public static class AkkaConfiguration
                 configBuilder.LogConfigOnStart = settings.LogConfigOnStart;
                 configBuilder.AddLoggerFactory();
             })
-            .ConfigureNetwork(sp)
-            .ConfigurePersistence(sp)
-            .ConfigureCounterActors(sp);
+            .ConfigureNetwork(serviceProvider)
+            .ConfigurePersistence(serviceProvider)
+            .ConfigureRootCoordinator(serviceProvider);
     }
 
     public static AkkaConfigurationBuilder ConfigureNetwork(this AkkaConfigurationBuilder builder,
@@ -58,10 +59,11 @@ public static class AkkaConfiguration
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
         if (!settings.UseClustering)
+        {
             return builder;
+        }
 
-        builder
-            .WithRemoting(settings.RemoteOptions);
+        builder.WithRemoting(settings.RemoteOptions);
 
         if (settings.AkkaManagementOptions is { Enabled: true })
         {
@@ -80,25 +82,10 @@ public static class AkkaConfiguration
             switch (settings.AkkaManagementOptions.DiscoveryMethod)
             {
                 case DiscoveryMethod.Kubernetes:
-                    break;
                 case DiscoveryMethod.AwsEcsTagBased:
-                    break;
                 case DiscoveryMethod.AwsEc2TagBased:
-                    break;
                 case DiscoveryMethod.AzureTableStorage:
-                {
-                    var connectionStringName = configuration.GetSection("AzureStorageSettings")
-                        .Get<AzureStorageSettings>()?.ConnectionStringName;
-                    Debug.Assert(connectionStringName != null, nameof(connectionStringName) + " != null");
-                    var connectionString = configuration.GetConnectionString(connectionStringName);
-
-                    // builder.WithAzureDiscovery(options =>
-                    // {
-                    //     options.ServiceName = settings.AkkaManagementOptions.ServiceName;
-                    //     options.ConnectionString = connectionString;
-                    // });
                     break;
-                }
                 case DiscoveryMethod.Config:
                 {
                     builder
@@ -107,6 +94,7 @@ public static class AkkaConfiguration
                             options.Services.Add(new Service
                             {
                                 Name = settings.AkkaManagementOptions.ServiceName,
+                                // TODO: use endpoints from configuration which should be set by environment variables so that in docker we can add them 
                                 Endpoints = new[]
                                 {
                                     $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}",
@@ -131,61 +119,56 @@ public static class AkkaConfiguration
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
-        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
         switch (settings.PersistenceMode)
         {
             case PersistenceMode.InMemory:
                 return builder.WithInMemoryJournal().WithInMemorySnapshotStore();
-            // case PersistenceMode.Azure:
-            // {
-            //     var connectionStringName = configuration.GetSection("AzureStorageSettings")
-            //         .Get<AzureStorageSettings>()?.ConnectionStringName;
-            //     Debug.Assert(connectionStringName != null, nameof(connectionStringName) + " != null");
-            //     var connectionString = configuration.GetConnectionString(connectionStringName);
-            //     Debug.Assert(connectionString != null, nameof(connectionString) + " != null");
-            //
-            //     // return builder.WithAzurePersistence(connectionString);
-            // }
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
-    public static AkkaConfigurationBuilder ConfigureCounterActors(this AkkaConfigurationBuilder builder,
+    public static AkkaConfigurationBuilder ConfigureRootCoordinator(this AkkaConfigurationBuilder builder,
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
-        // var extractor = CreateCounterMessageRouter();
+        var extractor = CreateHashCodeMessageExtractor();
 
-        // if (settings.UseClustering)
-        // {
-        //     return builder.WithShardRegion<CounterActor>("counter",
-        //         (system, registry, resolver) => s => Props.Create(() => new CounterActor(s)),
-        //         extractor, settings.ShardOptions);
-        // }
-        //
-        // return builder.WithActors((system, registry, resolver) =>
-        // {
-        //     var parent =
-        //         system.ActorOf(
-        //             GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new CounterActor(s))),
-        //             "counters");
-        //     registry.Register<CounterActor>(parent);
-        // });
-        // TODO:
-        return builder;
+        if (settings.UseClustering)
+        {
+            return builder.WithShardRegion<RootCoordinator>("root-coordinator",
+                (system, registry, resolver) => s => Props.Create(() => new RootCoordinator(serviceProvider)),
+                extractor, settings.ShardOptions);
+        }
+
+        return builder.WithActors((system, registry, resolver) =>
+        {
+            var parent = system.ActorOf(
+                Props.Create(() => new RootCoordinator(serviceProvider)),
+                "root-coordinator"
+            );
+            registry.Register<RootCoordinator>(parent);
+        });
     }
 
-    // public static HashCodeMessageExtractor CreateCounterMessageRouter()
-    // {
-    //     return HashCodeMessageExtractor.Create(30, o =>
-    //     {
-    //         return o switch
-    //         {
-    //             IWithCounterId counterId => counterId.CounterId,
-    //             _ => null
-    //         };
-    //     }, o => o);
-    // }
+    /// <summary>
+    /// Here we have to decide which message to which shard region.
+    /// It makes sense to keep actors that communicate often with each other in the same shard region.
+    /// Overall most messages are bubbling up to the root coordinator
+    /// It makes sense that Simulators and Coordinators are in the same shard region.
+    /// When a coordinator has a child coordinator then this can be in a different shard region.
+    /// </summary>
+    /// <returns></returns>
+    public static HashCodeMessageExtractor CreateHashCodeMessageExtractor()
+    {
+        return HashCodeMessageExtractor.Create(30, o =>
+        {
+            return o switch
+            {
+                IShardSeperation message => message.ShardId,
+                _ => null
+            };
+        }, o => o);
+    }
 }

@@ -1,5 +1,6 @@
 using Akka.HealthCheck.Hosting;
 using Akka.HealthCheck.Hosting.Web;
+using Frames.Engine.DependencyInjection;
 using Frames.Museum;
 using Frames.Museum.HelloWorld;
 
@@ -26,10 +27,9 @@ builder.Services.ConfigureWebApiAkka(builder.Configuration, (akkaConfigurationBu
     akkaConfigurationBuilder.WithWebHealthCheck(serviceProvider);
 });
 builder.Services.AddHWDependencies();
+builder.Services.AddFrameServices();
 
 var app = builder.Build();
-
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -5,6 +5,7 @@ using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Engine.Persistence;
+using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Microsoft.Extensions.DependencyInjection;
@@ -252,7 +253,11 @@ public class Coordinator : ReceiveActor, ILogReceive
 
         // send y-message (yparent , t) to parent
         Log.Debug("Sending output to parent {Parent}, Bag {Bag}", _parent.Path.Name, _outputMessageBagParent);
-        _parent.Tell(new ComputeOutput.ComputedOutput(_outputMessageBagParent, obj.CurrentTime));
+        _parent.Tell(new ComputeOutput.ComputedOutput(_outputMessageBagParent, obj.CurrentTime)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _parent)
+
+        });
 
 
         // according to M S, here we should create bag yr, which contains all messages that can be sent to the children and execute their transition
@@ -333,8 +338,10 @@ public class Coordinator : ReceiveActor, ILogReceive
                 // merge all States to one
                 ToStringState = _timeNextExecuteTransition.Values
                     .SelectMany(x => x.ToStringState ?? new Dictionary<string, Guid>())
-                    .ToDictionary(x => x.Key, x => x.Value),
-                StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached)
+                    .ToDictionary(x => x.Key,
+                        x => x.Value),
+                StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached),
+                ShardId = ActorHelper.GetShardId(Self, _parent)
             };
 
             _parent.Tell(result);
@@ -409,13 +416,19 @@ public class Coordinator : ReceiveActor, ILogReceive
         foreach (var receiver in receivers)
         {
             var receiverActors = _children[receiver.Key];
-            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime));
+            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime)
+            {
+                ShardId = ActorHelper.GetShardId(Self, receiverActors)
+            });
         }
 
         foreach (var uncoupledChild in imminentButNoReceiver)
         {
             var actor = _children[uncoupledChild.Key];
-            actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime));
+            actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime)
+            {
+                ShardId = ActorHelper.GetShardId(Self, actor)
+            });
         }
     }
 
@@ -436,7 +449,10 @@ public class Coordinator : ReceiveActor, ILogReceive
         foreach (var imminentChild in _imminentChildren)
         {
             var actor = _children[imminentChild.Key];
-            actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime));
+            actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime)
+            {
+                ShardId = ActorHelper.GetShardId(Self, actor)
+            });
         }
     }
 
@@ -461,7 +477,10 @@ public class Coordinator : ReceiveActor, ILogReceive
             _timeNext = _eventList.Values.Min(x => x.TimeNext);
 
             // tell parent
-            _parent.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext));
+            _parent.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext)
+            {
+                ShardId = ActorHelper.GetShardId(Self, _parent)
+            });
         }
     }
 
@@ -476,7 +495,10 @@ public class Coordinator : ReceiveActor, ILogReceive
         foreach (var child in _children)
         {
             activity?.SetTag("Child", child.Key);
-            child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime));
+            child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime)
+            {
+                ShardId = ActorHelper.GetShardId(Self, child.Value)
+            });
         }
     }
 }

@@ -17,14 +17,20 @@ public static class EngineMessages
     /// <summary>
     /// Written as (i,t) in Theory of M S
     /// </summary>
-    public sealed record StartInitialization(TimeUnit CurrentTime)  : WithActivityTrace;
+    public sealed record StartInitialization(TimeUnit CurrentTime)  : WithActivityTrace,IShardSeperation
+    {
+        public required string ShardId { get; set; }
+    }
 
     /// <summary>
     /// Implicit response, not written in Book because not needed in non actor based communication
     /// </summary>
     /// <param name="TimeLast"></param>
     /// <param name="TimeNext"></param>
-    public sealed record InitializationCompleted(TimeUnit TimeLast, TimeUnit TimeNext);
+    public sealed record InitializationCompleted(TimeUnit TimeLast, TimeUnit TimeNext) : IShardSeperation
+    {
+        public required string ShardId { get; set; }
+    }
 }
 
 public static class ComputeOutput
@@ -33,14 +39,20 @@ public static class ComputeOutput
     /// Written as (*,t) in Theory of M S
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record StartComputeOutput(TimeUnit CurrentTime)  : WithActivityTrace;
+    public sealed record StartComputeOutput(TimeUnit CurrentTime)  : WithActivityTrace, IShardSeperation
+    {
+        public required string ShardId { get; set; }
+    }
 
     /// <summary>
     /// Written as (y,t) in Theory of M S
     /// <param name="Output">y</param>
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : WithOutputTrace;
+    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : WithOutputTrace, IShardSeperation
+    {
+        public required string ShardId { get; set; }
+    }
 }
 
 public static class ExecuteTransition
@@ -48,13 +60,19 @@ public static class ExecuteTransition
     /// <summary>
     /// Written as (x,*) in Theory of M S
     /// </summary>
-    public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime) : WithActivityTrace;
+    public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime) : WithActivityTrace, IShardSeperation
+    {
+        public required string ShardId { get; set; }
+    }
 
     /// <summary>
     /// Implicit response, not written in Book because not needed in non actor based communication
     /// </summary>
     /// <param name="TimeNext"></param>
-    public sealed record FinishedExecuteTransition(TimeUnit TimeNext) : WithSimulatorInformation;
+    public sealed record FinishedExecuteTransition(TimeUnit TimeNext) : WithSimulatorInformation, IShardSeperation
+    {
+        public required string ShardId { get; set; }
+    }
 }
 
 public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
@@ -74,6 +92,18 @@ public static class StateSnapshot
 
 
 public record WithSimulatorInformation(bool StopConditionReached = false, Dictionary<string, Guid>? ToStringState = null);
+
+//TODO: I think this is not needed anymore as we send this with streams now
 public record WithOutputTrace(string ToStringOutput = "");
 
+/// <summary>
+/// When receiver is a simulator ShardId = SenderId, When receiver is a coordinator ShardId = receiverId
+/// </summary>
+/// <param name="ShardId"></param>
+public interface IShardSeperation
+{
+    string ShardId { get; }
+};
+
+//TODO: I think this is not needed anymore as we send this with streams now
 public record TraceInformation(string State);

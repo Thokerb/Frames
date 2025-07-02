@@ -1,4 +1,11 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Akka.Actor;
+using Akka.Hosting;
+using Frames.Engine;
+using Frames.Engine.Messages;
+using Frames.Model;
+using Frames.Model.ValueTypes;
+using Frames.Museum.BlinkingLightBRTest;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Frames.Museum.HelloWorld;
 
@@ -12,5 +19,21 @@ public static class HelloWorldLogic
         
         return TypedResults.Ok(greeting);
     }
-    
+
+    public static async Task CArenaTest(HttpContext context, IRequiredActor<RootCoordinator> rootCoordinatorActorRef, IServiceProvider serviceProvider)
+    {
+        var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
+        
+        ICoupledModel coupledModel = new CArena();
+        
+        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena"));
+      
+        
+        // Act
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
+        Thread.Sleep(2000);
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+
+    }
 }
