@@ -7,6 +7,7 @@ using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
 using Akka.Configuration;
 using Akka.Discovery.Config.Hosting;
+using Akka.HealthCheck.Hosting;
 using Akka.Hosting;
 using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;

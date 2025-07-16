@@ -45,6 +45,9 @@ else
     });
 }
 
+builder.Services.AddSignalRConfiguration();
+
+
 builder.Services.WithAkkaHealthCheck(HealthCheckType.All);
 builder.Services.ConfigureWebApiAkka(builder.Configuration, (akkaConfigurationBuilder, serviceProvider) =>
 {
@@ -65,7 +68,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHelloWorld();
-
+app.UseSignalRConfiguration();
 
 app.UseHttpsRedirection();
 
