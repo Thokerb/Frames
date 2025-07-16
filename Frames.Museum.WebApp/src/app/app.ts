@@ -1,7 +1,5 @@
 import {Component, inject, signal} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import {Button} from 'primeng/button';
-import {Card} from 'primeng/card';
 import {Menubar} from 'primeng/menubar';
 import {MenuItem} from 'primeng/api';
 import Aura from '@primeuix/themes/aura';
@@ -11,7 +9,7 @@ import {PrimeNG} from 'primeng/config';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Button, Card, Menubar, ToggleSwitch, FormsModule],
+  imports: [RouterOutlet, Menubar, ToggleSwitch, FormsModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

@@ -1,7 +1,9 @@
 using Akka.HealthCheck.Hosting;
 using Akka.HealthCheck.Hosting.Web;
+using Akka.Hosting;
 using Frames.Engine.DependencyInjection;
 using Frames.Museum;
+using Frames.Museum.ClusterOverview;
 using Frames.Museum.HelloWorld;
 using Microsoft.OpenApi.Models;
 
@@ -45,6 +47,16 @@ else
     });
 }
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddSignalRConfiguration();
 
 
@@ -77,5 +89,7 @@ app.MapAkkaHealthCheckRoutes(optionConfigure: (_, opt) =>
     // Use a custom response writer to output a json of all reported statuses
     opt.ResponseWriter = Helper.JsonResponseWriter;
 }); // needed for Akka.HealthCheck
+app.UseCors();
 
+// start Metrics Actor
 app.Run();

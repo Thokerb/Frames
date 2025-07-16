@@ -16,6 +16,8 @@ using Akka.Remote.Hosting;
 using Akka.Util;
 using Frames.Engine;
 using Frames.Engine.Messages;
+using Frames.Museum.ClusterOverview;
+using Microsoft.AspNetCore.SignalR;
 
 
 namespace Frames.Museum;
@@ -138,11 +140,21 @@ public static class AkkaConfiguration
 
         if (settings.UseClustering)
         {
-            return builder.WithShardRegion<RootCoordinator>("root-coordinator",
-                (system, registry, resolver) => s => Props.Create(() => new RootCoordinator(serviceProvider)),
-                extractor, settings.ShardOptions);
+            return builder.WithShardRegion<RootCoordinator>("base-shard-region",
+                (system, registry, resolver) =>
+                {
+                    
+                    var metricListener = system.ActorOf(Props.Create<MetricsListenerActor>(() => new MetricsListenerActor(serviceProvider.GetRequiredService<IHubContext<MetricsHub>>())), "metrics-listener");
+                    registry.Register<MetricsListenerActor>(metricListener);
+                    
+                    return s => Props.Create(() => new RootCoordinator(serviceProvider));
+                },
+                extractor, settings.ShardOptions)
+                ;
         }
 
+
+        
         return builder.WithActors((system, registry, resolver) =>
         {
             var parent = system.ActorOf(
@@ -150,6 +162,7 @@ public static class AkkaConfiguration
                 "root-coordinator"
             );
             registry.Register<RootCoordinator>(parent);
+
         });
     }
 

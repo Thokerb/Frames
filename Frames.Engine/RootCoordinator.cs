@@ -96,7 +96,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _timer?.Stop();
             _isCompleted = true;
             this.CompletionType = CompletionType.Error;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime,CompletionType)));
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime,CompletionType)
+            {
+                ShardId = ActorHelper.GetShardId(Self, x)
+            }));
         });
     }
 
@@ -187,7 +190,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
                 throw new SimulatorException("Simulation was not setup properly");
             }
             
-            Self.Tell(new Simulation.StartSimulation(_children, RestoredCheckpointName));
+            Self.Tell(new Simulation.StartSimulation(_children, RestoredCheckpointName)
+            {
+                ShardId = ActorHelper.GetShardId(Self, Self)
+            });
         }
     }
 
@@ -218,7 +224,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         
         _isLoadingCheckpoint = true;
         Log.Debug("[ROOT] Loading checkpoint {Checkpoint}", arg.Name);
-        _children.Tell(new Simulation.LoadCheckpoint(arg.Name));
+        _children.Tell(new Simulation.LoadCheckpoint(arg.Name)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _children)
+        });
     }
 
     private async Task ReceiveFinishedSaveCheckpointAsync(Simulation.FinishedSaveCheckpoint obj)
@@ -252,7 +261,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     {
         if (_isCompleted)
         {
-            Sender.Tell(new Simulation.IsCompleted(_currentTime, CompletionType));
+            Sender.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
+            {
+                ShardId = ActorHelper.GetShardId(Self, Sender)
+            });
         }
         else
         {
@@ -310,7 +322,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator");
         }
 
-        _hasStopCondition = _hasStopCondition || obj.Children.Ask<bool>(new Simulation.HasStopCondition()).Result;
+        _hasStopCondition = _hasStopCondition || obj.Children.Ask<bool>(new Simulation.HasStopCondition
+        {
+            ShardId = ActorHelper.GetShardId(Self, obj.Children)
+        }).Result;
 
         if (!_hasStopCondition)
         {
@@ -454,7 +469,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         {
             Log.Debug("[ROOT] Checkpoint reached at time {Time}", _currentTime);
             _checkpoints.Remove(checkpoint.Key);
-            _children.Tell(new Simulation.SaveCheckpoint(checkpoint.Value, checkpoint.Key));
+            _children.Tell(new Simulation.SaveCheckpoint(checkpoint.Value, checkpoint.Key)
+            {
+                ShardId = ActorHelper.GetShardId(Self, _children)
+            });
             await SaveCheckpoint(checkpoint.Value, checkpoint.Key);
             // RoundCompleted will be called again when the checkpoint is saved
             return;
@@ -475,7 +493,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _isCompleted = true;
             CompletionType = CompletionType.StopAfterCondition;
             _isRunning = false;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
+            {
+                ShardId = ActorHelper.GetShardId(Self, x)
+            }));
             return;
         }
 
@@ -488,7 +509,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _isCompleted = true;
             CompletionType = CompletionType.StopAfterTime;
             _isRunning = false;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
+            {
+                ShardId = ActorHelper.GetShardId(Self, x)
+            }));
             return;
         }
 
@@ -502,7 +526,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _isRunning = false;
             CompletionType = CompletionType.ManualStop;
             _timer?.Stop();
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
+            {
+                ShardId = ActorHelper.GetShardId(Self, x)
+            }));
             return;
         }
 
@@ -520,7 +547,10 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             CompletionType = CompletionType.ManualPause;
             _timer?.Stop();
             _stopwatch.Stop();
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)));
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
+            {
+                ShardId = ActorHelper.GetShardId(Self, x)
+            }));
             return;
         }
         

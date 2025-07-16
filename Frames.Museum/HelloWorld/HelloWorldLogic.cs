@@ -28,14 +28,26 @@ public static class HelloWorldLogic
         
         ICoupledModel coupledModel = new CArena();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-carena-{uniqueId}"));
+        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-carena-{uniqueId}")
+        {
+            ShardId = "root-coordinator"
+        });
       
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50))
+        {
+            ShardId = "root-coordinator"
+        });
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor)
+        {
+            ShardId = "root-coordinator"
+        });
         Thread.Sleep(2000);
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted
+        {
+            ShardId = "root-coordinator"
+        });
 
     }
 }

@@ -160,7 +160,10 @@ public class Coordinator : ReceiveActor, ILogReceive
         ChildrenLoadCheckpointCount += 1;
         if (ChildrenLoadCheckpointCount == _children.Count)
         {
-            _parent.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name));
+            _parent.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
+            {
+                ShardId = ActorHelper.GetShardId(Self, _parent)
+            });
         }
     }
 
@@ -173,7 +176,10 @@ public class Coordinator : ReceiveActor, ILogReceive
         ChildrenSaveCheckpointCount += 1;
         if (ChildrenSaveCheckpointCount == _children.Count)
         {
-            _parent.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime));
+            _parent.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
+            {
+                ShardId = ActorHelper.GetShardId(Self, _parent)
+            });
         }
     }
 

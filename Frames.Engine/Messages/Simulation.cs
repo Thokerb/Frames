@@ -56,5 +56,5 @@ public enum CompletionType
 
 public record WithRootShardId : IShardSeperation
 {
-    public string ShardId { get; } = "root-coordinator";
+    public required string ShardId { get; init; }
 }

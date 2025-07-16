@@ -88,7 +88,10 @@ public class Simulator : ReceiveActor, ILogReceive
         }, Self.Path.Name, _atomicModel.GetStateType());
 
         Log.Debug("[{Name} - CHECKPOINT] Checkpoint saved: {Checkpoint}", Self.Path.Name, obj.Name);
-        _coordinator.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime));
+        _coordinator.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+        });
     }
 
     private async Task HandleLoadCheckpointAsync(Simulation.LoadCheckpoint obj)
@@ -109,7 +112,10 @@ public class Simulator : ReceiveActor, ILogReceive
 
         Log.Debug("[{Name} - CHECKPOINT] Checkpoint loaded: {Checkpoint}", Self.Path.Name, obj.Name);
 
-        _coordinator.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name));
+        _coordinator.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
+        {
+            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+        });
     }
 
     private ActivitySource ActivitySource { get; set; }
