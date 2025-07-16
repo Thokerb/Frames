@@ -1,11 +1,20 @@
-<h1 class="text-3xl font-bold underline text-center mt-10">
-  Angular v19.1 + Tailwind CSS 4.0
-</h1>
-<p-card header="Simple Card">
-  <p class="mt-100">
-    Lorem ipsum dolor sit amet...2
-  </p>
-</p-card>
+<p-menubar [model]="items">
+  <ng-template #end>
+    <div class="flex items-center gap-2">
+      <span class="m-auto">
+        @if (isDarkMode()) {
+          🌜
+        } @else {
+          🌞
+        }
+      </span>
+      <p-toggle-switch
+        [ngModel]="isDarkMode()"
+        (ngModelChange)="toggleDarkMode()"
+      ></p-toggle-switch>
+    </div>
 
-<p-button label="Check" />
+  </ng-template>
+</p-menubar>
+
 <router-outlet />
