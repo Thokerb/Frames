@@ -42,25 +42,33 @@ public class Simulator : ReceiveActor, ILogReceive
         );
     }
 
-    private readonly IActorRef _coordinator;
+    public IActorRef _coordinator { private set; get; }
+    private string Name { set; get; }
+    
+    private string CoordinatorName { get; set; }
 
     private ActivityContext _parentContext;
 
-
-    public Simulator(IActorRef coordinator, IAtomicModelBase atomicModel, IServiceProvider serviceProvider)
+    public Simulator(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
         SnapshotManager = ServiceProvider.GetRequiredService<ISnapshotManager>();
         ActivitySource = ServiceProvider.GetRequiredService<Instrumentation>().ActivitySource;
 
-        _coordinator = coordinator;
-        _atomicModel = atomicModel;
-
 
         Receive<EngineMessages.StartInitialization>(HandleInitialization);
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
-        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel.HasStopCondition)));
+        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel!.HasStopCondition)));
+        Receive<EngineMessages.SetupSimulator>(msg =>
+        {
+            CoordinatorName = msg.CoordinatorName;
+            Name = msg.Name;
+            _atomicModel = msg.AtomicModel;
+            _coordinator = msg.Coordinator;
+            Log.Information("[{Name} - SETUP] Simulator setup with model: {Model}", Self.Path.Name, _atomicModel.GetType().Name);
+            Sender.Tell("done");
+        });
         ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpointAsync);
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
     }
@@ -90,7 +98,8 @@ public class Simulator : ReceiveActor, ILogReceive
         Log.Debug("[{Name} - CHECKPOINT] Checkpoint saved: {Checkpoint}", Self.Path.Name, obj.Name);
         _coordinator.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
         {
-            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+            ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
+            EntityName = CoordinatorName
         });
     }
 
@@ -114,7 +123,8 @@ public class Simulator : ReceiveActor, ILogReceive
 
         _coordinator.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
         {
-            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+            ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
+            EntityName = CoordinatorName
         });
     }
 
@@ -236,7 +246,8 @@ public class Simulator : ReceiveActor, ILogReceive
                 new KeyValuePair<string, Guid>(this._atomicModel.Name,
                     msgId)
             ]),
-            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+            ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
+            EntityName = CoordinatorName
         });
     }
 
@@ -265,7 +276,8 @@ public class Simulator : ReceiveActor, ILogReceive
             // Send the output message to the coordinator
             _coordinator.Tell(new ComputeOutput.ComputedOutput(_outputBag, obj.CurrentTime)
             {
-                 ShardId = ActorHelper.GetShardId(Self, _coordinator)
+                 ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
+                 EntityName = CoordinatorName
             });
         }
         else
@@ -294,7 +306,8 @@ public class Simulator : ReceiveActor, ILogReceive
         // Send the initialization completed message to the coordinator
         _coordinator.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext)
         {
-            ShardId = ActorHelper.GetShardId(Self, _coordinator)
+            ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
+            EntityName = CoordinatorName
         });
     }
 
@@ -316,7 +329,7 @@ public class Simulator : ReceiveActor, ILogReceive
     /// <summary>
     /// Underlying atomic model.
     /// </summary>
-    private readonly IAtomicModelBase _atomicModel;
+    private IAtomicModelBase _atomicModel;
 
     /// <summary>
     /// Output message bag

@@ -88,7 +88,8 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
         var input = new Bag(Player.Receive);
         using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
 
-        playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero));
+        // wrong shardId, but does not matter for this test
+        playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero){ShardId = "root-coordinator"});
         
         var response = await _testKit.ExpectMsgAsync<ExecuteTransition.FinishedExecuteTransition>(TimeSpan.FromSeconds(3));
     }
@@ -112,7 +113,8 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
         var input = Bag.Empty;
         using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
         
-        playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero));
+        // wrong shardId, but does not matter for this test
+        playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero){ShardId = "root-coordinator"});
         
         var response = await _testKit.ExpectMsgAsync<ExecuteTransition.FinishedExecuteTransition>(TimeSpan.FromSeconds(3));
     }

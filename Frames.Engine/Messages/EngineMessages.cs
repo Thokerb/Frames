@@ -20,6 +20,7 @@ public static class EngineMessages
     public sealed record StartInitialization(TimeUnit CurrentTime)  : WithActivityTrace,IShardSeperation
     {
         public required string ShardId { get; set; }
+        public required string EntityName { get; set; }
     }
 
     /// <summary>
@@ -30,7 +31,28 @@ public static class EngineMessages
     public sealed record InitializationCompleted(TimeUnit TimeLast, TimeUnit TimeNext) : IShardSeperation
     {
         public required string ShardId { get; set; }
+        public required string EntityName { get; set; }
     }
+
+    public sealed record SetupSimulator(
+        IActorRef Coordinator,
+        IAtomicModelBase AtomicModel,
+        string Name,
+        string CoordinatorName)
+        : IShardSeperation
+    {
+        public required string ShardId { get; set; }
+        public string EntityName { get; } = Name;
+    };
+
+
+    public sealed record SetupCoordinator(IActorRef Parent, ICoupledModel CoupledModel, string Name, string ParentName)
+        : IShardSeperation
+    {
+        public string ShardId { get; } = Name;
+        public string EntityName { get; } = Name;
+    };
+
 }
 
 public static class ComputeOutput
@@ -42,6 +64,7 @@ public static class ComputeOutput
     public sealed record StartComputeOutput(TimeUnit CurrentTime)  : WithActivityTrace, IShardSeperation
     {
         public required string ShardId { get; set; }
+        public required string EntityName { get; set; }
     }
 
     /// <summary>
@@ -52,6 +75,7 @@ public static class ComputeOutput
     public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : WithOutputTrace, IShardSeperation
     {
         public required string ShardId { get; set; }
+        public required string EntityName { get; set; }
     }
 }
 
@@ -63,6 +87,7 @@ public static class ExecuteTransition
     public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime) : WithActivityTrace, IShardSeperation
     {
         public required string ShardId { get; set; }
+        public required string EntityName { get; set; }
     }
 
     /// <summary>
@@ -72,6 +97,7 @@ public static class ExecuteTransition
     public sealed record FinishedExecuteTransition(TimeUnit TimeNext) : WithSimulatorInformation, IShardSeperation
     {
         public required string ShardId { get; set; }
+        public required string EntityName { get; set; }
     }
 }
 
@@ -103,6 +129,7 @@ public record WithOutputTrace(string ToStringOutput = "");
 public interface IShardSeperation
 {
     string ShardId { get; }
+    string EntityName { get; }
 };
 
 //TODO: I think this is not needed anymore as we send this with streams now

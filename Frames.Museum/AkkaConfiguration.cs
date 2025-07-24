@@ -22,6 +22,10 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Frames.Museum;
 
+public struct FramesRegion
+{
+}
+
 public static class AkkaConfiguration
 {
     public static IServiceCollection ConfigureWebApiAkka(this IServiceCollection services, IConfiguration configuration,
@@ -140,21 +144,58 @@ public static class AkkaConfiguration
 
         if (settings.UseClustering)
         {
-            return builder.WithShardRegion<RootCoordinator>("base-shard-region",
-                (system, registry, resolver) =>
-                {
-                    
-                    var metricListener = system.ActorOf(Props.Create<MetricsListenerActor>(() => new MetricsListenerActor(serviceProvider.GetRequiredService<IHubContext<MetricsHub>>())), "metrics-listener");
-                    registry.Register<MetricsListenerActor>(metricListener);
-                    
-                    return s => Props.Create(() => new RootCoordinator(serviceProvider));
-                },
-                extractor, settings.ShardOptions)
+            return builder.WithShardRegion<RootCoordinator>(
+                    typeName: "framesRegion",
+                    entityPropsFactory: (system, registry, resolver) =>
+                    {
+                        // var metricListener =
+                        //     system.ActorOf(
+                        //         Props.Create(() =>
+                        //             new MetricsListenerActor(
+                        //                 serviceProvider.GetRequiredService<IHubContext<MetricsHub>>())),
+                        //         "metrics-listener");
+                        // registry.Register<MetricsListenerActor>(metricListener);
+                        
+                        return s =>
+                        {
+                            Console.WriteLine("framesRegion1"+s);
+                            return Props.Create(() => new RootCoordinator(serviceProvider));
+                        };
+                    },
+                    extractor,
+                    settings.ShardOptions
+                )
+                .WithShardRegion<Simulator>(
+                    typeName: "framesRegion2",
+                    entityPropsFactory: (system, registry, resolver) =>
+                    {
+                        return s =>
+                        {
+                            Console.WriteLine("framesRegion2"+s);
+                            return Props.Create(() => new Simulator(serviceProvider));
+                        };
+                    },
+                    extractor,
+                    settings.ShardOptions
+                    )    
+                .WithShardRegion<Coordinator>(
+                    typeName: "framesRegion3",
+                    entityPropsFactory: (system, registry, resolver) =>
+                    {
+                        return s =>
+                        {
+                            Console.WriteLine("framesRegion3"+s);
+                            return Props.Create(() => new Coordinator(serviceProvider));
+                        };
+                    },
+                    extractor,
+                    settings.ShardOptions
+                    )
                 ;
         }
 
 
-        
+        // TODO: this is not properly configured, because we are always using shard regions
         return builder.WithActors((system, registry, resolver) =>
         {
             var parent = system.ActorOf(
@@ -162,7 +203,6 @@ public static class AkkaConfiguration
                 "root-coordinator"
             );
             registry.Register<RootCoordinator>(parent);
-
         });
     }
 
@@ -174,15 +214,73 @@ public static class AkkaConfiguration
     /// When a coordinator has a child coordinator then this can be in a different shard region.
     /// </summary>
     /// <returns></returns>
-    public static HashCodeMessageExtractor CreateHashCodeMessageExtractor()
+    public static IMessageExtractor CreateHashCodeMessageExtractor()
     {
+        return new FramesMessageExtractor();
+        
         return HashCodeMessageExtractor.Create(30, o =>
         {
             return o switch
             {
                 IShardSeperation message => message.ShardId,
-                _ => null
+                _ => throw new NotSupportedException("Message type not supported for hashing: " + o.GetType())
             };
         }, o => o);
+    }    
+    
+
+}
+
+public class FramesMessageExtractor : IMessageExtractor
+{
+    /// <summary>
+    /// To which entity does this message belong to?
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public string? EntityId(object message)
+    {
+        if (message is IShardSeperation shardSeperation)
+        {
+            return shardSeperation.EntityName;
+        }
+        throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
+    }
+
+    /// <summary>
+    /// What is the message for this entity?
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public object? EntityMessage(object message)
+    {
+        return message;
+    }
+
+    /// <summary>
+    /// What is the shard id (= cluster group) for this message?
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public string? ShardId(object message)
+    {
+        if (message is IShardSeperation shardSeperation)
+        {
+            return shardSeperation.ShardId;
+        }
+        throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
+    }
+
+    public string ShardId(string entityId, object? messageHint = null)
+    {
+        if (messageHint is IShardSeperation shardSeperation)
+        {
+            return shardSeperation.ShardId;
+        }
+        throw new NotSupportedException("Message type not supported for hashing: " + messageHint.GetType());
+        
     }
 }

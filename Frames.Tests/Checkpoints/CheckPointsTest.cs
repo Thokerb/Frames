@@ -70,7 +70,7 @@ public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
 
         Assert.Equivalent(TimeUnit.Infinity, response.ElapsedTime);
         
-        rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"));
+        rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"){ShardId = "root-coordinator"});
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor, "checkpoint1"));
         rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
         

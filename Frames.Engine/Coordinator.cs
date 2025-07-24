@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Akka.DependencyInjection;
+using Akka.Hosting;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -32,9 +33,9 @@ public class Coordinator : ReceiveActor, ILogReceive
     /// </summary>
     private readonly Dictionary<string, IActorRef> _children = new();
 
-    private readonly ICoupledModel _coupledModel;
+    private ICoupledModel _coupledModel;
 
-    private readonly IActorRef _parent;
+    private IActorRef _parent;
 
     private TimeUnit _timeLast;
 
@@ -73,49 +74,69 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private bool _initializationCompleted;
 
-    private void CreateChildren()
+    private async Task CreateChildrenAsync()
     {
         // Create a new actor for each child
         foreach (var child in _coupledModel.GetChildren())
         {
-            Props props;
+            IActorRef actor;
             switch (child.Item2)
             {
                 // TODO: DI
                 case IAtomicModelBase atomicModel:
-                    props = Props.Create(() => 
-                        new Simulator(Self, atomicModel, ServiceProvider));
+                    // props = Props.Create(() => 
+                    //     new Simulator(ServiceProvider)); //TODO Self, atomicModel,
+                    
+                    actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Simulator>();
+                    await actor.Ask(new EngineMessages.SetupSimulator(Self, atomicModel,  child.Item1, Name){
+                        ShardId = Name,  // Simulator should be in the same shard as the coordinator
+                        Name = child.Item1
+                    });
+
                     break;
                 case ICoupledModel coupledModel:
-                    props = Props.Create<Coordinator>(() => 
-                        new Coordinator(Self, coupledModel, ServiceProvider));
+                    actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Coordinator>();
+                    await actor.Ask(new EngineMessages.SetupCoordinator(Self, coupledModel, child.Item1, Name)
+                    {
+                        Name = child.Item1
+                    });
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            var actor = Context.ActorOf(props, child.Item1);
             _children.Add(child.Item1, actor);
         }
     }
-    
+    public string Name {private set; get; }
+
     private ISnapshotManager SnapshotManager { get; }
 
-    public Coordinator(IActorRef parent, ICoupledModel coupledModel,
-        IServiceProvider serviceProvider)
+    private string ParentName { get; set; }
+    
+    public Coordinator(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
         SnapshotManager = ServiceProvider.GetRequiredService<ISnapshotManager>();
         Instrumentation = ServiceProvider.GetRequiredService<Instrumentation>();
         ActivitySource = Instrumentation.ActivitySource;
-        _coupledModel = coupledModel;
-        this._parent = parent;
-        CreateChildren();
 
 
         // Simulation Messages
         Receive<EngineMessages.StartInitialization>(HandleInitialization);
         Receive<EngineMessages.InitializationCompleted>(HandleInitializationCompleted);
+        ReceiveAsync<EngineMessages.SetupCoordinator>(async msg =>
+        {
+            // This is used to setup the simulator actor with the coordinator
+            // It is not used in the coordinator itself, but in the simulator actor
+            // Therefore we just ignore it here
+            ParentName = msg.ParentName;
+            Name = msg.Name;
+            _coupledModel = msg.CoupledModel;
+            _parent = msg.Parent;
+            await CreateChildrenAsync();
+            Sender.Tell("done");
+        });
         Receive<ComputeOutput.StartComputeOutput>(HandleStartComputeOutput);
         Receive<ComputeOutput.ComputedOutput>(HandleComputedOutput); // (y,t)
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
@@ -162,7 +183,8 @@ public class Coordinator : ReceiveActor, ILogReceive
         {
             _parent.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
             {
-                ShardId = ActorHelper.GetShardId(Self, _parent)
+                ShardId = ActorHelper.GetShardId(Name, ParentName),
+                EntityName = ParentName
             });
         }
     }
@@ -178,7 +200,9 @@ public class Coordinator : ReceiveActor, ILogReceive
         {
             _parent.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
             {
-                ShardId = ActorHelper.GetShardId(Self, _parent)
+                ShardId = ActorHelper.GetShardId(Name, ParentName),
+                EntityName = ParentName
+
             });
         }
     }
@@ -218,7 +242,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     private void HandleComputedOutput(ComputeOutput.ComputedOutput obj)
     {
         // mark d as reporting
-        var name = _children.FirstOrDefault(x => x.Value.Equals(Sender)).Key;
+        var name = _children.FirstOrDefault(x => x.Key.Equals(Sender.Path.Name)).Key;
         _imminentChildren[name] = true;
 
 
@@ -261,7 +285,8 @@ public class Coordinator : ReceiveActor, ILogReceive
         Log.Debug("Sending output to parent {Parent}, Bag {Bag}", _parent.Path.Name, _outputMessageBagParent);
         _parent.Tell(new ComputeOutput.ComputedOutput(_outputMessageBagParent, obj.CurrentTime)
         {
-            ShardId = ActorHelper.GetShardId(Self, _parent)
+            ShardId = ActorHelper.GetShardId(Name, ParentName),
+            EntityName = ParentName
 
         });
 
@@ -311,7 +336,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     {
         // TODO: add save guards
 
-        var name = _children.First(x => x.Value.Equals(Sender)).Key;
+        var name = _children.FirstOrDefault(x => x.Key.Equals(Sender.Path.Name)).Key;
 
         _timeNextExecuteTransition.Add(name, obj);
 
@@ -347,7 +372,8 @@ public class Coordinator : ReceiveActor, ILogReceive
                     .ToDictionary(x => x.Key,
                         x => x.Value),
                 StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached),
-                ShardId = ActorHelper.GetShardId(Self, _parent)
+                ShardId = ActorHelper.GetShardId(Name, ParentName),
+                EntityName = ParentName
             };
 
             _parent.Tell(result);
@@ -424,7 +450,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             var receiverActors = _children[receiver.Key];
             receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime)
             {
-                ShardId = ActorHelper.GetShardId(Self, receiverActors)
+                ShardId = ActorHelper.GetShardId(Name, receiver.Key),
+                EntityName = receiver.Key
             });
         }
 
@@ -433,7 +460,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             var actor = _children[uncoupledChild.Key];
             actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime)
             {
-                ShardId = ActorHelper.GetShardId(Self, actor)
+                ShardId = ActorHelper.GetShardId(Name,  uncoupledChild.Key),
+                EntityName = uncoupledChild.Key
             });
         }
     }
@@ -457,7 +485,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             var actor = _children[imminentChild.Key];
             actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime)
             {
-                ShardId = ActorHelper.GetShardId(Self, actor)
+                ShardId = ActorHelper.GetShardId(Name, imminentChild.Key),
+                EntityName = imminentChild.Key
             });
         }
     }
@@ -470,7 +499,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         }
 
         // Get the sender name
-        var name = _children.FirstOrDefault(x => x.Value.Equals(Sender)).Key;
+        var name = _children.FirstOrDefault(x => x.Key.Equals(Sender.Path.Name)).Key;
 
         _eventList.Add(name, new TimeEventTuple(obj.TimeLast, obj.TimeNext));
 
@@ -485,7 +514,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             // tell parent
             _parent.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext)
             {
-                ShardId = ActorHelper.GetShardId(Self, _parent)
+                ShardId = ActorHelper.GetShardId(Name, ParentName),
+                EntityName = ParentName
             });
         }
     }
@@ -503,7 +533,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             activity?.SetTag("Child", child.Key);
             child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime)
             {
-                ShardId = ActorHelper.GetShardId(Self, child.Value)
+                ShardId = ActorHelper.GetShardId(Name,  child.Key), 
+                EntityName = child.Key
             });
         }
     }

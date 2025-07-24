@@ -8,15 +8,15 @@ namespace Frames.Engine.Messages;
 /// </summary>
 public static class Simulation
 {
-    public sealed record CreateModel(IModel Model, string Name) : WithRootShardId
+    public sealed record CreateModel(IModel Model, string Name) : WithRootCoordinatorShardId
     {
     }
 
-    public sealed record StartSimulation(IActorRef Children, string? CheckpointName = null) : WithRootShardId;
-    public sealed record QueryIsCompleted(): WithRootShardId;
-    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType): WithRootShardId;
-    public sealed record SetStopAfterTime(TimeUnit Time): WithRootShardId;
-    public sealed record SetSpeedControl : WithRootShardId
+    public sealed record StartSimulation(IActorRef Children, string? CheckpointName = null) : WithRootCoordinatorShardId;
+    public sealed record QueryIsCompleted(): WithRootCoordinatorShardId;
+    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType): WithRootCoordinatorShardId;
+    public sealed record SetStopAfterTime(TimeUnit Time): WithRootCoordinatorShardId;
+    public sealed record SetSpeedControl : WithRootCoordinatorShardId
     {
         public int TimeUnitInMilliseconds { get; init; }
         public bool AsFastAsPossible { get; init; }
@@ -31,13 +31,13 @@ public static class Simulation
         }
     }
 
-    public sealed record HasStopCondition(): WithRootShardId;
+    public sealed record HasStopCondition(): WithRootCoordinatorShardId;
     public sealed record SaveCheckpoint(string Name, TimeUnit CurrentTime): WithRootShardId;
     public sealed record FinishedSaveCheckpoint(string Name, TimeUnit CurrentTime): WithRootShardId;
-    public sealed record StopSimulation(): WithRootShardId;
-    public sealed record PauseSimulation(): WithRootShardId;
-    public sealed record ResumeSimulation(): WithRootShardId;
-    public sealed record SetCheckpoint(string Name, TimeUnit Time): WithRootShardId;
+    public sealed record StopSimulation(): WithRootCoordinatorShardId;
+    public sealed record PauseSimulation(): WithRootCoordinatorShardId;
+    public sealed record ResumeSimulation(): WithRootCoordinatorShardId;
+    public sealed record SetCheckpoint(string Name, TimeUnit Time): WithRootCoordinatorShardId;
     
     public sealed record LoadCheckpoint(string Name): WithRootShardId;
     public sealed record FinishedLoadCheckpoint(string Name): WithRootShardId;
@@ -54,7 +54,18 @@ public enum CompletionType
     Timeout
 }
 
+// TODO: rename
 public record WithRootShardId : IShardSeperation
 {
     public required string ShardId { get; init; }
+    public required string EntityName { get; init; }
+}
+
+/// <summary>
+/// For messages that are sent __only__ to the root coordinator.
+/// </summary>
+public record WithRootCoordinatorShardId : IShardSeperation
+{
+    public string ShardId { get; set; } = "root-coordinator";
+    public string EntityName { get; init; } = "root-coordinator";
 }

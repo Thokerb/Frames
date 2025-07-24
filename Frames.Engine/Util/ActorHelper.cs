@@ -3,13 +3,13 @@
 public static class ActorHelper
 {
 
-    public static bool IsCoordinator(IActorRef actorRef)
+    public static bool IsCoordinator(string actorName)
     {
-        return actorRef.Path.Name.StartsWith("coordinator-");
+        return actorName.StartsWith("coordinator-");
     }
-    public static bool IsSimulator(IActorRef actorRef)
+    public static bool IsSimulator(string actorName)
     {
-        return actorRef.Path.Name.StartsWith("simulator-");
+        return actorName.StartsWith("simulator-");
     }
 
     /// <summary>
@@ -18,12 +18,15 @@ public static class ActorHelper
     /// <param name="sender"></param>
     /// <param name="receiver"></param>
     /// <returns></returns>
-    public static string GetShardId(IActorRef sender, IActorRef receiver)
+    public static string GetShardId(string sender, string receiver)
     {
         if (IsSimulator(receiver))
         {
-            return sender.Path.Name;
+            return sender;
         }
-        return receiver.Path.Name;
+        return receiver;
     }
+    
+    public static readonly string RootCoordinatorName = "root-coordinator";
 }
+

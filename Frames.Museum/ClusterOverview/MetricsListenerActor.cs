@@ -8,6 +8,7 @@ using Akka.Util;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Frames.Museum.ClusterOverview;
+
 public class MetricsListenerActor : ReceiveActor
 {
     private IHubContext<MetricsHub> HubContext { get; }
@@ -29,21 +30,17 @@ public class MetricsListenerActor : ReceiveActor
                     var cpuInfo = GetCpuUsagePercent(nodeMetrics);
 
                     // Send data to SignalR
-                    await HubContext.Clients.All.SendAsync("metricsUpdate", new[]
-                    {
-                        new {
-                            id = 1,
-                            name = "memoryUsage",
-                            value = memInfo,
-                            timestamp = DateTime.UtcNow.ToString("o")
-                        },
-                        new {
-                            id = 2,
-                            name = "cpuUsage",
-                            value = cpuInfo,
-                            timestamp = DateTime.UtcNow.ToString("o")
+                    await HubContext.Clients.All.SendAsync("metricsUpdate",
+                        new
+                        {
+                            address = nodeMetrics.Address,
+                            usedMemoryMb = memInfo?.usedMemory,
+                            availableMemoryMb = memInfo?.availableMemory,
+                            cpuUsagePercent = cpuInfo?.usagePercent ,
+                            numberProcessors = cpuInfo?.numberProcessors ,
+                            processUsage = cpuInfo?.processUsage 
                         }
-                    });
+                    );
                 }
             }
         });
@@ -61,30 +58,32 @@ public class MetricsListenerActor : ReceiveActor
         _metricsExtension.Unsubscribe(Self);
     }
 
-    private double? GetMemoryUsageMb(NodeMetrics nodeMetrics)
+    private (double usedMemory, double availableMemory)? GetMemoryUsageMb(NodeMetrics nodeMetrics)
     {
         var memory = StandardMetrics.ExtractMemory(nodeMetrics);
         if (memory.HasValue)
         {
             var usedMb = memory.Value.Used / 1024.0 / 1024.0;
-            _log.Info("Used memory: {0} Mb", usedMb);
-            return usedMb;
+            var availableMemory = memory.Value.Available / 1024.0 / 1024.0;
+            return (usedMb, availableMemory);
         }
 
         return null;
     }
 
-    private double? GetCpuUsagePercent(NodeMetrics nodeMetrics)
+    private (double usagePercent, double numberProcessors, double processUsage)? GetCpuUsagePercent(
+        NodeMetrics nodeMetrics)
     {
         var cpu = StandardMetrics.ExtractCpu(nodeMetrics);
         if (cpu.HasValue)
         {
             var usagePercent = cpu.Value.TotalUsage / 100.0;
+            var numberProcessors = cpu.Value.ProcessorsNumber;
+            var processUsage = cpu.Value.ProcessUsage;
             _log.Info("Cpu load: {0}% ({1} processors)", usagePercent, cpu.Value.ProcessorsNumber);
-            return usagePercent;
+            return (usagePercent, numberProcessors, processUsage);
         }
 
         return null;
     }
-
 }

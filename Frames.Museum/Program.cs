@@ -5,6 +5,7 @@ using Frames.Engine.DependencyInjection;
 using Frames.Museum;
 using Frames.Museum.ClusterOverview;
 using Frames.Museum.HelloWorld;
+using Frames.Museum.Tracing;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,6 +70,7 @@ builder.Services.ConfigureWebApiAkka(builder.Configuration, (akkaConfigurationBu
 });
 builder.Services.AddHWDependencies();
 builder.Services.AddFrameServices();
+builder.AddOpenTelemetryConfiguration();
 
 var app = builder.Build();
 
@@ -78,6 +80,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/openapi/v1.json", "v1"); });
 }
+
+
 
 app.MapHelloWorld();
 app.UseSignalRConfiguration();

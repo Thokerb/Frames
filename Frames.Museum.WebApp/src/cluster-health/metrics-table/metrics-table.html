@@ -1,19 +1,24 @@
+{{metrics() | json}}
 @if (metrics().length > 0) {
-  <p-table [value]="metrics()" class="p-datatable-gridlines">
+  <p-table [value]="metrics()" class="p-datatable-gridlines" [responsiveLayout]="'scroll'">
     <ng-template pTemplate="header">
       <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Value</th>
-        <th>Timestamp</th>
+        <th>Address</th>
+        <th>Used Memory (MB)</th>
+        <th>Available Memory (MB)</th>
+        <th>CPU Usage (%)</th>
+        <th>Processors</th>
+        <th>Process Usage (%)</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-metric>
       <tr>
-        <td>{{ metric.id }}</td>
-        <td>{{ metric.name }}</td>
-        <td>{{ metric.value }}</td>
-        <td>{{ metric.timestamp }}</td>
+        <td>{{metric.monitoringUrl}} | {{ metric.address.host }} | {{metric.address.system}}</td>
+        <td>{{ metric.usedMemoryMb | number }} mb</td>
+        <td>{{ metric.availableMemoryMb | number }} mb</td>
+        <td>{{ metric.cpuUsagePercent | number }}</td>
+        <td>{{ metric.numberProcessors }}</td>
+        <td>{{ metric.processUsage | number }}</td>
       </tr>
     </ng-template>
   </p-table>

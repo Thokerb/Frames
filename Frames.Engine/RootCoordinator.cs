@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Timers;
+using Akka.Hosting;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using Akka.Streams.Implementation;
@@ -80,7 +81,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Receive<Simulation.StopSimulation>(ReceiveStopSimulation);
         ReceiveAsync<Simulation.ResumeSimulation>(ReceiveResumeSimulationAsync);
 
-        Receive<Simulation.CreateModel>(ReceiveCreateModel);
+        ReceiveAsync<Simulation.CreateModel>(ReceiveCreateModelAsync);
         
         // Simulation Messages
         ReceiveAsync<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
@@ -98,34 +99,40 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             this.CompletionType = CompletionType.Error;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime,CompletionType)
             {
-                ShardId = ActorHelper.GetShardId(Self, x)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, x.Path.Name),
+                EntityName = x.Path.Name // name is listener
             }));
         });
     }
 
-    private void ReceiveCreateModel(Simulation.CreateModel arg)
+    private async Task ReceiveCreateModelAsync(Simulation.CreateModel arg)
     {
-        Props props;
+        IActorRef actor;
         switch (arg.Model)
         {
             // TODO: DI
             case IAtomicModelBase atomicModel:
-                props = Props.Create(() => 
-                    new Simulator(Self, atomicModel, ServiceProvider));
+                actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Simulator>();
+                await actor.Ask(new EngineMessages.SetupSimulator(Self, atomicModel, arg.Name, ActorHelper.RootCoordinatorName){
+                    ShardId = ActorHelper.RootCoordinatorName,
+                    Name = arg.Name
+                });
                 break;
             case ICoupledModel coupledModel:
-                props = Props.Create<Coordinator>(() => 
-                    new Coordinator(Self, coupledModel, ServiceProvider));
+                actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Coordinator>();
+                await actor.Ask(new EngineMessages.SetupCoordinator(Self, coupledModel, arg.Name, ActorHelper.RootCoordinatorName));
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
 
-        var actor = Context.ActorOf(props, arg.Name);
+        ChildrenName = arg.Name;
         _children = actor;
         
         Sender.Tell(actor);
     }
+
+    private string ChildrenName { get; set; }
 
     private async Task ReceiveResumeSimulationAsync(Simulation.ResumeSimulation obj)
     {
@@ -191,9 +198,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             }
             
             Self.Tell(new Simulation.StartSimulation(_children, RestoredCheckpointName)
-            {
-                ShardId = ActorHelper.GetShardId(Self, Self)
-            });
+            );
         }
     }
 
@@ -226,7 +231,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Debug("[ROOT] Loading checkpoint {Checkpoint}", arg.Name);
         _children.Tell(new Simulation.LoadCheckpoint(arg.Name)
         {
-            ShardId = ActorHelper.GetShardId(Self, _children)
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
+            EntityName = ChildrenName
         });
     }
 
@@ -263,7 +269,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         {
             Sender.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
             {
-                ShardId = ActorHelper.GetShardId(Self, Sender)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, Sender.Path.Name)
             });
         }
         else
@@ -317,14 +323,14 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
 
 
-        if (!ActorHelper.IsSimulator(obj.Children) && !ActorHelper.IsCoordinator(obj.Children))
+        if (!ActorHelper.IsSimulator(ChildrenName) && !ActorHelper.IsCoordinator(ChildrenName))
         {
-            throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator");
+            throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator, got: " + obj.Children.Path.Name);
         }
 
         _hasStopCondition = _hasStopCondition || obj.Children.Ask<bool>(new Simulation.HasStopCondition
         {
-            ShardId = ActorHelper.GetShardId(Self, obj.Children)
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName)
         }).Result;
 
         if (!_hasStopCondition)
@@ -381,7 +387,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         
         _children.Tell(new EngineMessages.StartInitialization(_currentTime)
         {
-            ShardId = ActorHelper.GetShardId(Self, _children)
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
+            EntityName = ChildrenName
         });
     }
 
@@ -448,7 +455,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             parentContext: SimulationStep?.Context ?? new ActivityContext());
         _children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _timeNext)
         {
-            ShardId = ActorHelper.GetShardId(Self, _children)
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
+            EntityName = ChildrenName
         });
     }
 
@@ -471,7 +479,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _checkpoints.Remove(checkpoint.Key);
             _children.Tell(new Simulation.SaveCheckpoint(checkpoint.Value, checkpoint.Key)
             {
-                ShardId = ActorHelper.GetShardId(Self, _children)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
+                EntityName = ChildrenName
             });
             await SaveCheckpoint(checkpoint.Value, checkpoint.Key);
             // RoundCompleted will be called again when the checkpoint is saved
@@ -495,7 +504,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _isRunning = false;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
             {
-                ShardId = ActorHelper.GetShardId(Self, x)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, x.Path.Name)
             }));
             return;
         }
@@ -511,7 +520,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _isRunning = false;
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
             {
-                ShardId = ActorHelper.GetShardId(Self, x)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, x.Path.Name)
             }));
             return;
         }
@@ -528,7 +537,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _timer?.Stop();
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
             {
-                ShardId = ActorHelper.GetShardId(Self, x)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, x.Path.Name)
             }));
             return;
         }
@@ -549,7 +558,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _stopwatch.Stop();
             _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType)
             {
-                ShardId = ActorHelper.GetShardId(Self, x)
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, x.Path.Name)
             }));
             return;
         }
@@ -599,7 +608,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _currentTime = _timeNext;
         _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime)
         {
-            ShardId = ActorHelper.GetShardId(Self, _children)
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
+            EntityName = ChildrenName
         });
     }
 
