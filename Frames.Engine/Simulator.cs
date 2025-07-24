@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Akka.Hosting;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -42,7 +43,7 @@ public class Simulator : ReceiveActor, ILogReceive
         );
     }
 
-    public IActorRef _coordinator { private set; get; }
+    public IActorRef _coordinator => ServiceProvider.GetRequiredService<ActorRegistry>().Get<Coordinator>();
     private string Name { set; get; }
     
     private string CoordinatorName { get; set; }
@@ -65,7 +66,7 @@ public class Simulator : ReceiveActor, ILogReceive
             CoordinatorName = msg.CoordinatorName;
             Name = msg.Name;
             _atomicModel = msg.AtomicModel;
-            _coordinator = msg.Coordinator;
+            // _coordinator = msg.Coordinator;
             Log.Information("[{Name} - SETUP] Simulator setup with model: {Model}", Self.Path.Name, _atomicModel.GetType().Name);
             Sender.Tell("done");
         });
@@ -73,7 +74,7 @@ public class Simulator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
     }
 
-    public IActorRef TracingStreamActor => ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
+    public IActorRef TracingStreamActor => ServiceProvider.GetRequiredService<ActorRegistry>().Get<TracingActor>();  //ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
 
     private async Task HandleSaveCheckpointAsync(Simulation.SaveCheckpoint obj)
     {

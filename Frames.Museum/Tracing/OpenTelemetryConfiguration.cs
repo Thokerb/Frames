@@ -54,7 +54,6 @@ public static class OpenTelemetryConfiguration
                         options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
                     }
                 );
-                tracing.AddConsoleExporter();
             }
         );
 

@@ -18,13 +18,9 @@ public class Instrumentation : IDisposable
 
     public ActivitySource ActivitySource { get; }
     
-    public IActorRef? TracingActor { get; private set; }
+    public IActorRef TracingActor { get; set; }
 
-    public void SetTracingActor(IActorRef tracingActor)
-    {
-        this.TracingActor = tracingActor;
-    }
-    
+
     public void Dispose()
     {
         this.ActivitySource.Dispose();

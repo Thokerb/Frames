@@ -35,7 +35,11 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private ICoupledModel _coupledModel;
 
-    private IActorRef _parent;
+    private IActorRef _parent => ParentName == ActorHelper.RootCoordinatorName ?  ServiceProvider
+        .GetRequiredService<ActorRegistry>()
+        .Get<RootCoordinator>() : ServiceProvider
+        .GetRequiredService<ActorRegistry>()
+        .Get<Coordinator>();
 
     private TimeUnit _timeLast;
 
@@ -88,7 +92,7 @@ public class Coordinator : ReceiveActor, ILogReceive
                     //     new Simulator(ServiceProvider)); //TODO Self, atomicModel,
                     
                     actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Simulator>();
-                    await actor.Ask(new EngineMessages.SetupSimulator(Self, atomicModel,  child.Item1, Name){
+                    await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, Name){
                         ShardId = Name,  // Simulator should be in the same shard as the coordinator
                         Name = child.Item1
                     });
@@ -96,7 +100,7 @@ public class Coordinator : ReceiveActor, ILogReceive
                     break;
                 case ICoupledModel coupledModel:
                     actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Coordinator>();
-                    await actor.Ask(new EngineMessages.SetupCoordinator(Self, coupledModel, child.Item1, Name)
+                    await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, Name)
                     {
                         Name = child.Item1
                     });
@@ -133,7 +137,7 @@ public class Coordinator : ReceiveActor, ILogReceive
             ParentName = msg.ParentName;
             Name = msg.Name;
             _coupledModel = msg.CoupledModel;
-            _parent = msg.Parent;
+            // _parent = msg.Parent;
             await CreateChildrenAsync();
             Sender.Tell("done");
         });

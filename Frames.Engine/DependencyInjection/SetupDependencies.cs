@@ -15,7 +15,7 @@ public static class SetupDependencies
         services.AddSingleton<ISnapshotManager, SnapshotManager>();
         
         // Tracking
-        services.AddSingleton<Instrumentation, Instrumentation>();
+        services.AddSingleton<Instrumentation>();
 
         return services;
     }

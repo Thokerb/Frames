@@ -113,14 +113,14 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             // TODO: DI
             case IAtomicModelBase atomicModel:
                 actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Simulator>();
-                await actor.Ask(new EngineMessages.SetupSimulator(Self, atomicModel, arg.Name, ActorHelper.RootCoordinatorName){
+                await actor.Ask(new EngineMessages.SetupSimulator(atomicModel, arg.Name, ActorHelper.RootCoordinatorName){
                     ShardId = ActorHelper.RootCoordinatorName,
                     Name = arg.Name
                 });
                 break;
             case ICoupledModel coupledModel:
                 actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Coordinator>();
-                await actor.Ask(new EngineMessages.SetupCoordinator(Self, coupledModel, arg.Name, ActorHelper.RootCoordinatorName));
+                await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, arg.Name, ActorHelper.RootCoordinatorName));
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -290,23 +290,23 @@ public class RootCoordinator : ReceiveActor, ILogReceive
      
         _isCompleted = false;
 
-        var actorRef = 
-            Source
-                .ActorRef<Messages.Tracing.StreamElement>(1000, OverflowStrategy.DropHead)
-                .Via(TracingFlow.GroupByStepFlow())
-                .To(Sink.ForEach<List<Messages.Tracing.MessageWithId>>(group =>
-                {
-                    Console.WriteLine("Processing group:");
-                    Log.Information("[ROOT] Processing group:");
-                    foreach (var message in group)
-                    {
-                        Log.Information("[ROOT] Message: {Message}", message);
-                    }
-                }))
-                .Run(Context.System);
+        // var actorRef = 
+        //     Source
+        //         .ActorRef<Messages.Tracing.StreamElement>(1000, OverflowStrategy.DropHead)
+        //         .Via(TracingFlow.GroupByStepFlow())
+        //         .To(Sink.ForEach<List<Messages.Tracing.MessageWithId>>(group =>
+        //         {
+        //             Console.WriteLine("Processing group:");
+        //             Log.Information("[ROOT] Processing group:");
+        //             foreach (var message in group)
+        //             {
+        //                 Log.Information("[ROOT] Message: {Message}", message);
+        //             }
+        //         }))
+        //         .Run(Context.System);
         
         // Save this actorRef in DI
-        Instrumentation.SetTracingActor(actorRef);
+        // Instrumentation.SetTracingActor(actorRef);
         
         
         if (obj.CheckpointName is not null && obj.CheckpointName != RestoredCheckpointName)
@@ -416,7 +416,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Information("Round time: {TimeNow}", this._currentTime);
         Log.Information("Next time: {TimeNext}", obj.TimeNext.IsInfinity ? "Infinity" : obj.TimeNext.ToString());
         
-        ServiceProvider.GetRequiredService<Instrumentation>().TracingActor.Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>())));
+        ServiceProvider.GetRequiredService<ActorRegistry>().Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>())));
         // string logState = PrintState(obj.ToStringState);
         // if (obj.ToStringState != null)
         // {

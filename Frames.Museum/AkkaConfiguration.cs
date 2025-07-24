@@ -16,6 +16,7 @@ using Akka.Remote.Hosting;
 using Akka.Util;
 using Frames.Engine;
 using Frames.Engine.Messages;
+using Frames.Engine.Monitoring;
 using Frames.Museum.ClusterOverview;
 using Microsoft.AspNetCore.SignalR;
 
@@ -52,6 +53,18 @@ public static class AkkaConfiguration
             .ConfigureLoggers(configBuilder =>
             {
                 configBuilder.LogConfigOnStart = settings.LogConfigOnStart;
+                configBuilder.DebugOptions = new DebugOptions()
+                {
+                    Unhandled = true,
+                    Receive = true,
+                    AutoReceive = true,
+                    RouterMisconfiguration = true,
+                    LifeCycle = true,
+                };
+                configBuilder.DeadLetterOptions = new DeadLetterOptions()
+                {
+                    ShouldLog = TriStateValue.All
+                };
                 configBuilder.AddLoggerFactory();
             })
             .ConfigureNetwork(serviceProvider)
@@ -95,6 +108,7 @@ public static class AkkaConfiguration
                     break;
                 case DiscoveryMethod.Config:
                 {
+                    Console.WriteLine(string.Join(",",settings.AkkaManagementOptions.ExternalEndpoints));
                     builder
                         .WithConfigDiscovery(options =>
                         {
@@ -102,10 +116,7 @@ public static class AkkaConfiguration
                             {
                                 Name = settings.AkkaManagementOptions.ServiceName,
                                 // TODO: use endpoints from configuration which should be set by environment variables so that in docker we can add them 
-                                Endpoints = new[]
-                                {
-                                    $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}",
-                                }
+                                Endpoints = settings.AkkaManagementOptions.ExternalEndpoints.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).Append($"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}").ToArray() 
                             });
                         });
                     break;
@@ -144,8 +155,16 @@ public static class AkkaConfiguration
 
         if (settings.UseClustering)
         {
-            return builder.WithShardRegion<RootCoordinator>(
-                    typeName: "framesRegion",
+            return builder
+                    .WithSingleton<TracingActor>(
+                        "tracingActor",
+                        propsFactory: (system, registry, resolver) =>
+                        {
+                            return Props.Create(() => new TracingActor());
+                        }
+                        )
+                    .WithShardRegion<RootCoordinator>(
+                    typeName: "framesRegion1",
                     entityPropsFactory: (system, registry, resolver) =>
                     {
                         // var metricListener =
@@ -172,6 +191,7 @@ public static class AkkaConfiguration
                         return s =>
                         {
                             Console.WriteLine("framesRegion2"+s);
+                            var tracingActor = registry.Get<TracingActor>();
                             return Props.Create(() => new Simulator(serviceProvider));
                         };
                     },
@@ -243,6 +263,7 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeperation)
         {
+            Console.WriteLine("EntityId: " + shardSeperation.EntityName);
             return shardSeperation.EntityName;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
@@ -269,6 +290,7 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeperation)
         {
+            Console.WriteLine("ShardId: " + shardSeperation.ShardId);
             return shardSeperation.ShardId;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
@@ -278,6 +300,7 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (messageHint is IShardSeperation shardSeperation)
         {
+            Console.WriteLine("ShardId from messageHint: " + shardSeperation.ShardId);
             return shardSeperation.ShardId;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint.GetType());

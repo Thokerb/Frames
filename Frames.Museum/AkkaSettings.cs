@@ -9,6 +9,9 @@ public class AkkaManagementOptions
 {
     public bool Enabled { get; set; } = false;
     public string Hostname { get; set; } = Dns.GetHostName();
+    
+    public required List<string> ExternalEndpoints { get; set; }
+    
     public int Port { get; set; } = 8558;
     public string PortName { get; set; } = "management";
 

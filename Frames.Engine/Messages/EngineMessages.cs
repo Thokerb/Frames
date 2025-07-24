@@ -35,7 +35,6 @@ public static class EngineMessages
     }
 
     public sealed record SetupSimulator(
-        IActorRef Coordinator,
         IAtomicModelBase AtomicModel,
         string Name,
         string CoordinatorName)
@@ -46,7 +45,7 @@ public static class EngineMessages
     };
 
 
-    public sealed record SetupCoordinator(IActorRef Parent, ICoupledModel CoupledModel, string Name, string ParentName)
+    public sealed record SetupCoordinator(ICoupledModel CoupledModel, string Name, string ParentName)
         : IShardSeperation
     {
         public string ShardId { get; } = Name;
