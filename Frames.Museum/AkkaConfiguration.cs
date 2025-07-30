@@ -1,24 +1,18 @@
 ﻿using Akka.Actor;
 using Akka.Hosting;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
 using System.Diagnostics;
-using Akka.Actor;
 using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
-using Akka.Configuration;
 using Akka.Discovery.Config.Hosting;
-using Akka.HealthCheck.Hosting;
-using Akka.Hosting;
+using Akka.Logger.Serilog;
 using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Hosting;
 using Akka.Remote.Hosting;
-using Akka.Util;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
-using Frames.Museum.ClusterOverview;
-using Microsoft.AspNetCore.SignalR;
+using LogLevel = Akka.Event.LogLevel;
 
 
 namespace Frames.Museum;
@@ -53,6 +47,8 @@ public static class AkkaConfiguration
             .ConfigureLoggers(configBuilder =>
             {
                 configBuilder.LogConfigOnStart = settings.LogConfigOnStart;
+                configBuilder.LogLevel = LogLevel.DebugLevel;
+                configBuilder.AddLogger<SerilogLogger>();
                 configBuilder.DebugOptions = new DebugOptions()
                 {
                     Unhandled = true,
@@ -263,7 +259,6 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeperation)
         {
-            Console.WriteLine("EntityId: " + shardSeperation.EntityName);
             return shardSeperation.EntityName;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
@@ -290,7 +285,6 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeperation)
         {
-            Console.WriteLine("ShardId: " + shardSeperation.ShardId);
             return shardSeperation.ShardId;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
@@ -300,7 +294,6 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (messageHint is IShardSeperation shardSeperation)
         {
-            Console.WriteLine("ShardId from messageHint: " + shardSeperation.ShardId);
             return shardSeperation.ShardId;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint.GetType());

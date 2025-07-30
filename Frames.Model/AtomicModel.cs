@@ -52,7 +52,8 @@ public interface IAtomicModel<TState> : IAtomicModelBase where TState : IState
     /// This is the default stop condition.
     /// First parameter is the old state, second is the new state and third is the bag.
     /// </summary>
-    public Func<TState, Bag, bool> StopCondition { get; set; }
+    // public Func<TState, Bag, bool> StopCondition { get; set; }
+    bool StopCondition(TState state, Bag bag);
     
     /// <summary>
     /// The state of the model.
@@ -187,6 +188,8 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     public IState InternalTransition(IState state) => InternalTransition((TState)state);
 
     public IState ConfluentTransition(IState state, Bag bag) => ConfluentTransition((TState)state, bag);
+    
+    public bool StopCondition(IState state, Bag bag) => StopCondition((TState)state, bag);
 
     public Bag Output(IState state) => Output((TState)state);
     public Type GetStateType()
@@ -202,7 +205,12 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     /// This is the default stop condition.
     /// First parameter is the old state, second is the new state and third is the bag.
     /// </summary>
-    public virtual Func<TState, Bag, bool> StopCondition { get; set; } = (_, _) => false;
+    // public virtual Func<TState, Bag, bool> StopCondition { get; set; } = (_, _) => false;
+    
+    public bool StopCondition(TState state, Bag bag)
+    {
+        return false;
+    }
     
     /// <summary>
     /// Default behavior of confluent transition is to call internal transition first and then external transition.

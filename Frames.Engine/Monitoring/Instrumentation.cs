@@ -17,9 +17,6 @@ public class Instrumentation : IDisposable
     }
 
     public ActivitySource ActivitySource { get; }
-    
-    public IActorRef TracingActor { get; set; }
-
 
     public void Dispose()
     {

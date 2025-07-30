@@ -1,5 +1,4 @@
 ﻿using Akka.Hosting;
-using Akka.Hosting;
 using Petabridge.Cmd.Cluster;
 using Petabridge.Cmd.Cluster.Sharding;
 using Petabridge.Cmd.Host;

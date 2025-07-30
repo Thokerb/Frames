@@ -385,7 +385,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             _stopwatch.Start();
         }
         
-        _children.Tell(new EngineMessages.StartInitialization(_currentTime)
+        _children.Tell(new EngineMessages.StartInitialization(_currentTime, InitializationActivity)
         {
             ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
             EntityName = ChildrenName
@@ -453,7 +453,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Thread.Sleep(10);
         ExecuteTransitionActivity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Client,
             parentContext: SimulationStep?.Context ?? new ActivityContext());
-        _children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _timeNext)
+        _children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _timeNext, ExecuteTransitionActivity)
         {
             ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
             EntityName = ChildrenName
@@ -606,7 +606,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         
         _currentTime = _timeNext;
-        _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime)
+        _children.Tell(new ComputeOutput.StartComputeOutput(_currentTime, ComputeOutputActivity)
         {
             ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
             EntityName = ChildrenName

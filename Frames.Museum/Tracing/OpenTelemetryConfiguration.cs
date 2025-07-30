@@ -1,6 +1,4 @@
 ﻿using Frames.Engine.Monitoring;
-using OpenTelemetry;
-using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 

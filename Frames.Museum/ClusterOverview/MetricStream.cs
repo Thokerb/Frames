@@ -1,10 +1,7 @@
-﻿using Akka;
-using Akka.Actor;
+﻿using Akka.Actor;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using Akka.Streams.SignalR;
 using Akka.Streams.SignalR.AspNetCore;
-using Akka.Streams.SignalR.AspNetCore.Internals;
 using Microsoft.AspNetCore.SignalR;
  
 namespace Frames.Museum.ClusterOverview;

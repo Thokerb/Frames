@@ -4,7 +4,6 @@ using Akka.Cluster.Metrics;
 using Akka.Cluster.Metrics.Events;
 using Akka.Cluster.Metrics.Serialization;
 using Akka.Event;
-using Akka.Util;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Frames.Museum.ClusterOverview;

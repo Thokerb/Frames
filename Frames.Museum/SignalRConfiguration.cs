@@ -1,5 +1,4 @@
-﻿using Akka.Streams.SignalR;
-using Frames.Museum.ClusterOverview;
+﻿using Frames.Museum.ClusterOverview;
 
 namespace Frames.Museum;
 

@@ -78,7 +78,7 @@ public class CoupledModel : ICoupledModel
         var model = Activator.CreateInstance<T>();
         model.State = state;
         model.Name = id;
-        model.StopCondition = stopCondition;
+        // model.StopCondition = stopCondition;
         model.HasStopCondition = true;
         HasStopCondition = true;
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";

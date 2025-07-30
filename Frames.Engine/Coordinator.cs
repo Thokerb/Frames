@@ -452,7 +452,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         foreach (var receiver in receivers)
         {
             var receiverActors = _children[receiver.Key];
-            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime)
+            receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name, receiver.Key),
                 EntityName = receiver.Key
@@ -462,7 +462,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         foreach (var uncoupledChild in imminentButNoReceiver)
         {
             var actor = _children[uncoupledChild.Key];
-            actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime)
+            actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name,  uncoupledChild.Key),
                 EntityName = uncoupledChild.Key
@@ -487,7 +487,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         foreach (var imminentChild in _imminentChildren)
         {
             var actor = _children[imminentChild.Key];
-            actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime)
+            actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name, imminentChild.Key),
                 EntityName = imminentChild.Key
@@ -534,8 +534,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         foreach (var child in _children)
         {
-            activity?.SetTag("Child", child.Key);
-            child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime)
+            child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name,  child.Key), 
                 EntityName = child.Key

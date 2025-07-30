@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Newtonsoft.Json;
 
 
 namespace Frames.Engine.Messages;
@@ -17,10 +18,19 @@ public static class EngineMessages
     /// <summary>
     /// Written as (i,t) in Theory of M S
     /// </summary>
-    public sealed record StartInitialization(TimeUnit CurrentTime)  : WithActivityTrace,IShardSeperation
+    public sealed record StartInitialization : WithActivityTrace,IShardSeperation
     {
+        /// <summary>
+        /// Written as (i,t) in Theory of M S
+        /// </summary>
+        public StartInitialization(TimeUnit CurrentTime, Activity? activity) : base(activity)
+        {
+            this.CurrentTime = CurrentTime;
+        }
+
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public TimeUnit CurrentTime { get; init; }
     }
 
     /// <summary>
@@ -60,10 +70,22 @@ public static class ComputeOutput
     /// Written as (*,t) in Theory of M S
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record StartComputeOutput(TimeUnit CurrentTime)  : WithActivityTrace, IShardSeperation
+    public sealed record StartComputeOutput : WithActivityTrace, IShardSeperation
     {
+        /// <summary>
+        /// Written as (*,t) in Theory of M S
+        /// <param name="CurrentTime">t</param>
+        /// </summary>
+        public StartComputeOutput(TimeUnit CurrentTime, Activity? activity) : base(activity)
+        {
+            this.CurrentTime = CurrentTime;
+        }
+
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public TimeUnit CurrentTime { get; init; }
+
+
     }
 
     /// <summary>
@@ -83,10 +105,21 @@ public static class ExecuteTransition
     /// <summary>
     /// Written as (x,*) in Theory of M S
     /// </summary>
-    public sealed record StartExecuteTransition(Bag? Input, TimeUnit CurrentTime) : WithActivityTrace, IShardSeperation
+    public sealed record StartExecuteTransition : WithActivityTrace, IShardSeperation
     {
+        /// <summary>
+        /// Written as (x,*) in Theory of M S
+        /// </summary>
+        public StartExecuteTransition(Bag? Input, TimeUnit CurrentTime,Activity? activity) : base(activity)
+        {
+            this.Input = Input;
+            this.CurrentTime = CurrentTime;
+        }
+
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public Bag? Input { get; init; }
+        public TimeUnit CurrentTime { get; init; }
     }
 
     /// <summary>
@@ -100,10 +133,23 @@ public static class ExecuteTransition
     }
 }
 
-public record WithActivityTrace(ActivityTraceId TraceId, ActivitySpanId SpanId)
+public record WithActivityTrace
 {
     // TODO: check nullability
-    protected WithActivityTrace() : this( Activity.Current?.TraceId ?? new ActivityTraceId(),Activity.Current?.SpanId ?? new ActivitySpanId()) { }
+    protected WithActivityTrace(Activity? activity)
+    {
+        TraceIdValue = activity?.TraceId.ToString() ?? new ActivityTraceId().ToString();
+        SpanIdValue = activity?.SpanId.ToString() ?? new ActivitySpanId().ToString();
+    }
+    
+    public string TraceIdValue { get; init; }
+    public string SpanIdValue { get; init; }
+    
+    [JsonIgnore]
+    public ActivityTraceId TraceId => ActivityTraceId.CreateFromString(TraceIdValue);
+    
+    [JsonIgnore]
+    public ActivitySpanId SpanId => ActivitySpanId.CreateFromString(SpanIdValue);
 }
 
 public static class StateSnapshot

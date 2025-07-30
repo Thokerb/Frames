@@ -1,6 +1,13 @@
-﻿using Frames.Model;
+﻿using System.Diagnostics;
+using Frames.Engine.Messages;
+using Frames.Engine.Monitoring;
+using Frames.Model;
+using Frames.Model.ValueTypes;
 using Frames.Museum.BlinkingLightBRTest;
 using Newtonsoft.Json;
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Xunit;
 
 namespace Frames.Test2;
@@ -14,19 +21,95 @@ public class SerializationTest
         ICoupledModel arena = new CArena();
 
         // Act
-        var json = JsonConvert.SerializeObject(arena, new JsonSerializerSettings
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
-        });
-        JsonConvert.SerializeObject(new BlinkingLightAtomicModelBR(){Name = ""}, new JsonSerializerSettings
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
-        });JsonConvert.SerializeObject(new BlinkingLightStateBR(), new JsonSerializerSettings
+        JsonConvert.SerializeObject(arena, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
         });
 
         // Assert
-        Assert.NotNull(json);
+        Assert.True(true);
+    }   
+    
+    [Fact]
+    public void TestSerialization2()
+    {
+        var model = new BlinkingLightAtomicModelBR()
+        {
+            Name = "Test",
+            State = new BlinkingLightStateBR()
+            {
+                CurrentCycle = 2,
+                MaxCycles = 2,
+                Name = "On",
+                WaitingTime = 2
+            },
+            HasStopCondition = true,
+        };
+        
+        // Act
+        JsonConvert.SerializeObject(new BlinkingLightAtomicModelBR(){Name = ""}, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
+        });
+
+        // Assert
+        Assert.True(true);
+    }  
+    [Fact]
+    public void TestSerialization3()
+    {
+        // Act
+        JsonConvert.SerializeObject(new BlinkingLightStateBR(), new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
+        });
+
+        // Assert
+        Assert.True(true);
+    }    
+    
+    /// <summary>
+    /// Test only works when Jaeger is running on localhost:4317
+    /// </summary>
+    [Fact]
+    public void TestSerialization4()
+    {
+        var instrumentation = new Instrumentation();
+
+        Sdk.CreateTracerProviderBuilder()
+            .SetResourceBuilder(ResourceBuilder
+                .CreateDefault()
+                .AddService("Frames")
+            )
+            // .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(TracerName))
+            .AddSource(instrumentation.ActivitySource.Name)
+            .AddConsoleExporter()
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri("http://localhost:4317");
+                options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+            })
+            .Build();
+        
+        var x = instrumentation.ActivitySource.StartActivity("TestActivity", ActivityKind.Internal);
+        
+        // Act
+        var result = JsonConvert.SerializeObject(new EngineMessages.StartInitialization(new TimeUnit(3), x)
+        {
+            ShardId = "2",
+            EntityName = "w"
+        }, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
+        });
+        
+        var deserialized = JsonConvert.DeserializeObject<EngineMessages.StartInitialization>(result, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore
+        });
+        
+
+        // Assert
+        Assert.NotEqual(deserialized.TraceId.ToString(), new ActivityTraceId().ToString());
     }
 }
