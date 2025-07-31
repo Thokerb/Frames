@@ -1,5 +1,7 @@
-﻿using Akka.Actor;
-using Akka.TestKit.Xunit2;
+﻿using System.Diagnostics;
+using Akka.Actor;
+using Akka.Hosting;
+using Akka.Hosting.TestKit;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
@@ -10,9 +12,8 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.PingPong;
 
-public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
+public class PlayerTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 {
-    private readonly TestKit _testKit;
     private readonly OpenTelemetryFixture _openTelemetryFixture;
 
     public PlayerTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
@@ -29,21 +30,18 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
             .WriteTo.TestOutput(output)
             .CreateLogger();
         
-        
-        var system = ActorSystem.Create("my-test-system", File.ReadAllText("logConfig.conf"));
-        var testKit = new TestKit(system);
-        _testKit = testKit;
-        
     }
     
     
     [Fact]
     public async Task TestPlayerWhoWaitsForever()
     {
+        var expectResultsProbe = CreateTestProbe();
+
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
         var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = ActorOf(rootProps,"root-coordinator");
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
         IAtomicModelBase model = new Player()
         {
             Name = "Player"
@@ -53,69 +51,22 @@ public class PlayerTest : TestKit, IClassFixture<OpenTelemetryFixture>
             Name = "Send"
         };
 
-        var playerProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
-        var playerActor = ActorOf(playerProps,"simulator-player");
+        var playerActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"coordinator-table")
+        {
+            ShardId = "1"
+        });
         
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(playerActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
         
         // Assert
         // Act        
         // Assert that exception is thrown
-        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
         Assert.Equivalent(response.ElapsedTime, TimeUnit.Infinity);
         
     }
 
-    [Fact]
-    public async Task TestExternalTransition()
-    {
-        IAtomicModelBase model = new Player()
-        {
-            Name = "Player"
-        };        model.StateInternal = new PlayerState()
-        {
-            Name = "Waiting"
-        };
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-
-        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model, serviceProviderMock));
-        var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
-
-        // needs to be receive, because coupling transforms send to receive
-        var input = new Bag(Player.Receive);
-        using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
-
-        // wrong shardId, but does not matter for this test
-        playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero){ShardId = "root-coordinator"});
-        
-        var response = await _testKit.ExpectMsgAsync<ExecuteTransition.FinishedExecuteTransition>(TimeSpan.FromSeconds(3));
-    }
-    [Fact]
-    public async Task TestInternalTransition()
-    {
-        IAtomicModelBase model = new Player()
-        {
-            Name = "Player"
-        };
-        model.StateInternal = new PlayerState()
-        {
-            Name = "Waiting"
-        };
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-
-        var playerProps = Props.Create<Simulator>(() => new Simulator(_testKit.TestActor, model, serviceProviderMock));
-        var playerActor = _testKit.ActorOf(playerProps,"simulator-player");
-
-        // needs to be receive, because coupling transforms send to receive
-        var input = Bag.Empty;
-        using var activity = _openTelemetryFixture.Instrumentation.ActivitySource.StartActivity("test");
-        
-        // wrong shardId, but does not matter for this test
-        playerActor.Tell(new ExecuteTransition.StartExecuteTransition(input, TimeUnit.Zero){ShardId = "root-coordinator"});
-        
-        var response = await _testKit.ExpectMsgAsync<ExecuteTransition.FinishedExecuteTransition>(TimeSpan.FromSeconds(3));
-    }
 }

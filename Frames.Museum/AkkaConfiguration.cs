@@ -12,6 +12,7 @@ using Akka.Remote.Hosting;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
+using Frames.Museum.Actors;
 using LogLevel = Akka.Event.LogLevel;
 
 
@@ -214,11 +215,19 @@ public static class AkkaConfiguration
         // TODO: this is not properly configured, because we are always using shard regions
         return builder.WithActors((system, registry, resolver) =>
         {
-            var parent = system.ActorOf(
-                Props.Create(() => new RootCoordinator(serviceProvider)),
-                "root-coordinator"
-            );
+            var parent =
+                system.ActorOf(
+                    GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new RootCoordinator(serviceProvider))),
+                    "root-coordinator");
             registry.Register<RootCoordinator>(parent);
+            var parentCoordinator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new Coordinator(serviceProvider))));
+            registry.Register<Coordinator>(parentCoordinator);
+            var parentSimulator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new Simulator(serviceProvider))));
+            registry.Register<Simulator>(parentSimulator);            
+            var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new TracingActor())));
+            registry.Register<TracingActor>(parentSimulator);
+            
+            
         });
     }
 

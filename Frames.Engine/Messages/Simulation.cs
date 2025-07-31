@@ -31,7 +31,7 @@ public static class Simulation
         }
     }
 
-    public sealed record HasStopCondition(): WithRootCoordinatorShardId;
+    public sealed record HasStopCondition(): WithRootShardId;
     public sealed record SaveCheckpoint(string Name, TimeUnit CurrentTime): WithRootShardId;
     public sealed record FinishedSaveCheckpoint(string Name, TimeUnit CurrentTime): WithRootShardId;
     public sealed record StopSimulation(): WithRootCoordinatorShardId;

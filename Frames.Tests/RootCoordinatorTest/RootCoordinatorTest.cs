@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
-using Akka.TestKit.Xunit2;
+using Akka.Hosting;
+using Akka.Hosting.TestKit;
 using Frames.Engine;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -11,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.RootCoordinatorTest;
 
-public class RootCoordinatorTest : TestKit, IClassFixture<OpenTelemetryFixture>
+public class RootCoordinatorTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 {
     public static readonly Akka.Configuration.Config Config = "akka.loglevel=DEBUG";
     private readonly OpenTelemetryFixture _openTelemetryFixture;
@@ -29,26 +30,28 @@ public class RootCoordinatorTest : TestKit, IClassFixture<OpenTelemetryFixture>
     
     
     [Fact]
-    public void FailWhenStartingWithoutStopCondition()
+    public async Task FailWhenStartingWithoutStopCondition()
     {
+        var probe = CreateTestProbe();
         // Arrange root coordinator
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var props = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = Sys.ActorOf(props);
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
         {
             Name = "blinking-light",
         };
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
-        var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
-
+        var blinkingLightActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"simulator-blinking-light")
+        {
+            ShardId = "1"
+        });
         // Assert
-        EventFilter.Exception<NoStopConditionException>().ExpectOne(() =>
+        probe.EventFilter.Exception<NoStopConditionException>().ExpectOne(() =>
         {
             // Act
-            rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
+            rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor),probe);
         });
     }
+
+
 }

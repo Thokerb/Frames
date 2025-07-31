@@ -72,7 +72,7 @@ public class MyResourceDetector : IResourceDetector
     public Resource Detect()
     {
         return ResourceBuilder.CreateEmpty()
-            .AddService(serviceName: this.webHostEnvironment.ApplicationName)
+            .AddService(serviceName: $"{this.webHostEnvironment.ApplicationName}-{Configuration["AkkaSettings:RemoteOptions:HostName"]}")
             .AddAttributes(new Dictionary<string, object>
             {
                 ["host.environment"] = this.webHostEnvironment.EnvironmentName,

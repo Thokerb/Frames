@@ -1,18 +1,19 @@
 ﻿using Akka.Actor;
-using Akka.TestKit.Xunit2;
+using Akka.Hosting;
+using Akka.Hosting.TestKit;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.Tests.TestUtils;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Xunit.Abstractions;
 
 namespace Frames.Tests.PingPong;
 
-public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
+public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 {
-    private TestKit _testKit;
     
     private readonly OpenTelemetryFixture _openTelemetryFixture;
     
@@ -30,45 +31,33 @@ public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
             .WriteTo.TestOutput(output,outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{Properties}{NewLine}{Exception}")
             .CreateLogger();
         
-        
-        var system = ActorSystem.Create("my-test-system", File.ReadAllText("logConfig.conf"));
-        var testKit = new TestKit(system);
-        _testKit = testKit;
     }
 
-    [Fact]
-    public void TestEnrichedLog()
-    {
-        Log.Information("This is a test log message");
-        Log.Debug("This is a test log message");
-        
-        Assert.True(true);
-    }
-    
     
     
     [Fact]
     public async Task CreateTable()
     {
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-
+        var expectResultsProbe = CreateTestProbe();
+        
         // Arrange root coordinator
-        var rootProps = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = _testKit.ActorOf(rootProps,"root-coordinator");
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new Table();
         
-        var coupledModelProps = Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, coupledModel, serviceProviderMock));
-        var coupledModelActor = _testKit.ActorOf(coupledModelProps,"coordinator-table");
+        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-table")
+        {
+            ShardId = "1"
+        });
         
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
         
         
         // Assert
-        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
         Assert.True(response.ElapsedTime <= new TimeUnit(31));
         Assert.True(response.ElapsedTime > TimeUnit.Zero);
@@ -77,29 +66,32 @@ public class PingPongTestOTEL : IClassFixture<OpenTelemetryFixture>
     [Fact]
     public async Task BaseBlinkingLightTest()
     {
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var expectResultsProbe = CreateTestProbe();
+
 
         // Arrange root coordinator
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = _testKit.ActorOf(props);
-
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
         {
             Name = "blinking-light",
         };
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
-        var blinkingLightActor = _testKit.ActorOf(blinkingLightProps,"simulator-blinking-light");
+        var blinkingLightActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"coordinator-table")
+        {
+            ShardId = "1"
+        });
 
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
         
         // Assert
-        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
         Assert.True(response.ElapsedTime <= new TimeUnit(11));
         Assert.True(response.ElapsedTime > TimeUnit.Zero);
     }
+
+
 }

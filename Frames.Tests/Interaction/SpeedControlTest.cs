@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Akka.Actor;
-using Akka.TestKit.Xunit2;
+using Akka.Hosting;
+using Akka.Hosting.TestKit;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
@@ -12,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.Interaction;
 
-public class InteractionControlTest : TestKit, IClassFixture<OpenTelemetryFixture>
+public class InteractionControlTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 {
     public static readonly Akka.Configuration.Config Config = "akka.loglevel=DEBUG";
 
@@ -32,18 +33,22 @@ public class InteractionControlTest : TestKit, IClassFixture<OpenTelemetryFixtur
     [Fact]
     public async Task BaseInteractionControlTest()
     {
+        var expectResultsProbe = CreateTestProbe();
+
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = Sys.ActorOf(props);
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
         {
             Name = "blinking-light",
         };
         
-        var blinkingLightProps = Props.Create<Simulator>(() => new Simulator(rootCoordinatorActor, model, serviceProviderMock));
-        var blinkingLightActor = Sys.ActorOf(blinkingLightProps,"simulator-blinking-light");
+        var blinkingLightActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"simulator-blinking-light")
+        {
+            ShardId = "1",
+            EntityName = "root-coordinator"
+        });
 
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(12)));
@@ -51,7 +56,7 @@ public class InteractionControlTest : TestKit, IClassFixture<OpenTelemetryFixtur
         var stopTime = new Stopwatch();
         stopTime.Start();
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
         Thread.Sleep(3000);
         rootCoordinatorActor.Tell(new Simulation.PauseSimulation());
         Serilog.Log.Information($"Simulation stopped {stopTime.ElapsedMilliseconds} ms");
@@ -60,10 +65,12 @@ public class InteractionControlTest : TestKit, IClassFixture<OpenTelemetryFixtur
         rootCoordinatorActor.Tell(new Simulation.ResumeSimulation());
         
         // Assert
-        var response = await ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(25));
-        var response2 = await ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(25));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(25));
+        var response2 = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(25));
         stopTime.Stop();
         Assert.InRange(stopTime.ElapsedMilliseconds, 17 * 1000, 18 * 1000);
         Assert.InRange(response2.ElapsedTime.Value, new TimeUnit(14).Value, new TimeUnit(14).Value);
     }
+
+
 }

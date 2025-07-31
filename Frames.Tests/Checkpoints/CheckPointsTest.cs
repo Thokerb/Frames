@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
-using Akka.TestKit.Xunit2;
+using Akka.Hosting;
+using Akka.Hosting.TestKit;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
@@ -12,9 +13,8 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.Checkpoints;
 
-public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
+public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 {
-    private TestKit _testKit;
     private readonly OpenTelemetryFixture _openTelemetryFixture;
 
     public CheckPointsTest(ITestOutputHelper output, OpenTelemetryFixture openTelemetryFixture)
@@ -31,10 +31,6 @@ public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
             .CreateLogger();
 
 
-        var system = ActorSystem.Create("my-test-system", File.ReadAllText("logConfig.conf"));
-        var testKit = new TestKit(system);
-        _testKit = testKit;
-
     }
 
 
@@ -46,35 +42,35 @@ public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
     [SkipForGithubAction]
     public async Task CreateCSuperArena()
     {
+        var expectResultsProbe = CreateTestProbe();
+
         // Arrange root coordinator
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = _testKit.ActorOf(rootProps, "root-coordinator");
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new CSuperArena();
 
-        var coupledModelProps =
-            Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, coupledModel, serviceProviderMock));
-        var coupledModelActor = _testKit.ActorOf(coupledModelProps, "coordinator-carena");
-
+        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena")
+        {
+            ShardId = "root-coordinator"
+        });
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("checkpoint1", new TimeUnit(10)));
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
 
 
         // Assert
-        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
 
 
         Assert.Equivalent(TimeUnit.Infinity, response.ElapsedTime);
         
-        rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"){ShardId = "root-coordinator"});
+        rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"){ShardId = "root-coordinator", EntityName = "root-coordinator"});
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor, "checkpoint1"));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
         
-        var response2 = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
+        var response2 = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
         Assert.Equivalent(TimeUnit.Infinity, response2.ElapsedTime);
         
     }
@@ -83,28 +79,31 @@ public class CheckPointsTest : IClassFixture<OpenTelemetryFixture>
     [Fact]
     public async Task CreateCSuperArena2()
     {
+        var expectResultsProbe = CreateTestProbe();
+
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
         var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
-        var rootCoordinatorActor = _testKit.ActorOf(rootProps, "root-coordinator");
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new CSuperArena2();
-
-        var coupledModelProps =
-            Props.Create<Coordinator>(() => new Coordinator(rootCoordinatorActor, coupledModel, serviceProviderMock));
-        var coupledModelActor = _testKit.ActorOf(coupledModelProps, "coordinator-carena");
-
+        
+        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena")
+        {
+            ShardId = "root-coordinator"
+        });
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted());
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
 
 
         // Assert
-        var response = await _testKit.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
 
 
         Assert.Equivalent(TimeUnit.Infinity, response.ElapsedTime);
     }
+
 
 }

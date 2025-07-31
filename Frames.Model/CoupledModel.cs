@@ -45,6 +45,7 @@ public class CoupledModel : ICoupledModel
     public string Name { get; set; }
     public bool HasStopCondition { get; set; } = false;
 
+
     private Dictionary<string, IModel> Children { get; } = new();
     
     private List<(Port inPort, Port outPort, string inModel, string outModel)> Pipes { get; } = new();
@@ -66,21 +67,6 @@ public class CoupledModel : ICoupledModel
         var model = Activator.CreateInstance<T>();
         model.State = state;
         model.Name = id;
-        string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
-        Children.Add(prefix+id, model);
-        return model;
-    }
-    
-    public T AddModel<T,TState>(string id, TState state, Func<TState, Bag, bool> stopCondition) 
-        where T : IAtomicModel<TState>
-        where TState : IState
-    {
-        var model = Activator.CreateInstance<T>();
-        model.State = state;
-        model.Name = id;
-        // model.StopCondition = stopCondition;
-        model.HasStopCondition = true;
-        HasStopCondition = true;
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
         Children.Add(prefix+id, model);
         return model;

@@ -173,7 +173,16 @@ public record WithOutputTrace(string ToStringOutput = "");
 /// <param name="ShardId"></param>
 public interface IShardSeperation
 {
+    /// <summary>
+    /// ShardId is the akka ShardId, which is used to deceide what actors are in the same shard.
+    /// See CreateHashCodeMessageExtractor in AkkaConfiguration.cs for how this is calculated.
+    /// </summary>
     string ShardId { get; }
+    
+    /// <summary>
+    /// EntityName is the name of the entity that is receiving the message.
+    /// It is used to identify the entity within the cluster, but also keeping location transparency.
+    /// </summary>
     string EntityName { get; }
 };
 

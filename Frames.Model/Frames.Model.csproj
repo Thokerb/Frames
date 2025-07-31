@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Akka.Analyzers" Version="0.3.3" />
-        <PackageReference Include="Akka.DependencyInjection" Version="1.5.40" />
+        <PackageReference Include="Akka.DependencyInjection" Version="1.5.44" />
         <PackageReference Include="Akka.Hosting" Version="1.5.38"/>
         <PackageReference Include="Akka.Logger.Serilog" Version="1.5.25" />
         <PackageReference Include="Akka.Monitoring" Version="1.1.0" />

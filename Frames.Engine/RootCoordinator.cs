@@ -112,14 +112,14 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         {
             // TODO: DI
             case IAtomicModelBase atomicModel:
-                actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Simulator>();
+                actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
                 await actor.Ask(new EngineMessages.SetupSimulator(atomicModel, arg.Name, ActorHelper.RootCoordinatorName){
                     ShardId = ActorHelper.RootCoordinatorName,
                     Name = arg.Name
                 });
                 break;
             case ICoupledModel coupledModel:
-                actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Coordinator>();
+                actor = await ActorRegistry.For(Context.System).GetAsync<Coordinator>();
                 await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, arg.Name, ActorHelper.RootCoordinatorName));
                 break;
             default:
@@ -330,7 +330,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         _hasStopCondition = _hasStopCondition || obj.Children.Ask<bool>(new Simulation.HasStopCondition
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName)
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName, ChildrenName),
+            EntityName = ChildrenName
         }).Result;
 
         if (!_hasStopCondition)
@@ -416,7 +417,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Information("Round time: {TimeNow}", this._currentTime);
         Log.Information("Next time: {TimeNext}", obj.TimeNext.IsInfinity ? "Infinity" : obj.TimeNext.ToString());
         
-        ServiceProvider.GetRequiredService<ActorRegistry>().Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>())));
+        ActorRegistry.For(Context.System).Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>())));
         // string logState = PrintState(obj.ToStringState);
         // if (obj.ToStringState != null)
         // {

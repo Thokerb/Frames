@@ -23,7 +23,7 @@ services:
       ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
-      AkkaSettings__RemoteOptions__HostName: "museum1"
+      AkkaSettings__RemoteOptions__HostName: "museum1" 
       AkkaSettings__RemoteOptions__Port: "8081"
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"

@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using Frames.Model.ValueTypes;
 
@@ -175,20 +176,50 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     }
 
     public required string Name { get; set; }
-    public bool HasStopCondition { get; set; } = false;
+
+    public virtual bool HasStopCondition { get; set; } = false;
 
     /// <summary>
     /// State of the model.
     /// </summary>
     public abstract TState State { get; set; }
+    
+    /// <summary>
+    /// Do not override this method. Override the TState version instead.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <returns></returns>
     public TimeUnit TimeAdvance(IState state) => TimeAdvance((TState)state);
 
+    /// <summary>
+    /// Do not override this method. Override the TState version instead.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="bag"></param>
+    /// <returns></returns>
     public IState ExternalTransition(IState state, Bag bag) => ExternalTransition((TState)state, bag);
 
+    /// <summary>
+    /// Do not override this method. Override the TState version instead.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <returns></returns>
     public IState InternalTransition(IState state) => InternalTransition((TState)state);
 
+    /// <summary>
+    /// Do not override this method. Override the TState version instead.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="bag"></param>
+    /// <returns></returns>
     public IState ConfluentTransition(IState state, Bag bag) => ConfluentTransition((TState)state, bag);
     
+    /// <summary>
+    /// Do not override this method. Override the TState version instead.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="bag"></param>
+    /// <returns></returns>
     public bool StopCondition(IState state, Bag bag) => StopCondition((TState)state, bag);
 
     public Bag Output(IState state) => Output((TState)state);
@@ -200,18 +231,16 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     public abstract TimeUnit TimeAdvance(TState state);
     public abstract TState ExternalTransition(TState state, Bag bag);
     public abstract TState InternalTransition(TState state);
-    
+
     /// <summary>
     /// This is the default stop condition.
-    /// First parameter is the old state, second is the new state and third is the bag.
+    /// First parameter is the  state, second is the bag.
     /// </summary>
-    // public virtual Func<TState, Bag, bool> StopCondition { get; set; } = (_, _) => false;
-    
-    public bool StopCondition(TState state, Bag bag)
+
+    public virtual bool StopCondition(TState state, Bag bag)
     {
         return false;
     }
-    
     /// <summary>
     /// Default behavior of confluent transition is to call internal transition first and then external transition.
     /// Can be overridden in derived classes.

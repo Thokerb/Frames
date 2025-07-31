@@ -36,14 +36,16 @@ public class Simulator : ReceiveActor, ILogReceive
                     case SynchronisationException:
                         return Directive.Escalate;
                     default:
-                        return Directive.Restart;
+                        return Directive.Escalate;
                 }
             },
             loggingEnabled: true
         );
     }
 
-    public IActorRef _coordinator => ServiceProvider.GetRequiredService<ActorRegistry>().Get<Coordinator>();
+    public IActorRef _coordinator => CoordinatorName == ActorHelper.RootCoordinatorName ?  ActorRegistry.For(Context.System)
+        .Get<RootCoordinator>() : ActorRegistry.For(Context.System)
+        .Get<Coordinator>();
     private string Name { set; get; }
     
     private string CoordinatorName { get; set; }
@@ -60,7 +62,7 @@ public class Simulator : ReceiveActor, ILogReceive
         Receive<EngineMessages.StartInitialization>(HandleInitialization);
         Receive<ComputeOutput.StartComputeOutput>(HandleComputeOutput);
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
-        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel!.HasStopCondition)));
+        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_atomicModel?.HasStopCondition ?? false)));
         Receive<EngineMessages.SetupSimulator>(msg =>
         {
             CoordinatorName = msg.CoordinatorName;
@@ -74,13 +76,14 @@ public class Simulator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
     }
 
-    public IActorRef TracingStreamActor => ServiceProvider.GetRequiredService<ActorRegistry>().Get<TracingActor>();  //ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
+    public IActorRef TracingStreamActor => ActorRegistry.For(Context.System).Get<TracingActor>();  //ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
 
     private async Task HandleSaveCheckpointAsync(Simulation.SaveCheckpoint obj)
     {
         if (!(obj.CurrentTime <= _timeNext))
         {
-            Log.Error("Checkpoint time is not in the range of last and next time");
+            Log.Error("Checkpoint time is not in the range of last and next time for {Name}: {CheckpointTime} not in [{TimeLast}, {TimeNext}]", 
+                Self.Path.Name, obj.CurrentTime, _timeLast, _timeNext);
             throw new SynchronisationException("Checkpoint time is not in the range of last and next time");
         }
 

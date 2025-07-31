@@ -35,11 +35,8 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private ICoupledModel _coupledModel;
 
-    private IActorRef _parent => ParentName == ActorHelper.RootCoordinatorName ?  ServiceProvider
-        .GetRequiredService<ActorRegistry>()
-        .Get<RootCoordinator>() : ServiceProvider
-        .GetRequiredService<ActorRegistry>()
-        .Get<Coordinator>();
+    private IActorRef _parent => ParentName == ActorHelper.RootCoordinatorName ?  ActorRegistry.For(Context.System)
+        .Get<RootCoordinator>() : ActorRegistry.For(Context.System).Get<Coordinator>();
 
     private TimeUnit _timeLast;
 
@@ -91,7 +88,7 @@ public class Coordinator : ReceiveActor, ILogReceive
                     // props = Props.Create(() => 
                     //     new Simulator(ServiceProvider)); //TODO Self, atomicModel,
                     
-                    actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Simulator>();
+                    actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
                     await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, Name){
                         ShardId = Name,  // Simulator should be in the same shard as the coordinator
                         Name = child.Item1
@@ -99,7 +96,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
                     break;
                 case ICoupledModel coupledModel:
-                    actor = await ServiceProvider.GetRequiredService<ActorRegistry>().GetAsync<Coordinator>();
+                    actor = await ActorRegistry.For(Context.System).GetAsync<Coordinator>();
                     await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, Name)
                     {
                         Name = child.Item1
@@ -146,7 +143,25 @@ public class Coordinator : ReceiveActor, ILogReceive
         Receive<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
         Receive<ExecuteTransition.FinishedExecuteTransition>(HandleFinishedExecuteTransition);
 
-        Receive<Simulation.HasStopCondition>((_ => Sender.Tell(_coupledModel.HasStopCondition)));
+        ReceiveAsync<Simulation.HasStopCondition>((async _ =>
+        {
+            foreach (var child in _children)
+            {
+                var actor = child.Value;
+                var resp = await actor.Ask<bool>(new Simulation.HasStopCondition()
+                {
+                    ShardId = ActorHelper.GetShardId(Name, child.Key),
+                    EntityName = child.Key
+                });
+                if (resp)
+                {
+                    Sender.Tell(true);
+                    break; // if one child has a stop condition, we can stop checking
+                }
+            }
+            Sender.Tell(false); // if no child has a stop condition, we return false
+            
+        }));
         ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpoint);
         Receive<Simulation.FinishedSaveCheckpoint>(HandleFinishedSaveCheckpoint);
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpoint);
@@ -162,7 +177,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         ChildrenLoadCheckpointCount = 0;
         foreach (var child in _children)
         {
-            child.Value.Tell(obj);
+            child.Value.Tell(obj with { EntityName = child.Key, ShardId = ActorHelper.GetShardId(Name, child.Key) });
         }
     }
     
@@ -222,7 +237,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         ChildrenSaveCheckpointCount = 0;
         foreach (var child in _children)
         {
-            child.Value.Tell(obj);
+            child.Value.Tell(obj with {EntityName = child.Key, ShardId = ActorHelper.GetShardId(Name, child.Key)});
         }
     }
 
