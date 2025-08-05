@@ -9,11 +9,6 @@ public class TracingActor : ReceiveActor {
     private IActorRef StreamRef { get; init; }
 
     public TracingActor() {
-        // StreamRef = Source
-        //     .ActorRef<Messages.Tracing.StreamElement>(1000, OverflowStrategy.DropHead)
-        //     .Via(TracingFlow.GroupByStepFlow())
-        //     .To(Sink.ForEach<List<Messages.Tracing.MessageWithId>>(group => { ... }))
-        //     .Run(Context.Materializer());
 
         StreamRef = 
             Source

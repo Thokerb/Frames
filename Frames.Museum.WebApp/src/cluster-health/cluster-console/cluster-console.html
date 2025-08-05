@@ -1,0 +1,73 @@
+<div class="cluster-console">
+  <div class="console-header">
+    <h3 class="text-lg font-semibold">Cluster Events Console</h3>
+    <div class="console-controls">
+      <span class="text-sm text-gray-500">{{ events().length }} events</span>
+      <button 
+        (click)="clearEvents()"
+        class="px-2 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+      >
+        Clear
+      </button>
+    </div>
+  </div>
+  
+  <div class="console-content">
+    @if (events().length > 0) {
+      <div class="events-list">
+        @for (event of events(); track event.timestamp.getTime()) {
+          <div class="event-item">
+            <div class="event-header">
+              <span class="event-icon">{{ getEventIcon(event.type) }}</span>
+              <span class="event-type" [class]="getEventColor(event.type)">
+                {{ event.type }}
+              </span>
+              <span class="event-time text-xs text-gray-500">
+                {{ event.timestamp | date:'HH:mm:ss' }}
+              </span>
+            </div>
+            
+            @if (event.member) {
+              <div class="event-details">
+                @if (event.member.address) {
+                  <div class="detail-row">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">{{ event.member.address }}</span>
+                  </div>
+                }
+                @if (event.member.uniqueAddress) {
+                  <div class="detail-row">
+                    <span class="detail-label">Unique Address:</span>
+                    <span class="detail-value">{{ event.member.uniqueAddress }}</span>
+                  </div>
+                }
+                @if (event.member.status) {
+                  <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">{{ event.member.status }}</span>
+                  </div>
+                }
+                @if (event.member.roles && event.member.roles.length > 0) {
+                  <div class="detail-row">
+                    <span class="detail-label">Roles:</span>
+                    <span class="detail-value">{{ event.member.roles.join(', ') }}</span>
+                  </div>
+                }
+                @if (event.member.toStringValue) {
+                  <div class="detail-row">
+                    <span class="detail-label">Details:</span>
+                    <span class="detail-value text-xs">{{ event.member.toStringValue }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="no-events">
+        <p class="text-gray-500 text-center py-8">No cluster events received yet.</p>
+      </div>
+    }
+  </div>
+</div> 

@@ -1,7 +1,9 @@
 using Akka.HealthCheck.Hosting;
 using Akka.HealthCheck.Hosting.Web;
+using Akka.Hosting;
 using Frames.Engine.DependencyInjection;
 using Frames.Museum;
+using Frames.Museum.ClusterOverview;
 using Frames.Museum.HelloWorld;
 using Frames.Museum.Tracing;
 using Microsoft.OpenApi.Models;

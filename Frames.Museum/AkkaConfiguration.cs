@@ -13,6 +13,8 @@ using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Museum.Actors;
+using Frames.Museum.ClusterOverview;
+using Microsoft.AspNetCore.SignalR;
 using LogLevel = Akka.Event.LogLevel;
 
 
@@ -160,21 +162,35 @@ public static class AkkaConfiguration
                             return Props.Create(() => new TracingActor());
                         }
                         )
+                    .WithActors((system, registry, resolver) =>
+                    {
+                        // var hub = serviceProvider.GetRequiredService<IHubContext<MetricsHub>>();
+                        // var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new MetricsListenerActor(hub))));
+                        // registry.Register<MetricsListenerActor>(parentTracingActor);
+                        var metricListener =
+                            system.ActorOf(
+                                Props.Create(() =>
+                                    new MetricsListenerActor(
+                                        serviceProvider.GetRequiredService<IHubContext<MetricsHub>>())),
+                                "metrics-listener");
+                        registry.Register<MetricsListenerActor>(metricListener);
+                        var gossipListener =
+                            system.ActorOf(
+                                Props.Create(() =>
+                                    new ClusterGossipListenerActor(
+                                        serviceProvider.GetRequiredService<IHubContext<ClusterHub>>())),
+                                "gossip-listener");
+                        registry.Register<ClusterGossipListenerActor>(gossipListener);
+            
+                    })
                     .WithShardRegion<RootCoordinator>(
                     typeName: "framesRegion1",
                     entityPropsFactory: (system, registry, resolver) =>
                     {
-                        // var metricListener =
-                        //     system.ActorOf(
-                        //         Props.Create(() =>
-                        //             new MetricsListenerActor(
-                        //                 serviceProvider.GetRequiredService<IHubContext<MetricsHub>>())),
-                        //         "metrics-listener");
-                        // registry.Register<MetricsListenerActor>(metricListener);
+
                         
                         return s =>
                         {
-                            Console.WriteLine("framesRegion1"+s);
                             return Props.Create(() => new RootCoordinator(serviceProvider));
                         };
                     },
@@ -187,8 +203,6 @@ public static class AkkaConfiguration
                     {
                         return s =>
                         {
-                            Console.WriteLine("framesRegion2"+s);
-                            var tracingActor = registry.Get<TracingActor>();
                             return Props.Create(() => new Simulator(serviceProvider));
                         };
                     },
@@ -201,7 +215,6 @@ public static class AkkaConfiguration
                     {
                         return s =>
                         {
-                            Console.WriteLine("framesRegion3"+s);
                             return Props.Create(() => new Coordinator(serviceProvider));
                         };
                     },
@@ -212,7 +225,6 @@ public static class AkkaConfiguration
         }
 
 
-        // TODO: this is not properly configured, because we are always using shard regions
         return builder.WithActors((system, registry, resolver) =>
         {
             var parent =
@@ -225,7 +237,7 @@ public static class AkkaConfiguration
             var parentSimulator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new Simulator(serviceProvider))));
             registry.Register<Simulator>(parentSimulator);            
             var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new TracingActor())));
-            registry.Register<TracingActor>(parentSimulator);
+            registry.Register<TracingActor>(parentTracingActor);
             
             
         });

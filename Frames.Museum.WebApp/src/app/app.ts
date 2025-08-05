@@ -35,18 +35,9 @@ export class App {
 
   items: MenuItem[] = [
     {
-      label: 'Router',
+      label: 'Cluster Monitoring',
       icon: 'pi pi-palette',
-      items: [
-        {
-          label: 'Installation',
-          routerLink: '/installation'
-        },
-        {
-          label: 'Configuration',
-          routerLink: '/configuration'
-        }
-      ]
+      routerLink: 'cluster-health'
     },
     {
       label: 'External',

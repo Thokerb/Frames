@@ -13,6 +13,8 @@ public static class SignalRConfiguration
     public static void UseSignalRConfiguration(this WebApplication app)
     {
         app.MapHub<MetricsHub>("/metrics");
+        app.MapHub<ClusterHub>("/clusterHub");
+
     }
     
 }

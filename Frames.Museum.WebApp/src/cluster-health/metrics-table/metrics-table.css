@@ -1,0 +1,108 @@
+.endpoint-management {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.endpoint-management input {
+  min-width: 300px;
+}
+
+.metrics-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.metric-row {
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: white;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.metric-info {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+}
+
+.status-section {
+  min-width: 120px;
+}
+
+.address-section {
+  min-width: 200px;
+}
+
+.metrics-section {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.metric-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 120px;
+}
+
+.metric-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.metric-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.console-section {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.opacity-50 {
+  opacity: 0.5;
+}
+
+.text-gray-400 {
+  color: #9ca3af;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .metric-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .metric-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .metrics-section {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .metric-actions {
+    align-self: stretch;
+    justify-content: flex-end;
+  }
+}
