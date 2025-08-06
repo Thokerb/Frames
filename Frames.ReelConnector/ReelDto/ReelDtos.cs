@@ -1,12 +1,10 @@
-﻿namespace Frames.Museum.ReelDto;
-
-using System.Collections.Generic;
+﻿namespace Frames.ReelConnector.ReelDto;
 
 public record StatePropertyJson
 {
     public required string Name { get; init; }
-    public required string Type { get; init; }
-    public required StatePropertyValueType Value { get; init; } // string | number | boolean | undefined
+    public required StatePropertyValueType Type { get; init; }
+    public required object Value { get; init; } // string | number | boolean | undefined
 }
 
 public record StateJson
@@ -21,9 +19,8 @@ public record ExpressionJson
 {
     public required string Expression { get; init; }
     public bool? IsAssignment { get; init; } // Indicates if this expression is an assignment
-
-    public ExpressionValueType?
-        ReturnType { get; init; } // The type of the expression, e.g., 'int', 'bool', 'string', etc.
+    public required List<string> Variables { get; init; }
+    public ExpressionValueType? ReturnType { get; init; } // The type of the expression, e.g., 'int', 'bool', 'string', etc.
 }
 
 public record OutputJson
@@ -85,7 +82,7 @@ public record PortJson
 {
     public required string Name { get; init; }
     public required PortType Type { get; init; }
-    public required string ValueType { get; init; } // 'bool' | 'int' | 'string' | Array<PortObjectMap>
+    public required object ValueType { get; init; } // 'bool' | 'int' | 'string' | Array<PortObjectMap>
 }
 
 public record PortObjectMap

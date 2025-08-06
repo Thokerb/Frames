@@ -1,4 +1,6 @@
-﻿namespace Frames.Model.Exceptions;
+﻿using Frames.Model.ValueTypes;
+
+namespace Frames.Model.Exceptions;
 
 public class UnknownInputException : Exception
 {

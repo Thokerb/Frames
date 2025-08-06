@@ -1,5 +1,6 @@
 ﻿using Frames.Engine.Messages;
 using Frames.Model;
+using Frames.Model.ValueTypes;
 using Frames.Tests.BlinkingLight;
 
 namespace Frames.Tests.Counter;

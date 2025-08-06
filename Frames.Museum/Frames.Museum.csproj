@@ -39,4 +39,8 @@
       <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="ReelDto\" />
+    </ItemGroup>
+
 </Project>

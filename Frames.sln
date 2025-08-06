@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.Execution", "Frames.Execution\Frames.Execution.csproj", "{6D23E4D3-6F74-462C-8033-157ED7617116}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.ReelConnector", "Frames.ReelConnector\Frames.ReelConnector.csproj", "{6D23E4D3-6F74-462C-8033-157ED7617116}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.Engine", "Frames.Engine\Frames.Engine.csproj", "{DF524BE8-6BF9-4DD8-A2EC-5E76842E3803}"
 EndProject

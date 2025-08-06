@@ -54,7 +54,16 @@
 	
 	
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=dbbf4056_002D7cd9_002D4bd8_002Db2fa_002Dfcec71bf165e/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CreateCArena" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Project Location="D:\Dev\Frames\Frames.Tests" Presentation="&amp;lt;Frames.Tests&amp;gt;" /&gt;&#xD;
+  &lt;Or&gt;&#xD;
+    &lt;Project Location="D:\Dev\Frames\Frames.Tests" Presentation="&amp;lt;Frames.Tests&amp;gt;" /&gt;&#xD;
+    &lt;TestAncestor&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ParseReel.ParseReelFile&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.CreateReelAtomicModel&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.ReelAtomicModelInternalTransitionTest&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.ReelAtomicModelExternalTransitionTest&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest&lt;/TestId&gt;&#xD;
+    &lt;/TestAncestor&gt;&#xD;
+  &lt;/Or&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	
 	
