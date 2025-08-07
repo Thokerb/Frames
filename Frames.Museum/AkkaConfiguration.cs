@@ -180,7 +180,15 @@ public static class AkkaConfiguration
                                     new ClusterGossipListenerActor(
                                         serviceProvider.GetRequiredService<IHubContext<ClusterHub>>())),
                                 "gossip-listener");
-                        registry.Register<ClusterGossipListenerActor>(gossipListener);
+                        registry.Register<ClusterGossipListenerActor>(gossipListener);                        
+                        
+                        var tracingListener =
+                            system.ActorOf(
+                                Props.Create(() =>
+                                    new TracingStreamHubActor(
+                                        serviceProvider.GetRequiredService<IHubContext<TracingHub>>())),
+                                "tracing-listener");
+                        registry.Register<TracingStreamHubActor>(tracingListener);
             
                     })
                     .WithShardRegion<RootCoordinator>(

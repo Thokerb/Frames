@@ -50,7 +50,14 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
     public override ReelState State { get; set; }
     public override TimeUnit TimeAdvance(ReelState state)
     {
-        var currentState = JsonModel.States.First(x => x.StateTypeRef == state.CurrentState);
+        
+        
+        var currentState = JsonModel.States.FirstOrDefault(x => x.StateTypeRef == state.CurrentState);
+        
+        if (currentState == null)
+        {
+            throw new InvalidOperationException($"State '{state.CurrentState}' not found in model '{JsonModel.Name}'. Available states: {string.Join(", ", JsonModel.States.Select(s => s.StateTypeRef))}");
+        }
 
         if (currentState.TimeAdvanceExpression.Expression == "Infinity")
         {

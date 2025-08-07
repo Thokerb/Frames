@@ -417,7 +417,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Information("Round time: {TimeNow}", this._currentTime);
         Log.Information("Next time: {TimeNext}", obj.TimeNext.IsInfinity ? "Infinity" : obj.TimeNext.ToString());
         
-        ActorRegistry.For(Context.System).Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>())));
+        ActorRegistry.For(Context.System).Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>()), _currentTime, obj.TimeNext));
         // string logState = PrintState(obj.ToStringState);
         // if (obj.ToStringState != null)
         // {

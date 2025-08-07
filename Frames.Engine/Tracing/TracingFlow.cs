@@ -35,6 +35,8 @@ public static class TracingFlow
                             foreach (var id in boundary.StepIds)
                                 pendingMessages.Remove(id);
 
+                            group.Add(new Messages.Tracing.MessageWithId(boundary.ToString(),Guid.Empty));
+                            
                             return [group];
                         }
                         default:

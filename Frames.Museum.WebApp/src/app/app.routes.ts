@@ -6,4 +6,8 @@ export const routes: Routes = [
     loadComponent: () =>
       import('../cluster-health/cluster-health/cluster-health').then(m => m.ClusterHealth)
   },
+  {
+    path: 'execution',
+    loadComponent: () => import('../execution/execution/execution').then(m => m.Execution)
+  },
 ];

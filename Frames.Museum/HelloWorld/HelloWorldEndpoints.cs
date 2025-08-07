@@ -6,5 +6,6 @@ public static class HelloWorldEndpoints
     {
         app.MapGet("/hello-world", HelloWorldLogic.GreetBack);
         app.MapGet("/cArena-test", HelloWorldLogic.CArenaTest);
+        app.MapGet("/reel-test", HelloWorldLogic.ReelTest);
     }
 }

@@ -106,8 +106,6 @@ public class ReelAtomicModelTest
         Assert.Equal("kabumm",result.CurrentState);
     }
     
-    
-    
     [Theory]
     [InlineData("BlinkingLightAtomicModelBR" ,"FinishedByItself")]
     public void ReelAtomicModelOutputTest(string atomicModelName, string state)

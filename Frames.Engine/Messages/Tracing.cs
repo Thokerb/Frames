@@ -1,4 +1,6 @@
-﻿namespace Frames.Engine.Messages;
+﻿using Frames.Model.ValueTypes;
+
+namespace Frames.Engine.Messages;
 
 public static class Tracing
 {
@@ -8,11 +10,22 @@ public static class Tracing
     {
         public string ShardId { get; } = "Tracing";
         public string EntityName { get; } = "Tracing";
+        
+        public override string ToString()
+        {
+            return $"Message: {Message}, Id: {Id}";
+        }
     }
 
-    public sealed record StepBoundary(List<Guid> StepIds) : StreamElement, IShardSeperation
+    public sealed record StepBoundary(List<Guid> StepIds, TimeUnit LasTimeUnit, TimeUnit NexTimeUnit) : StreamElement, IShardSeperation
     {
         public string ShardId { get; } = "Tracing";
         public string EntityName { get; } = "Tracing";
+
+        public override string ToString()
+        {
+            return $"Step completed, Current TimeStep: {LasTimeUnit}, Next TimeStep: {NexTimeUnit}, Number of messages: {StepIds.Count}";
+        }
     }
+    
 }

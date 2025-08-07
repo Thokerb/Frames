@@ -37,10 +37,17 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
+      <ProjectReference Include="..\Frames.ReelConnector\Frames.ReelConnector.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="ReelDto\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="HelloWorld\ReelTestData\arena2.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
-﻿using Frames.Museum.ClusterOverview;
+﻿using Frames.Museum.Actors;
+using Frames.Museum.ClusterOverview;
 
 namespace Frames.Museum;
 
@@ -14,6 +15,7 @@ public static class SignalRConfiguration
     {
         app.MapHub<MetricsHub>("/metrics");
         app.MapHub<ClusterHub>("/clusterHub");
+        app.MapHub<TracingHub>("/tracingHub");
 
     }
     

@@ -37,6 +37,7 @@ export class MetricsSignalRService {
   private connections: Map<string, HubConnection> = new Map();
   private clusterConnections: Map<string, HubConnection> = new Map();
   private timeoutTimers: Map<string, number> = new Map();
+  private retryTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
   private readonly _metrics = signal<Array<Metric & WithMonitoringUrl>>([]);
   private readonly _endpointStatuses = signal<EndpointStatus[]>([]);
   
@@ -97,8 +98,9 @@ export class MetricsSignalRService {
   }
 
   private createMetricsConnection(monitoringUrl: string) {
+    const url = monitoringUrl.replace(/\/?$/, '') + '/metrics';
     const connection = new HubConnectionBuilder()
-      .withUrl(monitoringUrl)
+      .withUrl(url)
       .configureLogging(LogLevel.Information)
       .withAutomaticReconnect()
       .build();
@@ -142,7 +144,8 @@ export class MetricsSignalRService {
       console.warn(`Metrics connection to ${monitoringUrl} closed. Reconnecting in 5 seconds...`);
       this.updateEndpointStatus(monitoringUrl, false);
       this.clearTimeout(monitoringUrl);
-      setTimeout(startConnection, 5000);
+      const retry = setTimeout(startConnection, 5000);
+      this.retryTimeouts.add(retry);
     });
 
     startConnection();
@@ -171,14 +174,16 @@ export class MetricsSignalRService {
         })
         .catch(err => {
           console.error(`Connection to cluster hub at ${clusterHubUrl} failed. Retrying in 5 seconds...`, err);
-          setTimeout(startConnection, 5000);
+          const retry = setTimeout(startConnection, 5000);
+          this.retryTimeouts.add(retry);
         });
     };
 
     // Handle connection closed (trigger retry)
     connection.onclose(() => {
       console.warn(`Cluster connection to ${clusterHubUrl} closed. Reconnecting in 5 seconds...`);
-      setTimeout(startConnection, 5000);
+      const retry = setTimeout(startConnection, 5000);
+      this.retryTimeouts.add(retry);
     });
 
     startConnection();
@@ -247,5 +252,26 @@ export class MetricsSignalRService {
       statuses.filter(s => s.url !== url)
     );
     this.clearTimeout(url);
+  }
+
+  public disconnectAll(): void {
+    for (const connection of this.connections.values()) {
+      connection.stop();
+    }
+    this.connections.clear();
+    for (const connection of this.clusterConnections.values()) {
+      connection.stop();
+    }
+    this.clusterConnections.clear();
+    this._metrics.set([]);
+    this._endpointStatuses.set([]);
+    for (const timer of this.timeoutTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.timeoutTimers.clear();
+    for (const retry of this.retryTimeouts) {
+      clearTimeout(retry);
+    }
+    this.retryTimeouts.clear();
   }
 }

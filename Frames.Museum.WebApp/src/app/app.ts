@@ -40,6 +40,11 @@ export class App {
       routerLink: 'cluster-health'
     },
     {
+      label: 'Execution',
+      icon: 'pi pi-terminal',
+      routerLink: 'execution'
+    },
+    {
       label: 'External',
       icon: 'pi pi-home',
       items: [
