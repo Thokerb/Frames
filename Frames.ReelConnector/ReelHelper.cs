@@ -7,8 +7,13 @@ namespace Frames.ReelConnector;
 
 public static class ReelHelper
 {
-    public static StateJson OverwriteInitialStateValues(StateJson state, List<StatePropertyJson> overrides)
+    public static StateJson OverwriteInitialStateValues(StateJson state, List<StatePropertyJson>? overrides)
     {
+        if (overrides == null || overrides.Count == 0)
+        {
+            return state;
+        }
+        
         var newState = state with { Properties = state.Properties.Select(OverrideIfExists(overrides)).ToList() };
         return newState;
     }

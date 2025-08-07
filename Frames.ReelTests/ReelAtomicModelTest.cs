@@ -13,18 +13,7 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightModel2", new [] {"on"})]
     public void ReelAtomicModelTimeAdvanceTest(string atomicModelName, string[] states)
     {
-        var file = "arena2.json";
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Data", file);
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"The reel file '{file}' does not exist at path: {filePath}");
-        }
-        var reelContent = File.ReadAllText(filePath);
-        // Deparse with Newtonsoft.Json
-        
-        // Act
-        // We use Newtonsoft.Json here because akka.net uses Newtonsoft.Json for serialization
-        ReelJson? reelJson = Newtonsoft.Json.JsonConvert.DeserializeObject<ReelJson>(reelContent);
+        var reelJson = GetReelJson();
 
         var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
         var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
@@ -54,18 +43,7 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightAtomicModelBR","On")]
     public void ReelAtomicModelInternalTransitionTest(string atomicModelName, string state)
     {
-        var file = "arena2.json";
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Data", file);
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"The reel file '{file}' does not exist at path: {filePath}");
-        }
-        var reelContent = File.ReadAllText(filePath);
-        // Deparse with Newtonsoft.Json
-        
-        // Act
-        // We use Newtonsoft.Json here because akka.net uses Newtonsoft.Json for serialization
-        ReelJson? reelJson = Newtonsoft.Json.JsonConvert.DeserializeObject<ReelJson>(reelContent);
+        var reelJson = GetReelJson();
 
         var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
         var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
@@ -100,19 +78,7 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightModel2","on")]
     public void ReelAtomicModelExternalTransitionTest(string atomicModelName, string state)
     {
-        var file = "arena2.json";
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Data", file);
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"The reel file '{file}' does not exist at path: {filePath}");
-        }
-        var reelContent = File.ReadAllText(filePath);
-        reelContent = reelContent.Replace(".", "SEP");
-        // Deparse with Newtonsoft.Json
-        
-        // Act
-        // We use Newtonsoft.Json here because akka.net uses Newtonsoft.Json for serialization
-        ReelJson? reelJson = Newtonsoft.Json.JsonConvert.DeserializeObject<ReelJson>(reelContent);
+        var reelJson = GetReelJson();
 
         var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
         var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
@@ -146,19 +112,7 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightAtomicModelBR" ,"FinishedByItself")]
     public void ReelAtomicModelOutputTest(string atomicModelName, string state)
     {
-        var file = "arena2.json";
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Data", file);
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"The reel file '{file}' does not exist at path: {filePath}");
-        }
-        var reelContent = File.ReadAllText(filePath);
-        reelContent = reelContent.Replace(".", "SEP");
-        // Deparse with Newtonsoft.Json
-        
-        // Act
-        // We use Newtonsoft.Json here because akka.net uses Newtonsoft.Json for serialization
-        ReelJson? reelJson = Newtonsoft.Json.JsonConvert.DeserializeObject<ReelJson>(reelContent);
+        var reelJson = GetReelJson();
 
         var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
         var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
@@ -185,10 +139,26 @@ public class ReelAtomicModelTest
         Assert.Equal(cycles, result.Inputs["PortOutFinished"]);
         
     }
-    
-    
-    
-    
+
+    private static ReelJson? GetReelJson()
+    {
+        var file = "arena2.json";
+        var filePath = Path.Combine(AppContext.BaseDirectory, "Data", file);
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"The reel file '{file}' does not exist at path: {filePath}");
+        }
+        var reelContent = File.ReadAllText(filePath);
+        reelContent = reelContent.Replace(".", "SEP");
+        // Deparse with Newtonsoft.Json
+        
+        // Act
+        // We use Newtonsoft.Json here because akka.net uses Newtonsoft.Json for serialization
+        ReelJson? reelJson = Newtonsoft.Json.JsonConvert.DeserializeObject<ReelJson>(reelContent);
+        return reelJson;
+    }
+
+
     /// <summary>
     /// Helper method to convert state names to time advance values based on the atomic model name for unit tests.
     /// </summary>

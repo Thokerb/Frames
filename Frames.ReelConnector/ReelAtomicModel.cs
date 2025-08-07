@@ -35,6 +35,16 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
         };
     }
 
+    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson state, List<StatePropertyJson>? modelRefModelOverrides, string? modelRefInitialState)
+    {
+        JsonModel = jsonModel;
+        State = new ReelState()
+        {
+            StateJson = ReelHelper.OverwriteInitialStateValues(ReelHelper.OverwriteInitialStateValues(state, jsonModel.StateDefinitions), modelRefModelOverrides),
+            CurrentState = modelRefInitialState ?? jsonModel.InitialState ?? state.InitialState // TODO: document order of precedence
+        };    
+    }
+
     private AtomicModelJson JsonModel {get; init; }
     
     public override ReelState State { get; set; }

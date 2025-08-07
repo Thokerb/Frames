@@ -26,6 +26,12 @@ public class CoupledModel : ICoupledModel
         Children.Add(prefix+id, model);
         return model;
     }    
+    public T AddModel<T>(T model) where T : IModel
+    {
+        string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
+        Children.Add(prefix+model.Name, model);
+        return model;
+    }
 
     public T AddModel<T,TState>(string id, TState state) 
         where T : IAtomicModel<TState>
@@ -52,16 +58,36 @@ public class CoupledModel : ICoupledModel
         return Children.Select(x => (x.Key, x.Value)).ToList();
     }
 
+    private List<Port> InPorts { get; } = new();
+    private List<Port> OutPorts { get; } = new();
+    
     public void AddInPort(Port port)
     {
-        throw new NotImplementedException();
+        if (InPorts.Any(x => x.Equals(port)))
+        {
+            throw new ArgumentException($"Port {port} already exists in model {Name}.");
+        }
+        InPorts.Add(port);
     }
 
     public void AddOutPort(Port port)
     {
-        throw new NotImplementedException();
+        if (OutPorts.Any(x => x.Equals(port)))
+        {
+            throw new ArgumentException($"Port {port} already exists in model {Name}.");
+        }
+        OutPorts.Add(port);
     }
     
+    /// <summary>
+    /// It is required that the models are already added to the CoupledModel.
+    /// Therefore call AddModel before calling this method.
+    /// </summary>
+    /// <param name="sourceId"></param>
+    /// <param name="sourcePort"></param>
+    /// <param name="targetId"></param>
+    /// <param name="targetPort"></param>
+    /// <exception cref="ArgumentException"></exception>
     public void AddCoupling(string sourceId, Port sourcePort, string targetId, Port targetPort)
     {
         if (Name != sourceId)
