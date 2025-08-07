@@ -1,0 +1,24 @@
+<div class="mb-6">
+  <h2 class="text-2xl font-semibold mb-4">Execution Log Console</h2>
+  <div class="flex items-center gap-4 mb-6">
+    <p-select
+      [options]="endpoints()"
+      [ngModel]="selectedEndpoint()"
+      (onChange)="onEndpointChange($event.value)"
+      placeholder="Select endpoint"
+      class="w-80"
+      inputId="endpoint-select"
+    ></p-select>
+    <button pButton type="button" class="ml-auto" label="Clear Logs" icon="pi pi-trash" (click)="clearLogs()"></button>
+  </div>
+</div>
+<div class="console">
+  <div *ngIf="!selectedEndpoint()" class="console-placeholder">
+    Select an endpoint to view logs.
+  </div>
+  <div *ngIf="selectedEndpoint()">
+    <div *ngFor="let log of logs()" class="console-line">
+      {{ log }}
+    </div>
+  </div>
+</div>

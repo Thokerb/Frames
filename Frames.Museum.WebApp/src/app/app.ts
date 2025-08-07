@@ -45,6 +45,11 @@ export class App {
       routerLink: 'execution'
     },
     {
+      label: 'Model Creation',
+      icon: 'pi pi-plus',
+      routerLink: 'creation'
+    },
+    {
       label: 'External',
       icon: 'pi pi-home',
       items: [

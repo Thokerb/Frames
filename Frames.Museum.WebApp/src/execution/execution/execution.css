@@ -1,0 +1,15 @@
+.console {
+  background: #181818;
+  color: #e0e0e0;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  padding: 1rem;
+  border-radius: 6px;
+  min-height: 300px;
+  max-height: 60vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.console-line {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}

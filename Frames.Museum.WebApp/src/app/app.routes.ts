@@ -10,4 +10,8 @@ export const routes: Routes = [
     path: 'execution',
     loadComponent: () => import('../execution/execution/execution').then(m => m.Execution)
   },
+  {
+    path: 'creation',
+    loadComponent: () => import('../model-creation-page/model-creation-page').then(m => m.ModelCreationPage)
+  },
 ];

@@ -1,0 +1,9 @@
+.editor-wrap{
+  height: 60vh;
+
+}
+
+.monaco-editor-root{
+  height: 100%;
+  width: 100%;
+}
