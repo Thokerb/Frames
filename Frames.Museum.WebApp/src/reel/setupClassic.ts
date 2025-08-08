@@ -15,7 +15,7 @@ export const setupConfigClassic = (): UserConfig => {
                 languageDef: monarchSyntax,
                 editorOptions: {
                     'semanticHighlighting.enabled': true,
-                    theme: 'vs-dark'
+                    theme: 'vs-dark',
                 }
             }
         },
@@ -23,8 +23,9 @@ export const setupConfigClassic = (): UserConfig => {
     };
 };
 
-export const executeClassic = async (htmlElement: HTMLElement) => {
+export const executeClassic: (htmlElement: HTMLElement) => Promise<MonacoEditorLanguageClientWrapper> = async (htmlElement: HTMLElement) => {
     const userConfig = setupConfigClassic();
     const wrapper = new MonacoEditorLanguageClientWrapper();
     await wrapper.initAndStart(userConfig, htmlElement);
+    return wrapper;
 };
