@@ -2,7 +2,18 @@
 <div class="editor-wrap">
   <div id="monaco-editor-root" class="monaco-editor-root"></div>
 
-  <p-button (onClick)="onClicK()">GENERATE</p-button>
+  <div class="button-group">
+    <p-button (onClick)="onClicK()" label="GENERATE" icon="pi pi-cog"></p-button>
+    <p-button (onClick)="sendRequest()" label="SEND REQUEST" icon="pi pi-send"></p-button>
+  </div>
+</div>
 
-
+<div class="generated-code-section" *ngIf="generatedCode().length > 0">
+  <div class="code-header">
+    <h3 class="text-lg font-medium">Generated Code</h3>
+    <p-button (onClick)="copyToClipboard()" label="COPY" icon="pi pi-copy" size="small"></p-button>
+  </div>
+  <div class="code-block">
+    <pre><code>{{ formatJson(generatedCode()) }}</code></pre>
+  </div>
 </div>
