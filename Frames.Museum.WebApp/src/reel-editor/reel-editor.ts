@@ -1,6 +1,6 @@
 import {Component, OnInit, WritableSignal, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {executeClassic, executeClassicJson} from '../reel/setupClassic';
+import {executeClassic} from '../reel/setupClassic';
 import {MonacoEditorLanguageClientWrapper} from 'monaco-editor-wrapper';
 import {MonacoLanguageClient} from 'monaco-languageclient';
 import { Diagnostic } from 'vscode-languageserver/browser.js';
