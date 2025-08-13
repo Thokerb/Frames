@@ -2,12 +2,23 @@
 <div class="editor-wrap">
   <div id="monaco-editor-root" class="monaco-editor-root"></div>
 
-  <div class="button-group">
-    <p-button (onClick)="onClicK()" label="GENERATE" icon="pi pi-cog"></p-button>
+
+</div>
+<div class="button-group">
+  <p-button (onClick)="onClicK()" label="GENERATE" icon="pi pi-cog"></p-button>
+  <p-button (onClick)="setSampleCode()" label="Load Sample" icon="pi pi-file"></p-button>
+  <div class="send-request-group">
+    <p-select
+      [options]="coupledModels()"
+      [(ngModel)]="selectedModel"
+      placeholder="Select a model"
+      optionLabel="label"
+      optionValue="value"
+      class="model-select">
+    </p-select>
     <p-button (onClick)="sendRequest()" label="SEND REQUEST" icon="pi pi-send"></p-button>
   </div>
 </div>
-
 <div class="generated-code-section" *ngIf="generatedCode().length > 0">
   <div class="code-header">
     <h3 class="text-lg font-medium">Generated Code</h3>

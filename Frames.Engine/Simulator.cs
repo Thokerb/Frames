@@ -43,7 +43,7 @@ public class Simulator : ReceiveActor, ILogReceive
         );
     }
 
-    public IActorRef _coordinator => CoordinatorName == ActorHelper.RootCoordinatorName ?  ActorRegistry.For(Context.System)
+    public IActorRef _coordinator => CoordinatorName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
         .Get<RootCoordinator>() : ActorRegistry.For(Context.System)
         .Get<Coordinator>();
     private string Name { set; get; }
@@ -67,6 +67,7 @@ public class Simulator : ReceiveActor, ILogReceive
         {
             CoordinatorName = msg.CoordinatorName;
             Name = msg.Name;
+            RunId = msg.RunId;
             _atomicModel = msg.AtomicModel;
             // _coordinator = msg.Coordinator;
             Log.Information("[{Name} - SETUP] Simulator setup with model: {Model}", Self.Path.Name, _atomicModel.GetType().Name);
@@ -75,6 +76,8 @@ public class Simulator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpointAsync);
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
     }
+
+    public Guid RunId { get; set; }
 
     public IActorRef TracingStreamActor => ActorRegistry.For(Context.System).Get<TracingActor>();  //ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
 
@@ -103,7 +106,8 @@ public class Simulator : ReceiveActor, ILogReceive
         _coordinator.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
         {
             ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
-            EntityName = CoordinatorName
+            EntityName = CoordinatorName,
+            RunId = RunId
         });
     }
 
@@ -128,7 +132,8 @@ public class Simulator : ReceiveActor, ILogReceive
         _coordinator.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
         {
             ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
-            EntityName = CoordinatorName
+            EntityName = CoordinatorName,
+            RunId = RunId
         });
     }
 
@@ -251,7 +256,8 @@ public class Simulator : ReceiveActor, ILogReceive
                     msgId)
             ]),
             ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
-            EntityName = CoordinatorName
+            EntityName = CoordinatorName,
+            RunId = RunId
         });
     }
 
@@ -281,7 +287,8 @@ public class Simulator : ReceiveActor, ILogReceive
             _coordinator.Tell(new ComputeOutput.ComputedOutput(_outputBag, obj.CurrentTime)
             {
                  ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
-                 EntityName = CoordinatorName
+                 EntityName = CoordinatorName,
+                 RunId = RunId
             });
         }
         else
@@ -311,7 +318,8 @@ public class Simulator : ReceiveActor, ILogReceive
         _coordinator.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext)
         {
             ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
-            EntityName = CoordinatorName
+            EntityName = CoordinatorName,
+            RunId = RunId
         });
     }
 

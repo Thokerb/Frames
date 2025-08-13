@@ -10,7 +10,8 @@ public static class Tracing
     {
         public string ShardId { get; } = "Tracing";
         public string EntityName { get; } = "Tracing";
-        
+        public Guid RunId { get; set; } = Guid.Empty;
+
         public override string ToString()
         {
             return $"Message: {Message}, Id: {Id}";
@@ -21,7 +22,7 @@ public static class Tracing
     {
         public string ShardId { get; } = "Tracing";
         public string EntityName { get; } = "Tracing";
-
+        public Guid RunId { get; set; } = Guid.Empty;
         public override string ToString()
         {
             return $"Step completed, Current TimeStep: {LasTimeUnit}, Next TimeStep: {NexTimeUnit}, Number of messages: {StepIds.Count}";

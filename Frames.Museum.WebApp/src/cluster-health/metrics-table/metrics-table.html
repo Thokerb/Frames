@@ -1,19 +1,19 @@
 <div class="endpoint-management mb-4">
   <div class="flex gap-2 mb-4">
-    <input 
-      type="text" 
-      [value]="newEndpointUrl()" 
+    <input
+      type="text"
+      [value]="newEndpointUrl()"
       (input)="newEndpointUrl.set($any($event.target).value)"
-      placeholder="Enter endpoint URL (e.g., http://localhost:8080/metrics)"
+      placeholder="Enter endpoint URL (e.g., http://localhost:8080)"
       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
-    <button 
+    <button
       (click)="addEndpoint()"
       class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       Add Endpoint
     </button>
-    <button 
+    <button
       (click)="resetToDefaults()"
       class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
     >
@@ -29,7 +29,7 @@
         <div class="metric-header" [class]="item.connected ? '' : 'opacity-50'">
           <div class="metric-info">
             <div class="status-section">
-              <span 
+              <span
                 [class]="item.connected ? 'text-green-600' : 'text-red-600'"
                 class="font-semibold"
               >
@@ -42,13 +42,13 @@
                 </span>
               }
             </div>
-            
+
             <div class="address-section">
               <strong>{{item.monitoringUrl}}</strong>
               <br>
               <span class="text-sm text-gray-600">{{ item.address.host }} | {{item.address.system}}</span>
             </div>
-            
+
             <div class="metrics-section">
               <div class="metric-item">
                 <span class="metric-label">Memory:</span>
@@ -84,15 +84,15 @@
               </div>
             </div>
           </div>
-          
+
           <div class="metric-actions">
-            <button 
+            <button
               (click)="toggleRowExpansion(item.monitoringUrl)"
               class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {{ isRowExpanded(item.monitoringUrl) ? 'Hide Console' : 'Show Console' }}
             </button>
-            <button 
+            <button
               (click)="removeEndpoint(item.monitoringUrl)"
               class="px-2 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
@@ -100,7 +100,7 @@
             </button>
           </div>
         </div>
-        
+
         @if (isRowExpanded(item.monitoringUrl)) {
           <div class="console-section">
             <app-cluster-console [endpointUrl]="item.monitoringUrl" />

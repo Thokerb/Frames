@@ -26,30 +26,20 @@ public static class HelloWorldLogic
     {
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
         
-        var uniqueId = Guid.NewGuid().ToString();
+        var uniqueId = Guid.NewGuid();
         
         ICoupledModel coupledModel = new CArena();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-carena-{uniqueId}")
-        {
-            ShardId = "root-coordinator"
-        });
+        await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(coupledModel,$"coordinator-carena",uniqueId));
       
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50))
-        {
-            ShardId = "root-coordinator"
-        });
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor)
-        {
-            ShardId = "root-coordinator"
-        });
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
+        
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        
         Thread.Sleep(2000);
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted
-        {
-            ShardId = "root-coordinator"
-        });
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId));
 
     }
 
@@ -60,29 +50,28 @@ public static class HelloWorldLogic
         string coupledModelRef = "CArena";
         ReelJson reelJson = ReadReelJsonFromFile("HelloWorld/ReelTestData/arena2.json");
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
-        var uniqueId = Guid.NewGuid().ToString();
+        var uniqueId = Guid.NewGuid();
 
         var coupledModel = new ReelCoupledModel(reelJson, coupledModelRef, null);
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-{coupledModelRef}-{uniqueId}")
+        await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(coupledModel,$"coordinator-{coupledModelRef}",uniqueId)
         {
-            ShardId = "root-coordinator"
+            ShardId = $"root-coordinator-{uniqueId}"
         });
       
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50))
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId)
         {
-            ShardId = "root-coordinator"
+            ShardId = $"root-coordinator-{uniqueId}"
         });
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor)
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId)
         {
-            ShardId = "root-coordinator"
+            ShardId = $"root-coordinator-{uniqueId}"
         });
         Thread.Sleep(2000);
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId)
         {
-            ShardId = "root-coordinator"
         });
     }
     

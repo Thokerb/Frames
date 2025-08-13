@@ -1,9 +1,9 @@
 ﻿export const environment = {
   production: false,
-  signalrUrl: 'http://localhost:8080/metrics',
+  signalrUrl: 'http://localhost:8080',
   monitoringUrls: [
-    'http://localhost:8080/metrics',
-    'http://localhost:8082/metrics',
-    'http://localhost:8084/metrics',
+    'http://localhost:8080',
+    'http://localhost:8082',
+    'http://localhost:8084',
   ]
 };

@@ -41,7 +41,7 @@ public static class AkkaConfiguration
         });
     }
 
-    public static AkkaConfigurationBuilder ConfigureActorSystem(this AkkaConfigurationBuilder builder,
+    private static AkkaConfigurationBuilder ConfigureActorSystem(this AkkaConfigurationBuilder builder,
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
@@ -68,14 +68,13 @@ public static class AkkaConfiguration
             })
             .ConfigureNetwork(serviceProvider)
             .ConfigurePersistence(serviceProvider)
-            .ConfigureRootCoordinator(serviceProvider);
+            .ConfigureActorRegistry(serviceProvider);
     }
 
-    public static AkkaConfigurationBuilder ConfigureNetwork(this AkkaConfigurationBuilder builder,
+    private static AkkaConfigurationBuilder ConfigureNetwork(this AkkaConfigurationBuilder builder,
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
-        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
         if (!settings.UseClustering)
         {
@@ -88,7 +87,7 @@ public static class AkkaConfiguration
         {
             // need to delete seed-nodes so Akka.Management will take precedence
             var clusterOptions = settings.ClusterOptions;
-            clusterOptions.SeedNodes = Array.Empty<string>();
+            clusterOptions.SeedNodes = [];
 
             builder
                 .WithClustering(clusterOptions)
@@ -146,23 +145,23 @@ public static class AkkaConfiguration
         }
     }
 
-    public static AkkaConfigurationBuilder ConfigureRootCoordinator(this AkkaConfigurationBuilder builder,
+    public static AkkaConfigurationBuilder ConfigureActorRegistry(this AkkaConfigurationBuilder builder,
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
-        var extractor = CreateHashCodeMessageExtractor();
+        var extractor = new FramesMessageExtractor();
 
         if (settings.UseClustering)
         {
             return builder
                     .WithSingleton<TracingActor>(
                         "tracingActor",
-                        propsFactory: (system, registry, resolver) =>
+                        propsFactory: (_, _, _) =>
                         {
                             return Props.Create(() => new TracingActor());
                         }
                         )
-                    .WithActors((system, registry, resolver) =>
+                    .WithActors((system, registry, _) =>
                     {
                         // var hub = serviceProvider.GetRequiredService<IHubContext<MetricsHub>>();
                         // var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new MetricsListenerActor(hub))));
@@ -193,11 +192,11 @@ public static class AkkaConfiguration
                     })
                     .WithShardRegion<RootCoordinator>(
                     typeName: "framesRegion1",
-                    entityPropsFactory: (system, registry, resolver) =>
+                    entityPropsFactory: (_, _, _) =>
                     {
 
                         
-                        return s =>
+                        return _ =>
                         {
                             return Props.Create(() => new RootCoordinator(serviceProvider));
                         };
@@ -207,9 +206,9 @@ public static class AkkaConfiguration
                 )
                 .WithShardRegion<Simulator>(
                     typeName: "framesRegion2",
-                    entityPropsFactory: (system, registry, resolver) =>
+                    entityPropsFactory: (_, _, _) =>
                     {
-                        return s =>
+                        return _ =>
                         {
                             return Props.Create(() => new Simulator(serviceProvider));
                         };
@@ -219,9 +218,9 @@ public static class AkkaConfiguration
                     )    
                 .WithShardRegion<Coordinator>(
                     typeName: "framesRegion3",
-                    entityPropsFactory: (system, registry, resolver) =>
+                    entityPropsFactory: (_, _, _) =>
                     {
-                        return s =>
+                        return _ =>
                         {
                             return Props.Create(() => new Coordinator(serviceProvider));
                         };
@@ -233,49 +232,34 @@ public static class AkkaConfiguration
         }
 
 
-        return builder.WithActors((system, registry, resolver) =>
+        return builder.WithActors((system, registry, _) =>
         {
             var parent =
                 system.ActorOf(
-                    GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new RootCoordinator(serviceProvider))),
+                    GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new RootCoordinator(serviceProvider))),
                     "root-coordinator");
             registry.Register<RootCoordinator>(parent);
-            var parentCoordinator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new Coordinator(serviceProvider))));
+            var parentCoordinator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new Coordinator(serviceProvider))));
             registry.Register<Coordinator>(parentCoordinator);
-            var parentSimulator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new Simulator(serviceProvider))));
+            var parentSimulator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new Simulator(serviceProvider))));
             registry.Register<Simulator>(parentSimulator);            
-            var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new TracingActor())));
+            var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new TracingActor())));
             registry.Register<TracingActor>(parentTracingActor);
             
             
         });
     }
-
-    /// <summary>
-    /// Here we have to decide which message to which shard region.
-    /// It makes sense to keep actors that communicate often with each other in the same shard region.
-    /// Overall most messages are bubbling up to the root coordinator
-    /// It makes sense that Simulators and Coordinators are in the same shard region.
-    /// When a coordinator has a child coordinator then this can be in a different shard region.
-    /// </summary>
-    /// <returns></returns>
-    public static IMessageExtractor CreateHashCodeMessageExtractor()
-    {
-        return new FramesMessageExtractor();
-        
-        return HashCodeMessageExtractor.Create(30, o =>
-        {
-            return o switch
-            {
-                IShardSeperation message => message.ShardId,
-                _ => throw new NotSupportedException("Message type not supported for hashing: " + o.GetType())
-            };
-        }, o => o);
-    }    
-    
-
 }
 
+
+/// <summary>
+/// Here we have to decide which message to which shard region.
+/// It makes sense to keep actors that communicate often with each other in the same shard region.
+/// Overall most messages are bubbling up to the root coordinator
+/// It makes sense that Simulators and Coordinators are in the same shard region.
+/// When a coordinator has a child coordinator then this can be in a different shard region.
+/// </summary>
+/// <returns></returns>
 public class FramesMessageExtractor : IMessageExtractor
 {
     /// <summary>
@@ -284,11 +268,11 @@ public class FramesMessageExtractor : IMessageExtractor
     /// <param name="message"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public string? EntityId(object message)
+    public string EntityId(object message)
     {
-        if (message is IShardSeperation shardSeperation)
+        if (message is IShardSeperation shardSeparation)
         {
-            return shardSeperation.EntityName;
+            return $"{shardSeparation.EntityName}-{shardSeparation.RunId}";
         }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
@@ -299,7 +283,7 @@ public class FramesMessageExtractor : IMessageExtractor
     /// <param name="message"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public object? EntityMessage(object message)
+    public object EntityMessage(object message)
     {
         return message;
     }
@@ -310,22 +294,22 @@ public class FramesMessageExtractor : IMessageExtractor
     /// <param name="message"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public string? ShardId(object message)
+    public string ShardId(object message)
     {
-        if (message is IShardSeperation shardSeperation)
+        if (message is IShardSeperation shardSeparation)
         {
-            return shardSeperation.ShardId;
+            return shardSeparation.ShardId;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
     public string ShardId(string entityId, object? messageHint = null)
     {
-        if (messageHint is IShardSeperation shardSeperation)
+        if (messageHint is IShardSeperation shardSeparation)
         {
-            return shardSeperation.ShardId;
+            return shardSeparation.ShardId;
         }
-        throw new NotSupportedException("Message type not supported for hashing: " + messageHint.GetType());
+        throw new NotSupportedException("Message type not supported for hashing: " + messageHint?.GetType());
         
     }
 }

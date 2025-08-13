@@ -41,10 +41,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="ReelDto\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Include="HelloWorld\ReelTestData\arena2.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>

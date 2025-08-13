@@ -35,7 +35,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private ICoupledModel _coupledModel;
 
-    private IActorRef _parent => ParentName == ActorHelper.RootCoordinatorName ?  ActorRegistry.For(Context.System)
+    private IActorRef _parent => ParentName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
         .Get<RootCoordinator>() : ActorRegistry.For(Context.System).Get<Coordinator>();
 
     private TimeUnit _timeLast;
@@ -75,7 +75,7 @@ public class Coordinator : ReceiveActor, ILogReceive
 
     private bool _initializationCompleted;
 
-    private async Task CreateChildrenAsync()
+    private async Task CreateChildrenAsync(Guid runId)
     {
         // Create a new actor for each child
         foreach (var child in _coupledModel.GetChildren())
@@ -91,7 +91,7 @@ public class Coordinator : ReceiveActor, ILogReceive
                     actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
                     await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, Name){
                         ShardId = Name,  // Simulator should be in the same shard as the coordinator
-                        Name = child.Item1
+                        RunId = RunId,
                     });
 
                     break;
@@ -99,7 +99,7 @@ public class Coordinator : ReceiveActor, ILogReceive
                     actor = await ActorRegistry.For(Context.System).GetAsync<Coordinator>();
                     await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, Name)
                     {
-                        Name = child.Item1
+                        RunId = RunId,
                     });
                     break;
                 default:
@@ -133,9 +133,10 @@ public class Coordinator : ReceiveActor, ILogReceive
             // Therefore we just ignore it here
             ParentName = msg.ParentName;
             Name = msg.Name;
+            RunId = msg.RunId;
             _coupledModel = msg.CoupledModel;
             // _parent = msg.Parent;
-            await CreateChildrenAsync();
+            await CreateChildrenAsync(msg.RunId);
             Sender.Tell("done");
         });
         Receive<ComputeOutput.StartComputeOutput>(HandleStartComputeOutput);
@@ -151,7 +152,8 @@ public class Coordinator : ReceiveActor, ILogReceive
                 var resp = await actor.Ask<bool>(new Simulation.HasStopCondition()
                 {
                     ShardId = ActorHelper.GetShardId(Name, child.Key),
-                    EntityName = child.Key
+                    EntityName = child.Key,
+                    RunId = RunId,
                 });
                 if (resp)
                 {
@@ -167,7 +169,9 @@ public class Coordinator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpoint);
         Receive<Simulation.FinishedLoadCheckpoint>(HandleFinishedLoadCheckpoint);
     }
-    
+
+    private Guid RunId { get; set; }
+
     private int ChildrenLoadCheckpointCount { get; set; }
     
     private async Task HandleLoadCheckpoint(Simulation.LoadCheckpoint obj)
@@ -203,7 +207,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             _parent.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
             {
                 ShardId = ActorHelper.GetShardId(Name, ParentName),
-                EntityName = ParentName
+                EntityName = ParentName,
+                RunId = RunId,
             });
         }
     }
@@ -220,7 +225,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             _parent.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
             {
                 ShardId = ActorHelper.GetShardId(Name, ParentName),
-                EntityName = ParentName
+                EntityName = ParentName,
+                RunId = RunId,
 
             });
         }
@@ -261,7 +267,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     private void HandleComputedOutput(ComputeOutput.ComputedOutput obj)
     {
         // mark d as reporting
-        var name = _children.FirstOrDefault(x => x.Key.Equals(Sender.Path.Name)).Key;
+        var name = _children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
         _imminentChildren[name] = true;
 
 
@@ -305,8 +311,8 @@ public class Coordinator : ReceiveActor, ILogReceive
         _parent.Tell(new ComputeOutput.ComputedOutput(_outputMessageBagParent, obj.CurrentTime)
         {
             ShardId = ActorHelper.GetShardId(Name, ParentName),
-            EntityName = ParentName
-
+            EntityName = ParentName,
+            RunId = RunId,
         });
 
 
@@ -355,7 +361,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     {
         // TODO: add save guards
 
-        var name = _children.FirstOrDefault(x => x.Key.Equals(Sender.Path.Name)).Key;
+        var name = _children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
 
         _timeNextExecuteTransition.Add(name, obj);
 
@@ -392,7 +398,8 @@ public class Coordinator : ReceiveActor, ILogReceive
                         x => x.Value),
                 StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached),
                 ShardId = ActorHelper.GetShardId(Name, ParentName),
-                EntityName = ParentName
+                EntityName = ParentName,
+                RunId = RunId,
             };
 
             _parent.Tell(result);
@@ -470,7 +477,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name, receiver.Key),
-                EntityName = receiver.Key
+                EntityName = receiver.Key,
+                RunId = RunId,
             });
         }
 
@@ -480,7 +488,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name,  uncoupledChild.Key),
-                EntityName = uncoupledChild.Key
+                EntityName = uncoupledChild.Key,
+                RunId = RunId,
             });
         }
     }
@@ -505,7 +514,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name, imminentChild.Key),
-                EntityName = imminentChild.Key
+                EntityName = imminentChild.Key,
+                RunId = RunId,
             });
         }
     }
@@ -516,9 +526,12 @@ public class Coordinator : ReceiveActor, ILogReceive
         {
             throw new SynchronisationException("Initialization already completed");
         }
-
+        
+        
+        
+            
         // Get the sender name
-        var name = _children.FirstOrDefault(x => x.Key.Equals(Sender.Path.Name)).Key;
+        var name = _children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
 
         _eventList.Add(name, new TimeEventTuple(obj.TimeLast, obj.TimeNext));
 
@@ -534,7 +547,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             _parent.Tell(new EngineMessages.InitializationCompleted(_timeLast, _timeNext)
             {
                 ShardId = ActorHelper.GetShardId(Name, ParentName),
-                EntityName = ParentName
+                EntityName = ParentName,
+                RunId = RunId
             });
         }
     }
@@ -552,7 +566,8 @@ public class Coordinator : ReceiveActor, ILogReceive
             child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(Name,  child.Key), 
-                EntityName = child.Key
+                EntityName = child.Key,
+                RunId = RunId,
             });
         }
     }

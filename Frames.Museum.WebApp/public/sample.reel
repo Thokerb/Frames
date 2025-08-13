@@ -1,0 +1,103 @@
+﻿state BlinkingLightStateBR {
+    states: [On|Off|FinishedByItself|FinishedByOther|TransitionFinishedByItself];
+    initial = On;
+    int MaxCycles = 0;
+    int CurrentCycle = 0;
+    int WaitingTime = 2;
+}
+
+atomic2 model BlinkingLightAtomicModelBR {
+    state: BlinkingLightStateBR {
+        initial = On;
+        MaxCycles = 0;
+        CurrentCycle = 0;
+        WaitingTime = 2;
+    }
+
+    section Ports {
+        int InPort PortInFinishedByOther;
+        int OutPort PortOutFinished;
+    }
+
+    stateDefinition On: {
+        time-advance: 2 TimeUnits
+        transitions: {
+            (toTransitionFinishedByItself) with CurrentCycle >= MaxCycles => {
+                state.name becomes TransitionFinishedByItself;
+            }
+            (toOff) => {
+                state.name becomes Off;
+                CurrentCycle = CurrentCycle + 1;
+            }
+            (externalToOff) with InPort PortInFinishedByOther.any => {
+                state.name becomes Off;
+            }
+        }
+        output: {}
+    }
+    stateDefinition Off: {
+        time-advance: WaitingTime TimeUnits
+        transitions: {
+            (toOn) => {
+                state.name becomes On;
+            }
+            (externalToOff) with InPort PortInFinishedByOther.any => {
+                state.name becomes Off;
+            }
+
+        }
+        output: {}
+    }
+    stateDefinition TransitionFinishedByItself: {
+        time-advance: 1 TimeUnits
+        transitions: {
+            (toFinishedByItself) => {
+                state.name becomes FinishedByItself;
+            }
+        }
+        output: {}
+    }
+
+    stateDefinition FinishedByItself: {
+        time-advance: Infinity TimeUnits
+        transitions: {}
+        output: {
+            PortOutFinished: MaxCycles;
+        }
+    }
+
+    stateDefinition FinishedByOther: {
+        time-advance: Infinity TimeUnits
+        transitions: {}
+        output: {}
+    }
+}
+
+coupled model CArena {
+
+    section Ports {
+        int InPort InArena;
+        int OutPort OutArena;
+    }
+
+    BlinkingLightAtomicModelBR bl1 with BlinkingLightStateBR {
+        initial = On;
+        MaxCycles = 5;
+        WaitingTime = 3;
+    }
+
+    BlinkingLightAtomicModelBR bl2 with BlinkingLightStateBR {
+        initial = On;
+        MaxCycles = 20;
+        WaitingTime = 5;
+    }
+
+    Connect bl1.PortOutFinished to bl2.PortInFinishedByOther
+    Connect bl2.PortOutFinished to bl1.PortInFinishedByOther
+
+    Connect bl1.PortOutFinished to this.OutArena
+    Connect bl2.PortOutFinished to this.OutArena
+
+    Connect this.InArena to bl1.PortInFinishedByOther
+    Connect this.InArena to bl2.PortInFinishedByOther
+}

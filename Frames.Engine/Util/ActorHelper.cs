@@ -27,6 +27,14 @@ public static class ActorHelper
         return receiver;
     }
     
-    public static readonly string RootCoordinatorName = "root-coordinator";
+    public static string RootCoordinatorName(Guid id) => $"{RootCoordinatorIdentifier}-{id}";
+    public static string RootCoordinatorIdentifier = "root-coordinator";
+
+    public static string GetEntityNameFromSender(IActorRef pathName)
+    {
+        
+        var input = pathName.Path.Elements.Last();
+        return input.Substring(0, input.Length - 37); // default 36 characters for a GUID + 1 for the hyphen
+    }
 }
 

@@ -20,6 +20,6 @@ public class BaseTestKit : TestKit
     protected override void ConfigureAkka(AkkaConfigurationBuilder builder, IServiceProvider provider)
     {
         var serviceProviderMock = ServiceProviderMock.CreateMock(new Instrumentation());
-        builder.ConfigureRootCoordinator(serviceProviderMock).ConfigurePersistence(serviceProviderMock);
+        builder.ConfigureActorRegistry(serviceProviderMock).ConfigurePersistence(serviceProviderMock);
     }
 }

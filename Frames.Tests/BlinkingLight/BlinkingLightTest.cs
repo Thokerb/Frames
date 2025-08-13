@@ -34,6 +34,8 @@ public class BlinkingLightTest : BaseTestKit,  IClassFixture<OpenTelemetryFixtur
     {
         var expectResultsProbe = CreateTestProbe();
 
+        var uniqueId = Guid.NewGuid();
+        
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
@@ -43,14 +45,14 @@ public class BlinkingLightTest : BaseTestKit,  IClassFixture<OpenTelemetryFixtur
             Name = "simulator-blinking-light",
         };
         
-        var blinkingLightActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,"simulator-blinking-light")
+        var blinkingLightActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,"simulator-blinking-light",uniqueId)
         {
             ShardId = "1"
         });
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor,uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));

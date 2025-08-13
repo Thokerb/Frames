@@ -4,6 +4,5 @@
 @plugin "tailwindcss-primeui";
 
 body {
-  @apply bg-gray-100 text-gray-900;
   height: 100vh;
 }

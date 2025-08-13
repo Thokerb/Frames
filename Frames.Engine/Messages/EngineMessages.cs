@@ -30,6 +30,7 @@ public static class EngineMessages
 
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public required Guid RunId { get; set; }
         public TimeUnit CurrentTime { get; init; }
     }
 
@@ -42,16 +43,19 @@ public static class EngineMessages
     {
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public required Guid RunId { get; set; }
     }
 
     public sealed record SetupSimulator(
         IAtomicModelBase AtomicModel,
         string Name,
-        string CoordinatorName)
+        string CoordinatorName
+        )
         : IShardSeperation
     {
         public required string ShardId { get; set; }
         public string EntityName { get; } = Name;
+        public required Guid RunId { get; set; }
     };
 
 
@@ -60,6 +64,7 @@ public static class EngineMessages
     {
         public string ShardId { get; } = Name;
         public string EntityName { get; } = Name;
+        public required Guid RunId { get; set; }
     };
 
 }
@@ -83,6 +88,7 @@ public static class ComputeOutput
 
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public required Guid RunId { get; set; }
         public TimeUnit CurrentTime { get; init; }
 
 
@@ -97,6 +103,7 @@ public static class ComputeOutput
     {
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public required Guid RunId { get; set; }
     }
 }
 
@@ -120,6 +127,8 @@ public static class ExecuteTransition
         public required string EntityName { get; set; }
         public Bag? Input { get; init; }
         public TimeUnit CurrentTime { get; init; }
+        public required Guid RunId { get; set; }
+
     }
 
     /// <summary>
@@ -130,6 +139,7 @@ public static class ExecuteTransition
     {
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
+        public required Guid RunId { get; set; }
     }
 }
 
@@ -184,6 +194,11 @@ public interface IShardSeperation
     /// It is used to identify the entity within the cluster, but also keeping location transparency.
     /// </summary>
     string EntityName { get; }
+    
+    /// <summary>
+    /// This Id is appended to the EntityName to create a unique name for the actor for each run.
+    /// </summary>
+    Guid RunId { get; set; }
 };
 
 //TODO: I think this is not needed anymore as we send this with streams now
