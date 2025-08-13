@@ -39,21 +39,22 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
     public async Task CreateTable()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
         
         // Arrange root coordinator
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new Table();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-table")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-table",uniqueId)
         {
             ShardId = "1"
         });
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         
         // Assert
@@ -67,7 +68,7 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
     public async Task BaseBlinkingLightTest()
     {
         var expectResultsProbe = CreateTestProbe();
-
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
@@ -76,15 +77,15 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
             Name = "blinking-light",
         };
         
-        var blinkingLightActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"coordinator-table")
+        var blinkingLightActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"coordinator-table",uniqueId)
         {
             ShardId = "1"
         });
 
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));

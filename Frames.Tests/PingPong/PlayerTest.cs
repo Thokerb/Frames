@@ -39,8 +39,7 @@ public class PlayerTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         var expectResultsProbe = CreateTestProbe();
 
         // Arrange root coordinator
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
+        var uniqueId = Guid.NewGuid();
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
         IAtomicModelBase model = new Player()
         {
@@ -51,15 +50,15 @@ public class PlayerTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
             Name = "Send"
         };
 
-        var playerActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"coordinator-table")
+        var playerActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"coordinator-table",uniqueId)
         {
             ShardId = "1"
         });
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(playerActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         // Act        

@@ -33,6 +33,7 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
     public async Task CCounterTest()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -41,14 +42,14 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         ICoupledModel model = new CCounter();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,"coordinator-counter")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,"coordinator-counter",uniqueId)
         {
             ShardId = "1"
         });
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(20)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(20),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
@@ -60,6 +61,7 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
     public async Task CCounterWithStopConditionTest()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -68,13 +70,13 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         ICoupledModel model = new CCounterWithStopCondition();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,"coordinator-CCounterWithStopCondition")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,"coordinator-CCounterWithStopCondition",uniqueId)
         {
             ShardId = "root-coordinator"
         });
         // Act
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));

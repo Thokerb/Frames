@@ -37,6 +37,7 @@ public class PingPongTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
     public async Task CreateTable()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -45,15 +46,15 @@ public class PingPongTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         ICoupledModel coupledModel = new Table();
         
-        var coupledModelActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,$"coordinator-table")
+        var coupledModelActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-table",uniqueId)
         {
             ShardId = "1"
         });
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         
         // Assert

@@ -43,21 +43,22 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
     public async Task CreateCSuperArena()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new CSuperArena();
 
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
             ShardId = "root-coordinator"
         });
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("checkpoint1", new TimeUnit(10)));
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("checkpoint1", new TimeUnit(10),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
 
 
         // Assert
@@ -66,9 +67,9 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         Assert.Equivalent(TimeUnit.Infinity, response.ElapsedTime);
         
-        rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"){ShardId = "root-coordinator", EntityName = "root-coordinator"});
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor, "checkpoint1"));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"){ShardId = "root-coordinator", EntityName = "root-coordinator",RunId = uniqueId});
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId, "checkpoint1"));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         var response2 = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
         Assert.Equivalent(TimeUnit.Infinity, response2.ElapsedTime);
@@ -82,20 +83,19 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         var expectResultsProbe = CreateTestProbe();
 
         // Arrange root coordinator
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
+        var uniqueId = Guid.NewGuid();
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new CSuperArena2();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena", uniqueId)
         {
             ShardId = "root-coordinator"
         });
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50), uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
 
 
         // Assert

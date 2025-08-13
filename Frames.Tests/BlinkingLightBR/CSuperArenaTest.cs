@@ -37,6 +37,7 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
     public async Task CreateCSuperArena()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -45,14 +46,14 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         ICoupledModel coupledModel = new CSuperArena();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
             ShardId = "1"
         });        
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         
         // Assert
@@ -67,6 +68,7 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
     public async Task CreateCSuperArena2()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -75,14 +77,14 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         ICoupledModel coupledModel = new CSuperArena2();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-carena")
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
             ShardId = "1"
         });        
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         
         // Assert

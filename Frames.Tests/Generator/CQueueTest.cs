@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Frames.Tests.Generator;
 
-public class CQueueTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
+public class CQueueTest : BaseTestKit, IClassFixture<OpenTelemetryFixture>
 {
     private readonly OpenTelemetryFixture _openTelemetryFixture;
 
@@ -26,14 +26,14 @@ public class CQueueTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
             .MinimumLevel.Information()
             .WriteTo.TestOutput(output)
             .CreateLogger();
-        }
-    
-    
-    
+    }
+
+
     [Fact]
     public async Task CreateCQueue()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -41,24 +41,23 @@ public class CQueueTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new CQueue();
-        
-        var coupledModelActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(coupledModel,"coordinator-cqueue")
-        {
-            ShardId = "1"
-        });
-        
+
+        var coupledModelActor = await rootCoordinatorActor.Ask(
+            new Simulation.CreateModel(coupledModel, "coordinator-cqueue", uniqueId)
+            {
+                ShardId = "1"
+            });
+
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10)));
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(coupledModelActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
-        
-        
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10), uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId), expectResultsProbe);
+
+
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        
+
         Assert.Equivalent(response.ElapsedTime, TimeUnit.Infinity);
     }
-
-
 }

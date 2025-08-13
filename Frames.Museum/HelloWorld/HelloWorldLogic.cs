@@ -30,7 +30,7 @@ public static class HelloWorldLogic
         
         ICoupledModel coupledModel = new CArena();
         
-        await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(coupledModel,$"coordinator-carena",uniqueId));
+        await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-carena",uniqueId));
       
         
         // Act
@@ -40,6 +40,7 @@ public static class HelloWorldLogic
         
         Thread.Sleep(2000);
         rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId));
+        
 
     }
 

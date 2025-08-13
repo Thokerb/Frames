@@ -97,7 +97,8 @@ public class SerializationTest
         var result = JsonConvert.SerializeObject(new EngineMessages.StartInitialization(new TimeUnit(3), x)
         {
             ShardId = "2",
-            EntityName = "w"
+            EntityName = "w",
+            RunId = Guid.NewGuid()
         }, new JsonSerializerSettings
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Error // or Ignore

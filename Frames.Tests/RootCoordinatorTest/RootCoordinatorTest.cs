@@ -35,13 +35,14 @@ public class RootCoordinatorTest : BaseTestKit,  IClassFixture<OpenTelemetryFixt
         var probe = CreateTestProbe();
         // Arrange root coordinator
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
+        var uniqueId = Guid.NewGuid();
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
         {
             Name = "blinking-light",
         };
         
-        var blinkingLightActor  = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"simulator-blinking-light")
+        var blinkingLightActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"simulator-blinking-light",uniqueId)
         {
             ShardId = "1"
         });
@@ -49,7 +50,7 @@ public class RootCoordinatorTest : BaseTestKit,  IClassFixture<OpenTelemetryFixt
         probe.EventFilter.Exception<NoStopConditionException>().ExpectOne(() =>
         {
             // Act
-            rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor),probe);
+            rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId),probe);
         });
     }
 

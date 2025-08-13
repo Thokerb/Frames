@@ -36,6 +36,7 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
     public async Task ThrowOnIllegalTimeAdvance()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -46,10 +47,12 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
         {
             Name = "blinking-light",
         };
-        var blinkingLightActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"simulator-blinking-light")
+        var runId = await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
         {
             ShardId = "1"
         });
+        
+        var blinkingLightActor = ActorRegistry.Get<Simulator>();
         
         // Act        
         // Assert that exception is thrown
@@ -61,7 +64,8 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
                 ShardId = "root",
                 EntityName = "simulator-blinking-light",
                 SpanIdValue = ActivitySpanId.CreateRandom().ToString(),
-                TraceIdValue = ActivityTraceId.CreateRandom().ToString()
+                TraceIdValue = ActivityTraceId.CreateRandom().ToString(),
+                RunId = uniqueId
             },expectResultsProbe);
         });
 
@@ -73,19 +77,21 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
     public async Task ThrowOnIllegalOutput()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
         // Arrange root coordinator
-        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
         
         IAtomicModelBase model = new IllegalBlinkingLightAtomicModel()
         {
             Name = "blinking-light",
         };
-        var blinkingLightActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"simulator-blinking-light")
+        var runId = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
         {
             ShardId = "1"
         });        
+        
+        var blinkingLightActor = ActorRegistry.Get<Simulator>();
+
         // Act
         // // Assert that exception is thrown
         expectResultsProbe.EventFilter.Exception<IllegalStateModificationException>().ExpectOne(() =>
@@ -98,6 +104,7 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
                 EntityName = "simulator-blinking-light",
                 SpanIdValue = ActivitySpanId.CreateRandom().ToString(),
                 TraceIdValue = ActivityTraceId.CreateRandom().ToString(),
+                RunId = uniqueId
             },expectResultsProbe);
         });
 

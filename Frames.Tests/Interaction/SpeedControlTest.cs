@@ -34,6 +34,7 @@ public class InteractionControlTest : BaseTestKit,  IClassFixture<OpenTelemetryF
     public async Task BaseInteractionControlTest()
     {
         var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
@@ -44,25 +45,24 @@ public class InteractionControlTest : BaseTestKit,  IClassFixture<OpenTelemetryF
             Name = "blinking-light",
         };
         
-        var blinkingLightActor = await rootCoordinatorActor.Ask<IActorRef>(new Simulation.CreateModel(model,$"simulator-blinking-light")
+        var blinkingLightActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
         {
             ShardId = "1",
-            EntityName = "root-coordinator"
         });
 
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(12)));
-        rootCoordinatorActor.Tell(new Simulation.SetSpeedControl(1000));
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(12), uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.SetSpeedControl(1000, uniqueId));
         var stopTime = new Stopwatch();
         stopTime.Start();
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(blinkingLightActor));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(),expectResultsProbe);
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         Thread.Sleep(3000);
-        rootCoordinatorActor.Tell(new Simulation.PauseSimulation());
+        rootCoordinatorActor.Tell(new Simulation.PauseSimulation(uniqueId));
         Serilog.Log.Information($"Simulation stopped {stopTime.ElapsedMilliseconds} ms");
         Thread.Sleep(3000);
         Serilog.Log.Information($"Simulation resumed {stopTime.ElapsedMilliseconds} ms");
-        rootCoordinatorActor.Tell(new Simulation.ResumeSimulation());
+        rootCoordinatorActor.Tell(new Simulation.ResumeSimulation(uniqueId));
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(25));
