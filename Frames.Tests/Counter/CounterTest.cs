@@ -44,7 +44,6 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,"coordinator-counter",uniqueId)
         {
-            ShardId = "1"
         });
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(20),uniqueId));
@@ -72,7 +71,6 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,"coordinator-CCounterWithStopCondition",uniqueId)
         {
-            ShardId = "root-coordinator"
         });
         // Act
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));

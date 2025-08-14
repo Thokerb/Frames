@@ -49,7 +49,6 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
         };
         var runId = await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
         {
-            ShardId = "1"
         });
         
         var blinkingLightActor = ActorRegistry.Get<Simulator>();
@@ -87,7 +86,6 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
         };
         var runId = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
         {
-            ShardId = "1"
         });        
         
         var blinkingLightActor = ActorRegistry.Get<Simulator>();

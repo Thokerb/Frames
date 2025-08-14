@@ -44,7 +44,6 @@ public class RootCoordinatorTest : BaseTestKit,  IClassFixture<OpenTelemetryFixt
         
         var blinkingLightActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"simulator-blinking-light",uniqueId)
         {
-            ShardId = "1"
         });
         // Assert
         probe.EventFilter.Exception<NoStopConditionException>().ExpectOne(() =>

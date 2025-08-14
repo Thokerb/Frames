@@ -69,9 +69,9 @@ public record WithRootCoordinatorShardId(Guid Id) : IShardSeperation
     /// <summary>
     /// Each root coordinator actor has a unique shard ID.
     /// </summary>
-    public string ShardId { get; set; } = $"root-coordinator-{Id}";
+    public string ShardId { get; internal set; } = $"root-coordinator";
 
-    public string EntityName { get; } = $"root-coordinator-{Id}";
+    public string EntityName { get; } = $"root-coordinator";
     
     public Guid RunId { get; set; } = Id;
 }

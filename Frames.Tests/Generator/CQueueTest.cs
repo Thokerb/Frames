@@ -45,7 +45,6 @@ public class CQueueTest : BaseTestKit, IClassFixture<OpenTelemetryFixture>
         var coupledModelActor = await rootCoordinatorActor.Ask(
             new Simulation.CreateModel(coupledModel, "coordinator-cqueue", uniqueId)
             {
-                ShardId = "1"
             });
 
         // Act

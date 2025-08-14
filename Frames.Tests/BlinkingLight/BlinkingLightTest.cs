@@ -47,7 +47,6 @@ public class BlinkingLightTest : BaseTestKit,  IClassFixture<OpenTelemetryFixtur
         
         var blinkingLightActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,"simulator-blinking-light",uniqueId)
         {
-            ShardId = "1"
         });
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));

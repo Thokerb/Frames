@@ -117,14 +117,14 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             // TODO: DI
             case IAtomicModelBase atomicModel:
                 actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
-                await actor.Ask(new EngineMessages.SetupSimulator(atomicModel, arg.Name, ActorHelper.RootCoordinatorName(arg.Id)){
+                await actor.Ask(new EngineMessages.SetupSimulator(atomicModel, arg.Name, ActorHelper.RootCoordinatorIdentifier){
                     ShardId = ActorHelper.RootCoordinatorName(arg.Id),
                     RunId = arg.Id
                 });
                 break;
             case ICoupledModel coupledModel:
                 actor = await ActorRegistry.For(Context.System).GetAsync<Coordinator>();
-                await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, arg.Name, ActorHelper.RootCoordinatorName(arg.Id))
+                await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, arg.Name, ActorHelper.RootCoordinatorIdentifier)
                 {
                     RunId = arg.Id
                 });

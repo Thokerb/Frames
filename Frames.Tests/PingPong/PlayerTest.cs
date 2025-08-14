@@ -52,7 +52,6 @@ public class PlayerTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         var playerActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"coordinator-table",uniqueId)
         {
-            ShardId = "1"
         });
         
         // Act

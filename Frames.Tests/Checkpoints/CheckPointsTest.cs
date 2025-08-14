@@ -50,9 +50,8 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         ICoupledModel coupledModel = new CSuperArena();
 
-        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
+        await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
-            ShardId = "root-coordinator"
         });
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("checkpoint1", new TimeUnit(10),uniqueId));
@@ -90,7 +89,6 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena", uniqueId)
         {
-            ShardId = "root-coordinator"
         });
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50), uniqueId));

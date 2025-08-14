@@ -53,7 +53,6 @@ public class CArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
-            ShardId = "root-coordinator"
         });        
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));

@@ -5,6 +5,7 @@ using Frames.Engine.DependencyInjection;
 using Frames.Museum;
 using Frames.Museum.ClusterOverview;
 using Frames.Museum.HelloWorld;
+using Frames.Museum.SimulationControl;
 using Frames.Museum.Tracing;
 using Microsoft.OpenApi.Models;
 
@@ -84,6 +85,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.MapHelloWorld();
+app.MapSimulationControlEndpoints();
 app.UseSignalRConfiguration();
 
 app.UseHttpsRedirection();

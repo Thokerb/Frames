@@ -55,21 +55,12 @@ public static class HelloWorldLogic
 
         var coupledModel = new ReelCoupledModel(reelJson, coupledModelRef, null);
         
-        await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(coupledModel,$"coordinator-{coupledModelRef}",uniqueId)
-        {
-            ShardId = $"root-coordinator-{uniqueId}"
-        });
+        await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(coupledModel,$"coordinator-{coupledModelRef}",uniqueId));
       
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId)
-        {
-            ShardId = $"root-coordinator-{uniqueId}"
-        });
-        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId)
-        {
-            ShardId = $"root-coordinator-{uniqueId}"
-        });
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
         Thread.Sleep(2000);
         rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId)
         {

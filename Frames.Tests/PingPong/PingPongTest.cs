@@ -48,7 +48,6 @@ public class PingPongTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-table",uniqueId)
         {
-            ShardId = "1"
         });
         
         // Act

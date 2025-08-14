@@ -200,6 +200,3 @@ public interface IShardSeperation
     /// </summary>
     Guid RunId { get; set; }
 };
-
-//TODO: I think this is not needed anymore as we send this with streams now
-public record TraceInformation(string State);

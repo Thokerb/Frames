@@ -48,7 +48,6 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-table",uniqueId)
         {
-            ShardId = "1"
         });
         
         // Act
@@ -79,7 +78,6 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
         
         var blinkingLightActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"coordinator-table",uniqueId)
         {
-            ShardId = "1"
         });
 
         // Act

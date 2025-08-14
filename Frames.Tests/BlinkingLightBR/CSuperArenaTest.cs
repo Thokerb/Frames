@@ -48,7 +48,6 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
-            ShardId = "1"
         });        
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
@@ -79,7 +78,6 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
         {
-            ShardId = "1"
         });        
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
