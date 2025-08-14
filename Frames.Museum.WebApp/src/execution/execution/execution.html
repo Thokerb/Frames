@@ -1,15 +1,97 @@
 <div class="mb-6">
-  <h2 class="text-2xl font-semibold mb-4">Execution Log Console</h2>
-  <div class="flex items-center gap-4 mb-6">
-    <p-select
-      [options]="endpoints()"
-      [ngModel]="selectedEndpoint()"
-      (onChange)="onEndpointChange($event.value)"
-      placeholder="Select endpoint"
-      class="w-80"
-      inputId="endpoint-select"
-    ></p-select>
-    <button pButton type="button" class="ml-auto" label="Clear Logs" icon="pi pi-trash" (click)="clearLogs()"></button>
+  <h2 class="text-2xl font-semibold mb-4">Execution Control Panel</h2>
+  
+  <!-- Communication Endpoint Selection -->
+  <div class="endpoint-selection mb-6">
+    <h3 class="text-lg font-medium mb-2">Communication Endpoint</h3>
+    <div class="flex items-center gap-4">
+      <select 
+        class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        [value]="signalStore.state().communicationEndpoint || ''"
+        (change)="onCommunicationEndpointChange($any($event.target).value)">
+        <option value="">Select an endpoint</option>
+        <option *ngFor="let endpoint of endpointManager.endpoints()" [value]="endpoint">
+          {{ endpoint }}
+        </option>
+      </select>
+      <span class="text-sm text-gray-600" *ngIf="signalStore.state().communicationEndpoint">
+        Current: {{ signalStore.state().communicationEndpoint }}
+      </span>
+    </div>
+  </div>
+  
+  <!-- Global State Display -->
+  <div class="state-info mb-6" *ngIf="signalStore.state().runId">
+    <h3 class="text-lg font-medium mb-2">Current Model</h3>
+    <div class="state-grid">
+      <div class="state-item">
+        <strong>Model ID:</strong> {{ signalStore.state().runId }}
+      </div>
+      <div class="state-item">
+        <strong>Model Name:</strong> {{ signalStore.state().modelName }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Endpoints -->
+  <div class="test-section mb-6">
+    <h3 class="text-lg font-medium mb-3">Test Endpoints</h3>
+    <div class="button-group">
+      <button pButton type="button" label="Hello World" icon="pi pi-globe" (click)="testHelloWorld()"></button>
+      <button pButton type="button" label="CArena Test" icon="pi pi-cog" (click)="testCArena()"></button>
+      <button pButton type="button" label="Reel Test" icon="pi pi-file" (click)="testReel()"></button>
+    </div>
+  </div>
+
+  <!-- Model Control -->
+  <div class="model-control-section mb-6">
+    <h3 class="text-lg font-medium mb-3">Model Control</h3>
+    <div class="control-grid">
+      <div class="control-group">
+        <label>Time Units:</label>
+        <p-inputNumber [(ngModel)]="timeUnits" [min]="1" [max]="1000"></p-inputNumber>
+        <button pButton type="button" label="Add & Start Model" icon="pi pi-play" (click)="addAndStartModel()"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation Control -->
+  <div class="simulation-control-section mb-6">
+    <h3 class="text-lg font-medium mb-3">Simulation Control</h3>
+    <div class="control-grid">
+      <div class="control-group">
+        <label>Time (ms):</label>
+        <p-inputNumber [(ngModel)]="timeInMilliseconds" [min]="100" [max]="10000"></p-inputNumber>
+        <label>As Fast as Possible:</label>
+        <p-checkbox [(ngModel)]="asFastAsPossible"></p-checkbox>
+        <button pButton type="button" label="Set Speed" icon="pi pi-clock" (click)="setExecutionSpeed()"></button>
+      </div>
+      <div class="control-group">
+        <label>Stop After (Time Units):</label>
+        <p-inputNumber [(ngModel)]="stopAfterTimeUnits" [min]="1" [max]="1000"></p-inputNumber>
+        <button pButton type="button" label="Set Stop Time" icon="pi pi-stop-circle" (click)="setStopAfterTime()"></button>
+      </div>
+      <div class="control-group">
+        <button pButton type="button" label="Start Simulation" icon="pi pi-play" (click)="startSimulation()" class="p-button-success"></button>
+        <button pButton type="button" label="Stop Simulation" icon="pi pi-stop" (click)="stopSimulation()" class="p-button-danger"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SignalR Console -->
+  <div class="signalr-section mb-6">
+    <h3 class="text-lg font-medium mb-3">SignalR Log Console</h3>
+    <div class="flex items-center gap-4 mb-4">
+      <p-select
+        [options]="endpoints()"
+        [ngModel]="selectedEndpoint()"
+        (onChange)="onEndpointChange($event.value)"
+        placeholder="Select endpoint"
+        class="w-80"
+        inputId="endpoint-select"
+      ></p-select>
+      <button pButton type="button" label="Clear Logs" icon="pi pi-trash" (click)="clearLogs()"></button>
+    </div>
   </div>
 </div>
 <div class="console">

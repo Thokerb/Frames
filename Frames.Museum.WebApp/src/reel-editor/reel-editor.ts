@@ -5,8 +5,10 @@ import {executeClassic} from '../reel/setupClassic';
 import {MonacoEditorLanguageClientWrapper} from 'monaco-editor-wrapper';
 import {MonacoLanguageClient} from 'monaco-languageclient';
 import { Diagnostic } from 'vscode-languageserver/browser.js';
-import {Button} from 'primeng/button';
-import {Select} from 'primeng/select';
+import {ButtonModule} from 'primeng/button';
+import {SelectModule} from 'primeng/select';
+import {SignalStoreService} from '../app/services/signal-store.service';
+import {ApiService, AddModelRequest} from '../app/services/api.service';
 
 type DocumentChange = { uri: string, content: string, diagnostics: Diagnostic[] };
 
@@ -15,8 +17,8 @@ type DocumentChange = { uri: string, content: string, diagnostics: Diagnostic[] 
   imports: [
     FormsModule,
     CommonModule,
-    Button,
-    Select,
+    ButtonModule,
+    SelectModule,
   ],
   templateUrl: './reel-editor.html',
   styleUrl: './reel-editor.css'
@@ -28,11 +30,20 @@ export class ReelEditor implements OnInit {
 
   generatedCode: WritableSignal<string> =  signal<string>('');
   selectedModel: WritableSignal<string> = signal<string>('');
+  isDragOver = signal<boolean>(false);
 
   // Coupled models extracted from generated code
-  coupledModels = signal<Array<{label: string, value: string}>>([
 
-  ]);
+  atomicModels = signal<Array<{ label: string; value: string; type: 'atomic' }>>([]);
+  coupledModels = signal<Array<{ label: string; value: string; type: 'coupled' }>>([]);
+  allModels = () => [
+    ...this.atomicModels(),
+    ...this.coupledModels()
+  ];
+  constructor(
+    private signalStore: SignalStoreService,
+    private apiService: ApiService
+  ) {}
 
   async ngOnInit(): Promise<void> {
     this.Wrapper = await executeClassic(document.getElementById('monaco-editor-root') as HTMLElement);
@@ -66,35 +77,45 @@ export class ReelEditor implements OnInit {
       console.log("Command executed successfully:", result);
 
       // Extract coupled models from the generated code
-      this.extractCoupledModels(result as string);
+      this.extractModels(result as string);
     }).catch((error) => {
       console.error("Error executing command:", error);
 
     })
   }
 
-  extractCoupledModels(jsonString: string): void {
+  extractModels(jsonString: string): void {
     try {
       const parsed = JSON.parse(jsonString);
-      if (parsed.coupledModels && Array.isArray(parsed.coupledModels)) {
-        const models = [
-          ...parsed.coupledModels.map((model: any) => ({
-            label: model.name || 'Unnamed Model',
-            value: model.name || 'unnamed'
-          }))
-        ];
-        this.coupledModels.set(models);
-        console.log('Extracted coupled models:', models);
-      } else {
-        // Reset to default if no coupled models found
-        this.coupledModels.set([{ label: 'Select a model', value: '' }]);
-        console.log('No coupled models found in generated code');
-      }
+
+      const atomic = Array.isArray(parsed.atomicModels)
+        ? parsed.atomicModels.map((model: any) => ({
+          label: `[Atomic] ${model.name || 'Unnamed'}`,
+          value: model.name || 'unnamed',
+          type: 'atomic' as const
+        }))
+        : [];
+
+      const coupled = Array.isArray(parsed.coupledModels)
+        ? parsed.coupledModels.map((model: any) => ({
+          label: `[Coupled] ${model.name || 'Unnamed'}`,
+          value: model.name || 'unnamed',
+          type: 'coupled' as const
+        }))
+        : [];
+
+      this.atomicModels.set(atomic);
+      this.coupledModels.set(coupled);
+
+      console.log('Extracted atomic models:', atomic);
+      console.log('Extracted coupled models:', coupled);
     } catch (error) {
-      console.error('Error extracting coupled models:', error);
-      this.coupledModels.set([{ label: 'Select a model', value: '' }]);
+      console.error('Error extracting models:', error);
+      this.atomicModels.set([]);
+      this.coupledModels.set([]);
     }
   }
+
 
   copyToClipboard(): void {
     const code = this.generatedCode();
@@ -112,15 +133,89 @@ export class ReelEditor implements OnInit {
     const code = this.generatedCode();
     const selectedModelValue = this.selectedModel();
 
-    if (code && selectedModelValue) {
-      // Here you would implement the logic to send the generated code
-      // This could be an HTTP request to your backend
-      console.log('Sending request with code:', code);
-      console.log('Selected model:', selectedModelValue);
-      // Example: this.http.post('/api/execute', { code: code, model: selectedModelValue })
-    } else if (!selectedModelValue) {
-      console.warn('Please select a model before sending request');
+    // Find which type this model is
+    const selectedEntry = this.allModels().find(m => m.value === selectedModelValue);
+
+    if (code && selectedEntry) {
+      try {
+        const reelJson = JSON.parse(code);
+        const request: AddModelRequest = {
+          reelJson: reelJson,
+        };
+
+        if (selectedEntry.type === 'atomic') {
+          request.atomicModelName = selectedEntry.value;
+        } else if (selectedEntry.type === 'coupled') {
+          request.coupledModelName = selectedEntry.value;
+        }
+
+        this.apiService.addModel(request).subscribe({
+          next: (response) => {
+            console.log('Model added successfully:', response);
+            this.signalStore.setRunId(response.modelId);
+            this.signalStore.setModelName(selectedEntry.value);
+            this.signalStore.setGeneratedCode(code);
+            alert(`Model added successfully! Model ID: ${response.modelId}`);
+          },
+          error: (error) => {
+            console.error('Error adding model:', error);
+            alert('Error adding model: ' + error.message);
+          }
+        });
+      } catch (error) {
+        console.error('Error parsing generated code:', error);
+        alert('Error parsing generated code. Please ensure it is valid JSON.');
+      }
+    } else {
+      alert('Please select a model before sending request');
     }
+  }
+
+  // Drag and drop methods
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(false);
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        this.readJsonFile(file);
+      } else {
+        alert('Please drop a JSON file');
+      }
+    }
+  }
+
+  private readJsonFile(file: File): void {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const jsonData = JSON.parse(content);
+        this.generatedCode.set(content);
+        this.signalStore.setGeneratedCode(content);
+        this.extractModels(content);
+        console.log('JSON file loaded successfully');
+      } catch (error) {
+        console.error('Error reading JSON file:', error);
+        alert('Error reading JSON file. Please ensure it is valid JSON.');
+      }
+    };
+    reader.readAsText(file);
   }
 
   formatJson(jsonString: string): string {

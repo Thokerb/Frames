@@ -7,6 +7,7 @@ using Frames.Museum.ClusterOverview;
 using Frames.Museum.HelloWorld;
 using Frames.Museum.SimulationControl;
 using Frames.Museum.Tracing;
+using Frames.Museum.Util;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,6 +62,10 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddSignalRConfiguration();
 
+builder.Services.ConfigureHttpJsonOptions(options => 
+{
+    options.SerializerOptions.Converters.Add(new ReelJsonConverter());
+});
 
 builder.Services.WithAkkaHealthCheck(HealthCheckType.All);
 builder.Services.ConfigureWebApiAkka(builder.Configuration, (akkaConfigurationBuilder, serviceProvider) =>

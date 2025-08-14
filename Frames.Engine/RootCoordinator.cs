@@ -171,7 +171,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         _manualPause = true;
     }
 
-    private void ReceiveSetSpeedControl(Simulation.SetSpeedControl obj)
+    private void  ReceiveSetSpeedControl(Simulation.SetSpeedControl obj)
     {
         if (obj.AsFastAsPossible)
         {

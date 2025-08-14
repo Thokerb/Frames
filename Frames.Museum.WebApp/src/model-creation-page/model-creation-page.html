@@ -1,1 +1,30 @@
-<app-reel-editor></app-reel-editor>
+<div class="model-creation-container">
+  <div class="header-section">
+    <h1 class="text-3xl font-bold mb-4">Model Creation</h1>
+    
+    <!-- Endpoint Selection -->
+    <div class="endpoint-selection mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Communication Endpoint:</label>
+      <select 
+        class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        [value]="signalStore.state().communicationEndpoint || ''"
+        (change)="onEndpointChange($any($event.target).value)">
+        <option value="">Select an endpoint</option>
+        <option *ngFor="let endpoint of endpointManager.endpoints()" [value]="endpoint">
+          {{ endpoint }}
+        </option>
+      </select>
+    </div>
+    
+    <div class="status-info" *ngIf="signalStore.state().runId">
+      <div class="status-item">
+        <strong>Model ID:</strong> {{ signalStore.state().runId }}
+      </div>
+      <div class="status-item">
+        <strong>Model Name:</strong> {{ signalStore.state().modelName }}
+      </div>
+    </div>
+  </div>
+  
+  <app-reel-editor></app-reel-editor>
+</div>

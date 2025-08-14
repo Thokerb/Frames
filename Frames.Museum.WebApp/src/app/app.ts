@@ -1,15 +1,18 @@
 import {Component, inject, signal} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import {Menubar} from 'primeng/menubar';
 import {MenuItem} from 'primeng/api';
 import Aura from '@primeuix/themes/aura';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {FormsModule} from '@angular/forms';
 import {PrimeNG} from 'primeng/config';
+import {SignalStoreService} from './services/signal-store.service';
+import {EndpointManagerService} from './services/endpoint-manager.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Menubar, ToggleSwitch, FormsModule],
+  imports: [RouterOutlet, CommonModule, Menubar, ToggleSwitch, FormsModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -18,7 +21,10 @@ export class App {
   primeNgConfig = inject(PrimeNG);
   isDarkMode = signal(false);
 
-  constructor() {
+  constructor(
+    public signalStore: SignalStoreService,
+    public endpointManager: EndpointManagerService
+  ) {
     this.primeNgConfig.theme.set({
       preset: Aura,
       options: {

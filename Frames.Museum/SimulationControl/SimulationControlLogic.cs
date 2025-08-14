@@ -89,7 +89,7 @@ public static class SimulationControlLogic
             ? $"simulator-{request.AtomicModelName}"
             : $"coordinator-{request.CoupledModelName}";
 
-        await rootCoordinatorActor.Ask<IActorRef>(
+        await rootCoordinatorActor.Ask(
             new Simulation.CreateModel(model, name, uniqueId));
 
 
@@ -130,7 +130,7 @@ public static class SimulationControlLogic
             ? $"simulator-{request.AtomicModelName}"
             : $"coordinator-{request.CoupledModelName}";
 
-        await rootCoordinatorActor.Ask<IActorRef>(
+        await rootCoordinatorActor.Ask(
             new Simulation.CreateModel(model, name, uniqueId));
 
 

@@ -1,22 +1,35 @@
 <h2 class="text-xl font-semibold mb-4">Reel Editor</h2>
 <div class="editor-wrap">
   <div id="monaco-editor-root" class="monaco-editor-root"></div>
+</div>
 
-
+<!-- Drag and Drop Zone -->
+<div
+  class="drag-drop-zone"
+  [class.drag-over]="isDragOver()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+  *ngIf="generatedCode().length === 0">
+  <div class="drag-drop-content">
+    <i class="pi pi-upload" style="font-size: 2rem; color: #6c757d;"></i>
+    <p>Drag and drop a JSON file here</p>
+    <p class="text-sm text-muted">or use the editor above to generate code</p>
+  </div>
 </div>
 <div class="button-group">
   <p-button (onClick)="onClicK()" label="GENERATE" icon="pi pi-cog"></p-button>
   <p-button (onClick)="setSampleCode()" label="Load Sample" icon="pi pi-file"></p-button>
   <div class="send-request-group">
     <p-select
-      [options]="coupledModels()"
+      [options]="allModels()"
       [(ngModel)]="selectedModel"
       placeholder="Select a model"
       optionLabel="label"
       optionValue="value"
       class="model-select">
     </p-select>
-    <p-button (onClick)="sendRequest()" label="SEND REQUEST" icon="pi pi-send"></p-button>
+    <p-button (onClick)="sendRequest()" label="Add Model" icon="pi pi-send"></p-button>
   </div>
 </div>
 <div class="generated-code-section" *ngIf="generatedCode().length > 0">
