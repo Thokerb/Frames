@@ -415,6 +415,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         activity?.SetTag("Model", _coupledModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         activity?.SetTag("Input", obj.Input?.ToString() ?? "null");
+        activity?.WriteSharding(obj);
         if (!(_timeLast <= obj.CurrentTime && obj.CurrentTime <= _timeNext))
         {
             // TODO: what does this mean? taken from the book
@@ -498,6 +499,7 @@ public class Coordinator : ReceiveActor, ILogReceive
     {
         _parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
         using var activity = ActivitySource.StartActivity("ComputeOutput", ActivityKind.Internal, parentContext: _parentContext);
+        activity?.WriteSharding(obj);
         if (!obj.CurrentTime.Equals(_timeNext))
         {
             throw new SynchronisationException("Current time does not match time next");
@@ -561,6 +563,7 @@ public class Coordinator : ReceiveActor, ILogReceive
         activity?.SetTag("Name", Self.Path.Name);
         activity?.SetTag("Model", _coupledModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
+        activity?.WriteSharding(obj);
         foreach (var child in _children)
         {
             child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime, activity)

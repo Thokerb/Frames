@@ -28,9 +28,9 @@ public static class HelloWorldLogic
         
         var uniqueId = Guid.NewGuid();
         
-        ICoupledModel coupledModel = new CArena();
+        ICoupledModel coupledModel = new CSuperArena2();
         
-        await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-carena",uniqueId));
+        await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-cSuperArena",uniqueId));
       
         
         // Act

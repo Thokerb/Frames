@@ -216,6 +216,7 @@ public class Simulator : ReceiveActor, ILogReceive
         activity?.SetTag("OldState", _atomicModel.StateInternal.ToString());
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         activity?.SetTag("Input", obj.Input?.ToString() ?? "null");
+        activity?.WriteSharding(obj);
         var bagIsEmpty = obj.Input?.IsEmpty ?? true;
 
         if (bagIsEmpty && obj.CurrentTime == _timeNext)
@@ -274,6 +275,7 @@ public class Simulator : ReceiveActor, ILogReceive
         activity?.SetTag("Name", Self.Path.Name);
         activity?.SetTag("Model", _atomicModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
+        activity?.WriteSharding(obj);
 
         // Check if the current time is equal to the next time
         if (obj.CurrentTime == _timeNext)
@@ -305,6 +307,7 @@ public class Simulator : ReceiveActor, ILogReceive
         activity?.SetTag("Name", Self.Path.Name);
         activity?.SetTag("Model", _atomicModel.GetType().Name);
         activity?.SetTag("CurrentTime", msg.CurrentTime.ToString());
+        activity?.WriteSharding(msg);
 
         // tl = t −e
         _timeLast = msg.CurrentTime - _timeElapsed;
