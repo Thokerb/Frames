@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.Museum", "Frames.Mus
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.ReelTests", "Frames.ReelTests\Frames.ReelTests.csproj", "{B716AC48-9CCE-41E8-93D4-10A638DCD284}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.BenchmarkTests", "Frames.BenchmarkTests\Frames.BenchmarkTests.csproj", "{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{B716AC48-9CCE-41E8-93D4-10A638DCD284}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B716AC48-9CCE-41E8-93D4-10A638DCD284}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B716AC48-9CCE-41E8-93D4-10A638DCD284}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
