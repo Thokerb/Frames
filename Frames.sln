@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.ReelTests", "Frames.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.BenchmarkTests", "Frames.BenchmarkTests\Frames.BenchmarkTests.csproj", "{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frames.DevStoneAdapter", "Frames.DevStoneAdapter\Frames.DevStoneAdapter.csproj", "{6A09C57A-61FD-43A7-852E-5FAB23F2F052}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A09C57A-61FD-43A7-852E-5FAB23F2F052}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A09C57A-61FD-43A7-852E-5FAB23F2F052}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A09C57A-61FD-43A7-852E-5FAB23F2F052}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A09C57A-61FD-43A7-852E-5FAB23F2F052}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

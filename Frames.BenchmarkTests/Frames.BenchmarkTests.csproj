@@ -19,17 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Include="dhry\dhry_1.cpp" />
-      <None Include="dhry\dhry_2.cpp" />
-      <None Update="dhry\dhrystone.dll">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="dhry\dhrystone.exp">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="dhry\dhrystone.lib">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+      <ProjectReference Include="..\Frames.DevStoneAdapter\Frames.DevStoneAdapter.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Frames.BenchmarkTests;
+namespace Frames.DevStoneAdapter;
 
 public static class CSharpStone
 {

@@ -1,4 +1,6 @@
-﻿namespace Frames.BenchmarkTests;
+﻿using Frames.DevStoneAdapter;
+
+namespace Frames.BenchmarkTests;
 
 public class UnitTest1
 {
