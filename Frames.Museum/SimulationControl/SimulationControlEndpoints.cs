@@ -15,5 +15,10 @@ public static class SimulationControlEndpoints
         
         app.MapPost("/start-simulation", SimulationControlLogic.StartSimulation);
         app.MapPost("/stop-simulation", SimulationControlLogic.StopSimulation);
+        
+        app.MapPost("/get-status", SimulationControlLogic.GetStatus);
+        
+        app.MapPost("/remove-checkpoint", SimulationControlLogic.RemoveCheckpoint);
+        app.MapPost("/add-checkpoint", SimulationControlLogic.AddCheckpoint);
     }
 }

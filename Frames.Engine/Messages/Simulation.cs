@@ -13,34 +13,50 @@ public static class Simulation
     }
 
     public sealed record StartSimulation(Guid Id, string? CheckpointName = null) : WithRootCoordinatorShardId(Id);
-    public sealed record QueryIsCompleted( Guid Id): WithRootCoordinatorShardId(Id);
-    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id): WithRootCoordinatorShardId(Id);
-    public sealed record SetStopAfterTime(TimeUnit Time, Guid Id): WithRootCoordinatorShardId(Id);
+
+    public sealed record QueryIsCompleted(Guid Id) : WithRootCoordinatorShardId(Id);
+
+    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id)
+        : WithRootCoordinatorShardId(Id);
+
+    public sealed record SetStopAfterTime(TimeUnit Time, Guid Id) : WithRootCoordinatorShardId(Id);
+
     public sealed record SetSpeedControl : WithRootCoordinatorShardId
     {
         public int TimeUnitInMilliseconds { get; init; }
         public bool AsFastAsPossible { get; init; }
-        
+
         public SetSpeedControl(int timeUnitInMilliseconds, Guid Id) : base(Id)
         {
             TimeUnitInMilliseconds = timeUnitInMilliseconds;
         }
+
         public SetSpeedControl(bool asFastAsPossible, Guid Id) : base(Id)
         {
             AsFastAsPossible = asFastAsPossible;
         }
     }
 
-    public sealed record HasStopCondition(): WithShardId;
-    public sealed record SaveCheckpoint(string Name, TimeUnit CurrentTime): WithShardId;
-    public sealed record FinishedSaveCheckpoint(string Name, TimeUnit CurrentTime): WithShardId;
-    public sealed record StopSimulation( Guid Id): WithRootCoordinatorShardId(Id);
-    public sealed record PauseSimulation( Guid Id): WithRootCoordinatorShardId(Id);
-    public sealed record ResumeSimulation( Guid Id): WithRootCoordinatorShardId(Id);
-    public sealed record SetCheckpoint(string Name, TimeUnit Time, Guid Id): WithRootCoordinatorShardId(Id);
-    
-    public sealed record LoadCheckpoint(string Name): WithShardId;
-    public sealed record FinishedLoadCheckpoint(string Name): WithShardId;
+    public sealed record HasStopCondition() : WithShardId;
+
+    public sealed record SaveCheckpoint(string Name, TimeUnit CurrentTime) : WithShardId;
+
+    public sealed record FinishedSaveCheckpoint(string Name, TimeUnit CurrentTime) : WithShardId;
+
+    public sealed record StopSimulation(Guid Id) : WithRootCoordinatorShardId(Id);
+
+    public sealed record PauseSimulation(Guid Id) : WithRootCoordinatorShardId(Id);
+
+    public sealed record ResumeSimulation(Guid Id) : WithRootCoordinatorShardId(Id);
+
+    public sealed record SetCheckpoint(string Name, TimeUnit Time, Guid Id) : WithRootCoordinatorShardId(Id);
+    public sealed record RemoveCheckpoint(string Name, Guid Id) : WithRootCoordinatorShardId(Id);
+
+    public sealed record LoadCheckpoint(string Name) : WithShardId;
+
+    public sealed record FinishedLoadCheckpoint(string Name) : WithShardId;
+
+    public sealed record GetStatus(Guid Id) : WithRootCoordinatorShardId(Id);
 }
 
 public enum CompletionType
@@ -53,8 +69,8 @@ public enum CompletionType
     Error,
     Timeout
 }
- 
-  public record WithShardId : IShardSeperation
+
+public record WithShardId : IShardSeperation
 {
     public required string ShardId { get; init; }
     public required string EntityName { get; init; }
@@ -72,6 +88,6 @@ public record WithRootCoordinatorShardId(Guid Id) : IShardSeperation
     public string ShardId { get; internal set; } = $"root-coordinator";
 
     public string EntityName { get; } = $"root-coordinator";
-    
+
     public Guid RunId { get; set; } = Id;
 }

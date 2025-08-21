@@ -137,7 +137,49 @@ public static class SimulationControlLogic
         return TypedResults.Ok(new ModelResponse(uniqueId,
             $"Reel model created: {request.CoupledModelName} with ID {uniqueId}"));
     }
+    
+    public static async Task<Results<Ok<ModelResponse>, BadRequest<string>>> AddCheckpoint(HttpContext context,
+        IRequiredActor<RootCoordinator> rootCoordinatorActorRef, AddCheckpointRequest request)
+    {
+        var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
+        
+        var response = await rootCoordinatorActor.Ask<ActionResponse>(new Simulation.SetCheckpoint(request.CheckpointName,request.TimeUnit, request.ModelId));
+        
+        if (response.Success)
+        {
+            return TypedResults.Ok(new ModelResponse(request.ModelId, $"Checkpoint '{request.CheckpointName}' added successfully. {response.Message}"));
+        }
 
+        return TypedResults.BadRequest($"Failed to add checkpoint: {response.Message}");
+
+    }
+    
+    public static async Task<Results<Ok<ModelResponse>, BadRequest<string>>> RemoveCheckpoint(HttpContext context,
+        IRequiredActor<RootCoordinator> rootCoordinatorActorRef, RemoveCheckpointRequest request)
+    {
+        var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
+        
+        var response = await rootCoordinatorActor.Ask<ActionResponse>(new Simulation.RemoveCheckpoint(request.CheckpointName, request.ModelId));
+        
+        if (response.Success)
+        {
+            return TypedResults.Ok(new ModelResponse(request.ModelId, $"Checkpoint '{request.CheckpointName}' added successfully. {response.Message}"));
+        }
+
+        return TypedResults.BadRequest($"Failed to add checkpoint: {response.Message}");
+
+    }
+
+    
+
+    public static async Task<Results<Ok<SimulationStatus>, BadRequest<string>>> GetStatus(HttpContext context, IRequiredActor<RootCoordinator> rootCoordinatorActorRef, SimulationRequest request)
+    {
+        var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
+        // Get the status of the model with the given ID
+        var status = await rootCoordinatorActor.Ask<SimulationStatus>(new Simulation.GetStatus(request.ModelId));
+        return TypedResults.Ok(status);
+    }
+    
     private static ReelAtomicModel GetAtomicModelReel(ReelJson requestReelJson, string requestAtomicModelName)
     {
         var atomicModelJson = requestReelJson.AtomicModels
@@ -151,6 +193,8 @@ public static class SimulationControlLogic
             Name = requestAtomicModelName
         };
     }
+
+
 }
 
 public record AddModelRequest(
@@ -167,7 +211,11 @@ public record AddModelRequestWithDuration(
 public record SetStopAfterTimeRequest(Guid ModelId, int TimeUnits);
 
 public record ModelResponse(Guid ModelId, string Message);
+public record ModelStatusResponse(Guid ModelId,bool Success, string Message);
 
 public record SppedControlRequest(Guid ModelId, int TimeInMilliseconds, bool AsFastAsPossible);
 
 public record SimulationRequest(Guid ModelId);
+
+public record AddCheckpointRequest(string CheckpointName, TimeUnit TimeUnit, Guid ModelId);
+public record RemoveCheckpointRequest(string CheckpointName, Guid ModelId);

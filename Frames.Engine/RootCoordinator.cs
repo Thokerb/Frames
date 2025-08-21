@@ -76,9 +76,34 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Receive<Simulation.SetStopAfterTime>(ReceiveSetStopAfterTime);
         Receive<Simulation.QueryIsCompleted>(ReceiveIsCompleted);
         Receive<Simulation.SetCheckpoint>(ReceiveSetCheckpoint);
+        Receive<Simulation.RemoveCheckpoint>(ReceiveRemoveCheckpoint);
         ReceiveAsync<Simulation.FinishedSaveCheckpoint>(ReceiveFinishedSaveCheckpointAsync);
         ReceiveAsync<Simulation.LoadCheckpoint>(ReceiveLoadCheckpointAsync);
         Receive<Simulation.FinishedLoadCheckpoint>(ReceiveFinishedLoadCheckpoint);
+        Receive<Simulation.GetStatus>(msg =>
+        {
+            var status = new SimulationStatus()
+            {
+                Checkpoints = _checkpoints,
+                CurrentTime = _currentTime,
+                TimeNext = _timeNext,
+                IsRunning = _isRunning,
+                IsCompleted = _isCompleted,
+                CompletionType = CompletionType,
+                TimeUntilShutdown = _timeUntilShutdown,
+                IsLoadingCheckpoint = _isLoadingCheckpoint,
+                ManualPause = _manualPause,
+                ManualStop = _manualStop,
+                TimeUnitInMilliseconds = _timeUnitInMilliseconds,
+                ChildrenName = ChildrenName,
+                Id = Id,
+                LastTime = _lastTime,
+                StopConditionReached = StopConditionReached,
+                CheckpointName = RestoredCheckpointName,
+                ListeningActors = _waitingForCompletion.Select(x => x.Path.Name).ToList(),
+            };
+            Sender.Tell(status);
+        });
         Receive<Simulation.SetSpeedControl>(ReceiveSetSpeedControl);
         Receive<Simulation.PauseSimulation>(ReceivePauseSimulation);
         Receive<Simulation.StopSimulation>(ReceiveStopSimulation);
@@ -256,11 +281,32 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     {
         if (_currentTime > obj.Time)
         {
-            throw new SimulatorException("Checkpoint time is in the past");
+            Sender.Tell(new ActionResponse(false, "Checkpoint time can not be in the past"));
+            return;
+        }
+
+        if (_checkpoints.ContainsValue(obj.Name))
+        {
+            Sender.Tell(new ActionResponse(false, "Checkpoint with this name already exists"));
+            return;
         }
 
         _checkpoints.Add(obj.Time, obj.Name);
         Log.Information("[ROOT] Checkpoint set at time {Time}", obj.Time);
+        Sender.Tell(new ActionResponse(true, "Checkpoint set successfully"));
+    }
+    private void ReceiveRemoveCheckpoint(Simulation.RemoveCheckpoint obj)
+    {
+        var checkpoint = _checkpoints.FirstOrDefault(x => x.Value == obj.Name);
+        if (checkpoint.Equals(default(KeyValuePair<TimeUnit, string>)))
+        {
+            Sender.Tell(new ActionResponse(false, "Checkpoint with this name does not exist"));
+            return;
+        }
+        
+        _checkpoints.Remove(checkpoint.Key);
+        Log.Information("[ROOT] Checkpoint {Checkpoint} removed", obj.Name);
+        Sender.Tell(new ActionResponse(true, "Checkpoint removed successfully"));
     }
 
     private Activity? SimulationRun { get; set; }
@@ -637,3 +683,26 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private bool StopConditionReached { get; set; }
 }
+
+public record SimulationStatus
+{
+    public SortedList<TimeUnit, string> Checkpoints { get; set; }
+    public TimeUnit CurrentTime { get; set; }
+    public bool IsRunning { get; set; }
+    public CompletionType CompletionType { get; set; }
+    public bool ManualStop { get; set; }
+    public bool StopConditionReached { get; set; }
+    public string? ChildrenName { get; set; }
+    public bool IsCompleted { get; set; }
+    public int? TimeUnitInMilliseconds { get; set; }
+    public TimeUnit TimeUntilShutdown { get; set; }
+    public bool IsLoadingCheckpoint { get; set; }
+    public bool ManualPause { get; set; }
+    public TimeUnit TimeNext { get; set; }
+    public Guid Id { get; set; }
+    public TimeUnit? LastTime { get; set; }
+    public string? CheckpointName { get; set; }
+    public List<string> ListeningActors { get; set; }
+}
+
+public record ActionResponse(bool Success, string? Message);
