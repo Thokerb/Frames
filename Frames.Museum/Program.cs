@@ -4,6 +4,7 @@ using Akka.Hosting;
 using Frames.Engine.DependencyInjection;
 using Frames.Museum;
 using Frames.Museum.ClusterOverview;
+using Frames.Museum.Devstone;
 using Frames.Museum.HelloWorld;
 using Frames.Museum.SimulationControl;
 using Frames.Museum.Tracing;
@@ -91,6 +92,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapHelloWorld();
 app.MapSimulationControlEndpoints();
+app.MapDevstoneEndpoints();
 app.UseSignalRConfiguration();
 
 app.UseHttpsRedirection();

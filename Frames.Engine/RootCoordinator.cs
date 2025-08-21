@@ -41,6 +41,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private TimeUnit _timeNext;
 
     private TimeUnit _currentTime = TimeUnit.Zero;
+    private TimeUnit? _lastTime = null;
 
     private readonly SortedList<TimeUnit, string> _checkpoints = new();
 
@@ -588,7 +589,23 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             }
             _stopwatch.Restart();
         }
-        
+
+        if (_currentTime == _lastTime)
+        {
+            SimulationStep?.Dispose();
+            SimulationRun?.Dispose(); 
+            Log.Information("[ROOT] Simulation completed, no more time left");
+            _timer?.Stop();
+            _isCompleted = true;
+            CompletionType = CompletionType.StopAfterTime;
+            _isRunning = false;
+            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType,Id)
+            {
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
+            }));
+            return;
+        }
+        _lastTime = _currentTime;
 
         
         SimulationStep?.Dispose();

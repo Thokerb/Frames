@@ -36,6 +36,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Frames.DevStoneAdapter\Frames.DevStoneAdapter.csproj" />
       <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
       <ProjectReference Include="..\Frames.ReelConnector\Frames.ReelConnector.csproj" />
     </ItemGroup>

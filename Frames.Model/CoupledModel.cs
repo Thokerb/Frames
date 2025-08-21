@@ -14,26 +14,27 @@ public class CoupledModel : ICoupledModel
 
 
     private Dictionary<string, IModel> Children { get; } = new();
-    
+
     private List<(Port inPort, Port outPort, string inModel, string outModel)> Pipes { get; } = new();
     private List<(Port inPort, Port outPort)> OutsidePorts { get; } = new();
-    
+
     public T AddModel<T>(string id) where T : IModel
     {
         T model = Activator.CreateInstance<T>();
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
         model.Name = id;
-        Children.Add(prefix+id, model);
-        return model;
-    }    
-    public T AddModel<T>(T model) where T : IModel
-    {
-        string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
-        Children.Add(prefix+model.Name, model);
+        Children.Add(prefix + id, model);
         return model;
     }
 
-    public T AddModel<T,TState>(string id, TState state) 
+    public T AddModel<T>(T model) where T : IModel
+    {
+        string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
+        Children.Add(prefix + model.Name, model);
+        return model;
+    }
+
+    public T AddModel<T, TState>(string id, TState state)
         where T : IAtomicModel<TState>
         where TState : IState
     {
@@ -41,10 +42,10 @@ public class CoupledModel : ICoupledModel
         model.State = state;
         model.Name = id;
         string prefix = (model is IAtomicModelBase) ? "simulator-" : "coordinator-";
-        Children.Add(prefix+id, model);
+        Children.Add(prefix + id, model);
         return model;
     }
-    
+
     public void RemoveModel(string id)
     {
         if (Children.ContainsKey(id))
@@ -60,13 +61,14 @@ public class CoupledModel : ICoupledModel
 
     private List<Port> InPorts { get; } = new();
     private List<Port> OutPorts { get; } = new();
-    
+
     public void AddInPort(Port port)
     {
         if (InPorts.Any(x => x.Equals(port)))
         {
             throw new ArgumentException($"Port {port} already exists in model {Name}.");
         }
+
         InPorts.Add(port);
     }
 
@@ -76,9 +78,10 @@ public class CoupledModel : ICoupledModel
         {
             throw new ArgumentException($"Port {port} already exists in model {Name}.");
         }
+
         OutPorts.Add(port);
     }
-    
+
     /// <summary>
     /// It is required that the models are already added to the CoupledModel.
     /// Therefore call AddModel before calling this method.
@@ -90,28 +93,39 @@ public class CoupledModel : ICoupledModel
     /// <exception cref="ArgumentException"></exception>
     public void AddCoupling(string sourceId, Port sourcePort, string targetId, Port targetPort)
     {
+        string internalSourceId = sourceId;
+        string internalTargetId = targetId;
+
         if (Name != sourceId)
         {
-            sourceId = Children.Keys.Any(x => x.Equals("simulator-"+sourceId)) 
-                ? sourceId = "simulator-"+sourceId 
-                : sourceId = "coordinator-"+sourceId;
-
+            // Internally all models are prefixed with "simulator-" or "coordinator-"
+            if (!(internalSourceId.StartsWith("simulator-") || internalSourceId.StartsWith("coordinator-")))
+            {
+                internalSourceId = Children.Keys.Any(x => x.Equals("simulator-" + sourceId))
+                    ? "simulator-" + sourceId
+                    : "coordinator-" + sourceId;
+            }
         }
 
-        targetId = Children.Keys.Any(x => x.Equals("simulator-"+targetId))
-            ? targetId = "simulator-"+targetId 
-            : targetId = "coordinator-"+targetId;
-        
-        if (!Children.ContainsKey(sourceId) && Name != sourceId)
+        if (!internalTargetId.StartsWith("simulator-") && !internalTargetId.StartsWith("coordinator-"))
+        {
+            // Internally all models are prefixed with "simulator-" or "coordinator-"}
+            internalTargetId = Children.Keys.Any(x => x.Equals("simulator-" + targetId))
+                ? "simulator-" + targetId
+                : "coordinator-" + targetId;
+        }
+
+        if (!Children.ContainsKey(internalSourceId) && Name != internalSourceId)
         {
             throw new ArgumentException($"Source model with id {sourceId} does not exist.");
         }
-        if (!Children.ContainsKey(targetId))
+
+        if (!Children.ContainsKey(internalTargetId))
         {
             throw new ArgumentException($"Target model with id {targetId} does not exist.");
         }
-        
-        Pipes.Add((sourcePort, targetPort, sourceId, targetId));
+
+        Pipes.Add((sourcePort, targetPort, internalSourceId, internalTargetId));
     }
 
     public List<(Port inPort, Port outPort, string inModel, string outModel)> GetCouplings()
@@ -144,12 +158,12 @@ public class CoupledModel : ICoupledModel
     {
         var coupling = Pipes
             .FirstOrDefault(x => x.inModel.Equals(source) && x.outModel.Equals(target) && x.inPort.Equals(sourcePort));
-        
+
         if (coupling == default)
         {
             throw new ArgumentException($"No coupling found for source {source} and target {target}");
         }
-        
+
         return coupling.outPort;
     }
 
@@ -167,33 +181,33 @@ public class CoupledModel : ICoupledModel
     {
         // TODO: change pipes to allow outport without model
         // TODO: evaluate if outModel is needed
-        OutsidePorts.Add((inPort,outPort));
+        OutsidePorts.Add((inPort, outPort));
     }
-    
-    
+
+
     public void AddCouplingFromOutIn(Port sourcePort, string targetModel, Port targetPort)
     {
-        
         // TODO: dont use default
-        targetModel = Children.Keys.Any(x => x.Equals("simulator-"+targetModel))
-            ? targetModel = "simulator-"+targetModel 
-            : targetModel = "coordinator-"+targetModel;
+        targetModel = Children.Keys.Any(x => x.Equals("simulator-" + targetModel))
+            ? targetModel = "simulator-" + targetModel
+            : targetModel = "coordinator-" + targetModel;
 
-        
+
         // TODO: is inModel relevant
         Pipes.Add((sourcePort, targetPort, "NONE", targetModel));
     }
-    
-    public bool HasCouplingOut(Port inPort,out Port? outPort)
+
+    public bool HasCouplingOut(Port inPort, out Port? outPort)
     {
         var coupling = OutsidePorts
             .FirstOrDefault(x => x.inPort.Equals(inPort));
-        
+
         if (coupling == default)
         {
             outPort = null;
             return false;
         }
+
         outPort = coupling.outPort;
         return true;
     }

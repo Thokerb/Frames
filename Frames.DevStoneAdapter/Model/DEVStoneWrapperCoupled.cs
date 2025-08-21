@@ -8,12 +8,12 @@ namespace Frames.DevStoneAdapter.Model;
 /// </summary>
 public abstract class DEVStoneWrapperCoupled : CoupledModel
 {
-    public int Depth { get; }
-    public int Width { get; }
-    public int IntDelay { get; }
-    public int ExtDelay { get; }
-    public bool AddAtomicOutPorts { get; }
-    public int PrepTime { get; }
+    protected int Depth { get; }
+    protected int Width { get; }
+    protected int IntDelay { get; }
+    protected int ExtDelay { get; }
+    protected bool AddAtomicOutPorts { get; }
+    protected int PrepTime { get; }
 
     public DEVStoneWrapperCoupled(string name, int depth, int width, int intDelay, int extDelay, bool addAtomicOutPorts, int prepTime) : base(name)
     {
@@ -65,6 +65,27 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
         }
         
     }
+
+
+    protected void AssertIsCoupled(IModel model)
+    {
+        var isCoupled = model is DEVStoneWrapperCoupled;
+        if (!isCoupled)
+        {
+            throw new ArgumentException($"Model {model.Name} is not a coupled model.");
+        }
+    }
+    
+    protected void AssertIsAtomic(IModel model)
+    {
+        var isAtomic = model is DelayedAtomic;
+        if (!isAtomic)
+        {
+            throw new ArgumentException($"Model {model.Name} is not an atomic model.");
+        }
+    }
+    
+    
 
     public abstract DEVStoneWrapperCoupled GenerateCoupled();
 }
