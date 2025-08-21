@@ -10,11 +10,12 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
 import {SignalStoreService} from '../../app/services/signal-store.service';
 import {ApiService} from '../../app/services/api.service';
+import {StatusComponent} from './status-component/status-component';
 
 @Component({
   selector: 'app-execution',
   standalone: true,
-  imports: [FormsModule, NgIf, NgForOf, ButtonModule, SelectModule, InputTextModule, InputNumberModule, CheckboxModule],
+  imports: [FormsModule, NgIf, NgForOf, ButtonModule, SelectModule, InputTextModule, InputNumberModule, CheckboxModule, StatusComponent],
   templateUrl: './execution.html',
   styleUrl: './execution.css',
   providers: [ExecutionSignalRService]
@@ -156,6 +157,8 @@ export class Execution implements OnDestroy {
       }
     });
   }
+
+
 
   stopSimulation(): void {
     const state = this.signalStore.state();

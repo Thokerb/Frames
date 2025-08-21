@@ -66,6 +66,7 @@ builder.Services.AddSignalRConfiguration();
 builder.Services.ConfigureHttpJsonOptions(options => 
 {
     options.SerializerOptions.Converters.Add(new ReelJsonConverter());
+    options.SerializerOptions.Converters.Add(new TimeUnitJsonConverter());
 });
 
 builder.Services.WithAkkaHealthCheck(HealthCheckType.All);

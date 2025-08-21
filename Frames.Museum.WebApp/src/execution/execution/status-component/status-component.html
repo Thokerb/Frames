@@ -1,0 +1,78 @@
+<!-- Add a new section for simulation status and checkpoint management -->
+<div class="simulation-status-section mb-6" *ngIf="signalStore.state().runId">
+
+  <div class="flex justify-between items-center mb-3">
+    <h3 class="text-lg font-medium">Simulation Status & Checkpoints</h3>
+    <button pButton type="button"
+            icon="pi pi-refresh"
+            label="Refresh Status"
+            (click)="fetchStatus()"></button>
+  </div>
+
+{{this.signalStore.state().communicationEndpoint}}
+  <h3 class="text-lg font-medium mb-3">Simulation Status & Checkpoints</h3>
+
+  <div class="grid grid-cols-2 gap-4">
+    <!-- Status Display Column -->
+    <div class="status-info p-4 border rounded-lg bg-gray-50">
+      <h4 class="text-md font-medium mb-2">Current Status</h4>
+      <div class="grid gap-2">
+        <div class="flex justify-between">
+          <span class="font-medium">Current Time:</span>
+          <span>{{simulationStatus?.currentTime?.value}}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-medium">Next Time:</span>
+          <span>{{simulationStatus?.timeNext?.value}}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-medium">Running:</span>
+          <span>{{simulationStatus?.isRunning ? 'Yes' : 'No'}}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-medium">Completed:</span>
+          <span>{{simulationStatus?.isCompleted ? 'Yes' : 'No'}}</span>
+        </div>
+        <div *ngIf="simulationStatus?.checkpoints">
+          <span class="font-medium">Checkpoints:</span>
+          <div class="ml-4 mt-2">
+            <div *ngFor="let checkpoint of getCheckpoints()" class="flex justify-between items-center mb-2">
+              <span>{{checkpoint.name}} (Time: {{checkpoint.time}})</span>
+              <button pButton type="button"
+                      icon="pi pi-trash"
+                      class="p-button-danger p-button-sm"
+                      (click)="removeCheckpoint(checkpoint.name)"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkpoint Controls Column -->
+    <div class="checkpoint-controls p-4 border rounded-lg">
+      <h4 class="text-md font-medium mb-2">Add New Checkpoint</h4>
+      <div class="grid gap-4">
+        <div class="flex flex-col">
+          <label for="checkpointName" class="mb-1">Checkpoint Name</label>
+          <input pInputText
+                 id="checkpointName"
+                 [(ngModel)]="checkpointName"
+                 placeholder="Enter checkpoint name"/>
+        </div>
+        <div class="flex flex-col">
+          <label for="checkpointTime" class="mb-1">Time Unit</label>
+          <p-inputNumber id="checkpointTime"
+                         [(ngModel)]="checkpointTime"
+                         [min]="0"
+                         placeholder="Enter time unit"></p-inputNumber>
+        </div>
+        <button pButton type="button"
+                label="Add Checkpoint"
+                icon="pi pi-plus"
+                (click)="addCheckpoint()"
+                [disabled]="!checkpointName || checkpointTime === null"></button>
+      </div>
+    </div>
+  </div>
+</div>
+

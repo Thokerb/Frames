@@ -1,11 +1,11 @@
 <div class="mb-6">
   <h2 class="text-2xl font-semibold mb-4">Execution Control Panel</h2>
-  
+
   <!-- Communication Endpoint Selection -->
   <div class="endpoint-selection mb-6">
     <h3 class="text-lg font-medium mb-2">Communication Endpoint</h3>
     <div class="flex items-center gap-4">
-      <select 
+      <select
         class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         [value]="signalStore.state().communicationEndpoint || ''"
         (change)="onCommunicationEndpointChange($any($event.target).value)">
@@ -19,7 +19,7 @@
       </span>
     </div>
   </div>
-  
+
   <!-- Global State Display -->
   <div class="state-info mb-6" *ngIf="signalStore.state().runId">
     <h3 class="text-lg font-medium mb-2">Current Model</h3>
@@ -77,6 +77,8 @@
       </div>
     </div>
   </div>
+
+<app-status-component></app-status-component>
 
   <!-- SignalR Console -->
   <div class="signalr-section mb-6">
