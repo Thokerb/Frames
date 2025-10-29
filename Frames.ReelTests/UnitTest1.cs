@@ -3,6 +3,7 @@ using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Museum.Benchmark.Model;
 using Frames.Museum.BlinkingLightBRTest;
 using Newtonsoft.Json;
 using OpenTelemetry;
@@ -112,5 +113,42 @@ public class SerializationTest
 
         // Assert
         Assert.NotEqual(deserialized.TraceId.ToString(), new ActivityTraceId().ToString());
+    }
+
+    [Fact]
+    public void TestSerialization5()
+    {
+        var model = new CoupledBenchmarkModel("root2", 20, 20, true);
+        Assert.Equal(20, model.GetChildren().Count());
+        
+        // serialize and deserialize
+        var serialize = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Auto
+        });
+        var modelDeserialized = JsonConvert.DeserializeObject<CoupledBenchmarkModel>(serialize, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Auto
+        });
+        Assert.Equal(20, modelDeserialized.GetChildren().Count());
+    }
+    
+    [Fact]
+    public void TestSerialization6()
+    {
+        var model = new CoupledBenchmarkModel("root2", 20, 20, true);
+
+        var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
+        
+        // serialize and deserialize
+        var serialize = JsonConvert.SerializeObject(msg, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.All
+        });
+        var modelDeserialized = JsonConvert.DeserializeObject<IShardSeperation>(serialize, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.All
+        });
+        Assert.Equal(modelDeserialized.ShardId, msg.ShardId);
     }
 }

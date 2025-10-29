@@ -99,7 +99,7 @@ public static class ComputeOutput
     /// <param name="Output">y</param>
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : WithOutputTrace, IShardSeperation
+    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : IShardSeperation
     {
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
@@ -172,10 +172,8 @@ public static class StateSnapshot
 }
 
 
-public record WithSimulatorInformation(bool StopConditionReached = false, Dictionary<string, Guid>? ToStringState = null);
+public record WithSimulatorInformation(bool StopConditionReached = false, List<Guid>? ToStringState = null);
 
-//TODO: I think this is not needed anymore as we send this with streams now
-public record WithOutputTrace(string ToStringOutput = "");
 
 /// <summary>
 /// When receiver is a simulator ShardId = SenderId, When receiver is a coordinator ShardId = receiverId

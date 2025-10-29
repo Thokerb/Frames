@@ -1,4 +1,5 @@
 ﻿using Frames.Model.ValueTypes;
+using Newtonsoft.Json;
 
 namespace Frames.Model;
 
@@ -9,13 +10,20 @@ public class CoupledModel : ICoupledModel
         this.Name = name;
     }
 
+    [JsonProperty]
     public string Name { get; set; }
+    
+    [JsonProperty]
     public bool HasStopCondition { get; set; } = false;
-
-
+    
+    [JsonProperty]
     private Dictionary<string, IModel> Children { get; } = new();
 
+    [JsonProperty]
     private List<(Port inPort, Port outPort, string inModel, string outModel)> Pipes { get; } = new();
+    
+    // TODO: this seems inconsistent, we dont care about models and only about ports here but in Pipes we care about models.
+    [JsonProperty]
     private List<(Port inPort, Port outPort)> OutsidePorts { get; } = new();
 
     public T AddModel<T>(string id) where T : IModel
@@ -59,7 +67,10 @@ public class CoupledModel : ICoupledModel
         return Children.Select(x => (x.Key, x.Value)).ToList();
     }
 
+    [JsonProperty]
     private List<Port> InPorts { get; } = new();
+    
+    [JsonProperty]
     private List<Port> OutPorts { get; } = new();
 
     public void AddInPort(Port port)
@@ -177,11 +188,11 @@ public class CoupledModel : ICoupledModel
         return receivers;
     }
 
-    public void AddCouplingOut(string source, Port inPort, Port outPort)
+    public void AddCouplingOut(string source, Port sourcePort, Port targetPort)
     {
         // TODO: change pipes to allow outport without model
         // TODO: evaluate if outModel is needed
-        OutsidePorts.Add((inPort, outPort));
+        OutsidePorts.Add((sourcePort, targetPort));
     }
 
 

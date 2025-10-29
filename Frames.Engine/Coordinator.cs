@@ -283,11 +283,9 @@ public class Coordinator : ReceiveActor, ILogReceive
             Log.Debug("Not all children have reported yet");
             return;
         }
-        else
-        {
-            Log.Debug("All children have reported");
-            _outputMessageBagParent = new Bag();
-        }
+
+        Log.Debug("All children have reported");
+        _outputMessageBagParent = new Bag();
 
         // prepare output bag for parent
         // all ports in bag that are not coupled to children are added to the output message bag
@@ -393,9 +391,7 @@ public class Coordinator : ReceiveActor, ILogReceive
             {
                 // merge all States to one
                 ToStringState = _timeNextExecuteTransition.Values
-                    .SelectMany(x => x.ToStringState ?? new Dictionary<string, Guid>())
-                    .ToDictionary(x => x.Key,
-                        x => x.Value),
+                    .SelectMany(x => x.ToStringState ?? []).ToList(),
                 StopConditionReached = _timeNextExecuteTransition.Values.Any(x => x.StopConditionReached),
                 ShardId = ActorHelper.GetShardId(Name, ParentName),
                 EntityName = ParentName,

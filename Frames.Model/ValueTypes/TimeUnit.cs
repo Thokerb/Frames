@@ -34,11 +34,6 @@ public record struct TimeUnit : IComparable<TimeUnit>
         return $"{Value}";
     }
 
-    public int CompareTo(object? obj)
-    {
-        throw new NotImplementedException();
-    }
-
     public static implicit operator TimeUnit(int value)
     {
         return new TimeUnit(value);

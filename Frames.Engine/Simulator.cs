@@ -77,9 +77,9 @@ public class Simulator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
     }
 
-    public Guid RunId { get; set; }
+    private Guid RunId { get; set; }
 
-    public IActorRef TracingStreamActor => ActorRegistry.For(Context.System).Get<TracingActor>();  //ServiceProvider.GetRequiredService<Instrumentation>().TracingActor ?? throw new InvalidOperationException();
+    private IActorRef TracingStreamActor => ActorRegistry.For(Context.System).Get<TracingActor>();
 
     private async Task HandleSaveCheckpointAsync(Simulation.SaveCheckpoint obj)
     {
@@ -89,8 +89,6 @@ public class Simulator : ReceiveActor, ILogReceive
                 Self.Path.Name, obj.CurrentTime, _timeLast, _timeNext);
             throw new SynchronisationException("Checkpoint time is not in the range of last and next time");
         }
-
-        var stateType = _atomicModel.GetStateType();
 
         // save the checkpoint n 
         await SnapshotManager.SaveSnapshotAsync(obj.Name, new SimulatorSnapshotObject()
@@ -252,10 +250,7 @@ public class Simulator : ReceiveActor, ILogReceive
         {
             StopConditionReached = _atomicModel.StopConditionCheck(_atomicModel.StateInternal,
                 obj.Input ?? Bag.Empty),
-            ToStringState = new Dictionary<string, Guid>([
-                new KeyValuePair<string, Guid>(this._atomicModel.Name,
-                    msgId)
-            ]),
+            ToStringState = [msgId],
             ShardId = ActorHelper.GetShardId(Name, CoordinatorName),
             EntityName = CoordinatorName,
             RunId = RunId

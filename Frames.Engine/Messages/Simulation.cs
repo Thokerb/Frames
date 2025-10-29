@@ -3,9 +3,6 @@ using Frames.Model.ValueTypes;
 
 namespace Frames.Engine.Messages;
 
-/// <summary>
-/// Written as (x,*) in Theory of M S
-/// </summary>
 public static class Simulation
 {
     public sealed record CreateModel(IModel Model, string Name, Guid Id) : WithRootCoordinatorShardId(Id)

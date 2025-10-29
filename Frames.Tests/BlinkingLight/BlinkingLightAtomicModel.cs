@@ -43,6 +43,8 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
                 return new TimeUnit(2);
             case "Off":
                 return new TimeUnit(1);
+            case "Disabled":
+                return TimeUnit.Infinity;
             default:
                 throw new UnknownStateException(State.Name);
         }
@@ -51,7 +53,15 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
     public override BlinkingLightState ExternalTransition(BlinkingLightState state, Bag bag)
     {
         // Blinking light has no external transition
-        throw new NotSupportedException();
+        if (bag.ContainsKey("DisablePort"))
+        {
+            return new BlinkingLightState()
+            {
+                Name = "Disabled"
+            };
+        }
+
+        return state;
     }
 
     public override BlinkingLightState InternalTransition(BlinkingLightState state)
@@ -68,6 +78,8 @@ public class BlinkingLightAtomicModel : AtomicModel<BlinkingLightState>
                 {
                     Name = "On"
                 };
+            case "Disabled":
+                return state;
             default:
                 throw new UnknownStateException(State.Name);
         }

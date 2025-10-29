@@ -1,16 +1,11 @@
 ﻿using System.Diagnostics;
-using System.Text;
 using System.Timers;
 using Akka.Hosting;
-using Akka.Streams;
-using Akka.Streams.Dsl;
-using Akka.Streams.Implementation;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Engine.Persistence;
-using Frames.Engine.Tracing;
 using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
@@ -41,7 +36,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private TimeUnit _timeNext;
 
     private TimeUnit _currentTime = TimeUnit.Zero;
-    private TimeUnit? _lastTime = null;
+    private TimeUnit? _lastTime;
 
     private readonly SortedList<TimeUnit, string> _checkpoints = new();
 
@@ -51,15 +46,15 @@ public class RootCoordinator : ReceiveActor, ILogReceive
     private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(300);
     private Timer? _timer;
     private bool _isRunning;
-    private bool _isLoadingCheckpoint = false;
+    private bool _isLoadingCheckpoint;
     
     private CompletionType CompletionType {get; set; } = CompletionType.NotCompleted;
     
-    private int? _timeUnitInMilliseconds = null;
+    private int? _timeUnitInMilliseconds;
 
-    private Stopwatch _stopwatch = new Stopwatch();
-    private bool _manualStop = false;
-    private bool _manualPause = false;
+    private Stopwatch _stopwatch = new();
+    private bool _manualStop;
+    private bool _manualPause;
 
     private ISnapshotManager SnapshotManager { get; }
     
@@ -80,7 +75,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         ReceiveAsync<Simulation.FinishedSaveCheckpoint>(ReceiveFinishedSaveCheckpointAsync);
         ReceiveAsync<Simulation.LoadCheckpoint>(ReceiveLoadCheckpointAsync);
         Receive<Simulation.FinishedLoadCheckpoint>(ReceiveFinishedLoadCheckpoint);
-        Receive<Simulation.GetStatus>(msg =>
+        Receive<Simulation.GetStatus>(_ =>
         {
             var status = new SimulationStatus()
             {
@@ -132,6 +127,22 @@ public class RootCoordinator : ReceiveActor, ILogReceive
                 
             }));
         });
+    }
+
+
+    private void HaltExecution(CompletionType completionType)
+    {
+        SimulationStep?.Dispose();
+        SimulationRun?.Dispose();
+        _timer?.Stop();
+        _stopwatch.Stop();
+        _isCompleted = true;
+        CompletionType = completionType;
+        _isRunning = false;
+        _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType,Id)
+        {
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
+        }));
     }
 
     private async Task ReceiveCreateModelAsync(Simulation.CreateModel arg)
@@ -454,32 +465,11 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Log.Information("Round time: {TimeNow}", this._currentTime);
         Log.Information("Next time: {TimeNext}", obj.TimeNext.IsInfinity ? "Infinity" : obj.TimeNext.ToString());
         
-        ActorRegistry.For(Context.System).Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState?.Values ?? Enumerable.Empty<Guid>()), _currentTime, obj.TimeNext));
-        // string logState = PrintState(obj.ToStringState);
-        // if (obj.ToStringState != null)
-        // {
-        //     Log.Information("State:\n{State}", logState);
-        // }
+        ActorRegistry.For(Context.System).Get<TracingActor>().Tell(new Messages.Tracing.StepBoundary(new List<Guid>(obj.ToStringState ?? Enumerable.Empty<Guid>()), _currentTime, obj.TimeNext));
 
         _timeNext = obj.TimeNext;
 
         await RoundCompleted();
-    }
-
-    private static string PrintState(Dictionary<string, Guid>? objToStringState)
-    {
-        if (objToStringState == null)
-        {
-            return string.Empty;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        foreach (var state in objToStringState.OrderBy(x => x.Key))
-        {
-            builder.AppendLine($"[{state.Key}] {state.Value}");
-        }
-
-        return builder.ToString();
     }
 
     private void ReceiveComputationCompleted(ComputeOutput.ComputedOutput obj)
@@ -535,71 +525,27 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         if (StopConditionReached)
         {
-            SimulationStep?.Dispose();
-            SimulationRun?.Dispose();
-            Log.Information("[ROOT] Stop condition reached, simulation will be interrupted");
-            _timer?.Stop();
-            _isCompleted = true;
-            CompletionType = CompletionType.StopAfterCondition;
-            _isRunning = false;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType, Id)
-            {
-                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
-            }));
+            HaltExecution(CompletionType.StopAfterCondition);
             return;
         }
 
         if (_timeUntilShutdown != TimeUnit.Undefined && _currentTime > _timeUntilShutdown)
         {
-            SimulationStep?.Dispose();
-            SimulationRun?.Dispose();
-            Log.Information("[ROOT] Time Stop condition reached, simulation will be interrupted");
-            _timer?.Stop();
-            _isCompleted = true;
-            CompletionType = CompletionType.StopAfterTime;
-            _isRunning = false;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType,Id)
-            {
-                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
-            }));
+            HaltExecution(CompletionType.StopAfterTime);
             return;
         }
 
         if (_manualStop)
         {
-            Log.Information("[ROOT] Simulation stopped");
-            SimulationStep?.Dispose();
-            SimulationRun?.Dispose();
             _manualStop = false;
-            _isCompleted = true;
-            _isRunning = false;
-            CompletionType = CompletionType.ManualStop;
-            _timer?.Stop();
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType,Id)
-            {
-                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
-            }));
+            HaltExecution(CompletionType.ManualStop);
             return;
         }
 
-
-        
-        
         
         if (_manualPause)
         {
-            Log.Information("[ROOT] Simulation paused");
-            SimulationStep?.Dispose();
-            SimulationRun?.Dispose();
-            _isCompleted = true;
-            _isRunning = false;
-            CompletionType = CompletionType.ManualPause;
-            _timer?.Stop();
-            _stopwatch.Stop();
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType,Id)
-            {
-                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
-            }));
+            HaltExecution(CompletionType.ManualPause);
             return;
         }
         
@@ -638,18 +584,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
         if (_currentTime == _lastTime)
         {
-            SimulationStep?.Dispose();
-            SimulationRun?.Dispose(); 
-            Log.Information("[ROOT] Simulation completed, no more time left");
-            _timer?.Stop();
-            _isCompleted = true;
-            CompletionType = CompletionType.StopAfterTime;
-            _isRunning = false;
-            _waitingForCompletion.ForEach(x => x.Tell(new Simulation.IsCompleted(_currentTime, CompletionType,Id)
-            {
-                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(Id), x.Path.Name)
-            }));
-            return;
+            HaltExecution(CompletionType.StopAfterTime);
+            return;  
         }
         _lastTime = _currentTime;
 
@@ -686,7 +622,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
 public record SimulationStatus
 {
-    public SortedList<TimeUnit, string> Checkpoints { get; set; }
+    public  SortedList<TimeUnit, string> Checkpoints { get; set; }
     public TimeUnit CurrentTime { get; set; }
     public bool IsRunning { get; set; }
     public CompletionType CompletionType { get; set; }
@@ -702,7 +638,7 @@ public record SimulationStatus
     public Guid Id { get; set; }
     public TimeUnit? LastTime { get; set; }
     public string? CheckpointName { get; set; }
-    public List<string> ListeningActors { get; set; }
+    public required List<string> ListeningActors { get; set; }
 }
 
 public record ActionResponse(bool Success, string? Message);

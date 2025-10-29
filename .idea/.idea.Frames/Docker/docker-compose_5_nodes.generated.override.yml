@@ -1,0 +1,93 @@
+# This is a generated file. Not intended for manual editing.
+version: "3.9"
+services:
+  museum1:
+    build:
+      context: "D:\\Dev\\Frames\\Frames.Museum"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/Frames.Museum.dll"
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "frames.museum:dev"
+    ports: []
+    volumes:
+    - "D:\\Dev\\Frames\\Frames.Museum:/app:rw"
+    - "D:\\Dev\\Frames:/src:rw"
+    - "C:\\Users\\kerbe\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"
+  museum2:
+    build:
+      context: "D:\\Dev\\Frames\\Frames.Museum"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/Frames.Museum.dll"
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "frames.museum:dev"
+    ports: []
+    volumes:
+    - "D:\\Dev\\Frames\\Frames.Museum:/app:rw"
+    - "D:\\Dev\\Frames:/src:rw"
+    - "C:\\Users\\kerbe\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"
+  museum3:
+    build:
+      context: "D:\\Dev\\Frames\\Frames.Museum"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/Frames.Museum.dll"
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "frames.museum:dev"
+    ports: []
+    volumes:
+    - "D:\\Dev\\Frames\\Frames.Museum:/app:rw"
+    - "D:\\Dev\\Frames:/src:rw"
+    - "C:\\Users\\kerbe\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"
+  museum4:
+    build:
+      context: "D:\\Dev\\Frames\\Frames.Museum"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/Frames.Museum.dll"
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "frames.museum:dev"
+    ports: []
+    volumes:
+    - "D:\\Dev\\Frames\\Frames.Museum:/app:rw"
+    - "D:\\Dev\\Frames:/src:rw"
+    - "C:\\Users\\kerbe\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"
+  museum5:
+    build:
+      context: "D:\\Dev\\Frames\\Frames.Museum"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/Frames.Museum.dll"
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "frames.museum:dev"
+    ports: []
+    volumes:
+    - "D:\\Dev\\Frames\\Frames.Museum:/app:rw"
+    - "D:\\Dev\\Frames:/src:rw"
+    - "C:\\Users\\kerbe\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"

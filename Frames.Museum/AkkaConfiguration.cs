@@ -9,12 +9,15 @@ using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Hosting;
 using Akka.Remote.Hosting;
+using Akka.Serialization;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Museum.Actors;
 using Frames.Museum.ClusterOverview;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using LogLevel = Akka.Event.LogLevel;
 
 
@@ -33,10 +36,22 @@ public static class AkkaConfiguration
         Debug.Assert(akkaSettings != null, nameof(akkaSettings) + " != null");
 
         services.AddSingleton(akkaSettings);
+        
+
+        
 
         return services.AddAkka(akkaSettings.ActorSystemName, (builder, serviceProvider) =>
         {
             builder.ConfigureActorSystem(serviceProvider);
+            
+            NewtonSoftJsonSerializerSetup? jsonSerializerSetup = NewtonSoftJsonSerializerSetup.Create(
+                settings =>
+                {
+                    settings.TypeNameHandling = TypeNameHandling.All;
+                });
+
+            builder.Setups.Add(jsonSerializerSetup);
+            
             additionalConfig(builder, serviceProvider);
         });
     }
@@ -50,7 +65,7 @@ public static class AkkaConfiguration
             .ConfigureLoggers(configBuilder =>
             {
                 configBuilder.LogConfigOnStart = settings.LogConfigOnStart;
-                configBuilder.LogLevel = LogLevel.DebugLevel;
+                configBuilder.LogLevel = LogLevel.InfoLevel;
                 configBuilder.AddLogger<SerilogLogger>();
                 configBuilder.DebugOptions = new DebugOptions()
                 {
@@ -274,6 +289,18 @@ public class FramesMessageExtractor : IMessageExtractor
         {
             return $"{shardSeparation.EntityName}-{shardSeparation.RunId}";
         }
+
+        if (message is JObject jObject)
+        {
+            IShardSeperation? shardSeparationFromJson = jObject.ToObject<IShardSeperation>();
+
+            if (shardSeparationFromJson == null)
+            {
+                throw new Exception("Unable to deserialize shard seperation");
+            }
+            
+            return $"{shardSeparationFromJson.EntityName}-{shardSeparationFromJson.RunId}";
+        }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
@@ -300,6 +327,17 @@ public class FramesMessageExtractor : IMessageExtractor
         {
             return shardSeparation.ShardId;
         }
+        if (message is JObject jObject)
+        {
+            IShardSeperation? shardSeparationFromJson = jObject.ToObject<IShardSeperation>();
+
+            if (shardSeparationFromJson == null)
+            {
+                throw new Exception("Unable to deserialize shard seperation");
+            }
+            
+            return shardSeparationFromJson.ShardId;
+        }
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
@@ -308,6 +346,18 @@ public class FramesMessageExtractor : IMessageExtractor
         if (messageHint is IShardSeperation shardSeparation)
         {
             return shardSeparation.ShardId;
+        } 
+        
+        if (messageHint is JObject jObject)
+        {
+            IShardSeperation? shardSeparationFromJson = jObject.ToObject<IShardSeperation>();
+
+            if (shardSeparationFromJson == null)
+            {
+                throw new Exception("Unable to deserialize shard seperation");
+            }
+
+            return shardSeparationFromJson.ShardId;
         }
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint?.GetType());
         
