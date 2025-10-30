@@ -20,6 +20,28 @@ namespace Frames.Engine;
 /// </summary>
 public class Coordinator : ReceiveActor, ILogReceive
 {
+    
+    protected override SupervisorStrategy SupervisorStrategy()
+    {
+        return new OneForOneStrategy(
+            maxNrOfRetries: 10,
+            withinTimeMilliseconds: 30 * 1000,
+            localOnlyDecider: ex =>
+            {
+                switch (ex)
+                {
+                    case SimulatorException:
+                        return Directive.Escalate;
+                    case SynchronisationException:
+                        return Directive.Escalate;
+                    default:
+                        return Directive.Escalate;
+                }
+            },
+            loggingEnabled: true
+        );
+    }
+    
     private Instrumentation Instrumentation { get; }
     private IServiceProvider ServiceProvider { get; }
 

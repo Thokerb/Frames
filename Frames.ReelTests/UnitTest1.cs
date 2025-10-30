@@ -150,5 +150,36 @@ public class SerializationTest
             TypeNameHandling = TypeNameHandling.All
         });
         Assert.Equal(modelDeserialized.ShardId, msg.ShardId);
+    }    
+    [Fact]
+    public void TestSerializationSize()
+    {
+        // Akka.Remote.OversizedPayloadException  max allowed size 128000 bytes, actual size of encoded Frames.Engine.Messages.Simulation+CreateModel was 177351 bytes.
+        /*
+         * {
+              "numberNodes": 200,
+              "percentageActive": 0.5,
+              "timeUnits": 400
+            }
+         */
+
+        
+        var model = new CoupledBenchmarkModel("root2", 100, 100, true);
+
+        var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
+        
+        // serialize and deserialize
+        var serialize = JsonConvert.SerializeObject(msg, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Auto,
+        });
+        var modelDeserialized = JsonConvert.DeserializeObject<WithShardId>(serialize, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Auto
+        });
+        
+
+        Assert.InRange( System.Text.Encoding.Unicode.GetByteCount(serialize) ,0, 128000);
     }
 }
+

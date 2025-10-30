@@ -47,7 +47,7 @@ public static class AkkaConfiguration
             NewtonSoftJsonSerializerSetup? jsonSerializerSetup = NewtonSoftJsonSerializerSetup.Create(
                 settings =>
                 {
-                    settings.TypeNameHandling = TypeNameHandling.All;
+                    settings.TypeNameHandling = TypeNameHandling.Objects;
                 });
 
             builder.Setups.Add(jsonSerializerSetup);
@@ -292,7 +292,7 @@ public class FramesMessageExtractor : IMessageExtractor
 
         if (message is JObject jObject)
         {
-            IShardSeperation? shardSeparationFromJson = jObject.ToObject<IShardSeperation>();
+            IShardSeperation? shardSeparationFromJson = jObject.ToObject<WithShardId>();
 
             if (shardSeparationFromJson == null)
             {
@@ -312,6 +312,7 @@ public class FramesMessageExtractor : IMessageExtractor
     /// <exception cref="NotImplementedException"></exception>
     public object EntityMessage(object message)
     {
+       
         return message;
     }
 
@@ -329,7 +330,7 @@ public class FramesMessageExtractor : IMessageExtractor
         }
         if (message is JObject jObject)
         {
-            IShardSeperation? shardSeparationFromJson = jObject.ToObject<IShardSeperation>();
+            IShardSeperation? shardSeparationFromJson = jObject.ToObject<WithShardId>();
 
             if (shardSeparationFromJson == null)
             {
@@ -350,7 +351,7 @@ public class FramesMessageExtractor : IMessageExtractor
         
         if (messageHint is JObject jObject)
         {
-            IShardSeperation? shardSeparationFromJson = jObject.ToObject<IShardSeperation>();
+            IShardSeperation? shardSeparationFromJson = jObject.ToObject<WithShardId>();
 
             if (shardSeparationFromJson == null)
             {

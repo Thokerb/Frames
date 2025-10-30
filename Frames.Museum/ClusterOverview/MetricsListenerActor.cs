@@ -79,7 +79,7 @@ public class MetricsListenerActor : ReceiveActor
             var usagePercent = cpu.Value.TotalUsage / 100.0;
             var numberProcessors = cpu.Value.ProcessorsNumber;
             var processUsage = cpu.Value.ProcessUsage;
-            _log.Info("Cpu load: {0}% ({1} processors)", usagePercent, cpu.Value.ProcessorsNumber);
+            // _log.Info("Cpu load: {0}% ({1} processors)", usagePercent, cpu.Value.ProcessorsNumber);
             return (usagePercent, numberProcessors, processUsage);
         }
 
