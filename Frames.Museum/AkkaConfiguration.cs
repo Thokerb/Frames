@@ -48,6 +48,7 @@ public static class AkkaConfiguration
                 settings =>
                 {
                     settings.TypeNameHandling = TypeNameHandling.Objects;
+                    settings.Formatting = Formatting.None;
                 });
 
             builder.Setups.Add(jsonSerializerSetup);
@@ -65,7 +66,7 @@ public static class AkkaConfiguration
             .ConfigureLoggers(configBuilder =>
             {
                 configBuilder.LogConfigOnStart = settings.LogConfigOnStart;
-                configBuilder.LogLevel = LogLevel.InfoLevel;
+                configBuilder.LogLevel = LogLevel.DebugLevel;
                 configBuilder.AddLogger<SerilogLogger>();
                 configBuilder.DebugOptions = new DebugOptions()
                 {
@@ -307,6 +308,15 @@ public class FramesMessageExtractor : IMessageExtractor
             
             return $"{shardSeparationFromJson.EntityName}-{shardSeparationFromJson.RunId}";
         }
+        
+                
+        
+        if (message is ShardRegion.StartEntity startEntity)
+        {
+            return startEntity.EntityId;
+        }
+
+        
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
@@ -345,6 +355,7 @@ public class FramesMessageExtractor : IMessageExtractor
             
             return shardSeparationFromJson.ShardId;
         }
+
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
@@ -366,6 +377,12 @@ public class FramesMessageExtractor : IMessageExtractor
 
             return shardSeparationFromJson.ShardId;
         }
+
+        if (messageHint is ShardRegion.StartEntity startEntity)
+        {
+            return startEntity.EntityId;
+        }
+        
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint?.GetType());
         
     }

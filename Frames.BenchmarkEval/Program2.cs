@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
+using System.IO;
 using System.Net.Http.Json;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -7,26 +9,26 @@ using Frames.Museum.Benchmark;
 
 
 
-public class Program
+public class Program2
 {
 
     public const string Endpoint = "http://localhost:8080/";
-    public const string BenchmarkHub = "BenchmarkHub";
+    public const string BenchmarkHub = "BenchmarkHub";  
     public const string BenchmarkMethod = "benchmark2/run";
 
-    public static async Task Main(string[] args)
+    public static async Task Main2(string[] args)
     {
         var config = new BenchmarkConfig
         {
             NumberRuns = 10, // 7
             StartTimeUnits = 400,
             TimeUnitIncrement = 0,
-            PercentageActive = 10,
-            PercentageIncrement = 10,
+            PercentageActive = 0.1,
+            PercentageIncrement = 0.1,
             NodeIcrement = 0,
-            NumberNodes = 1000,
-            CsvPath = "results-5-cluster_20gb_noj_4mb_nodes_200_to_2000_by_inc.csv",
-            NumberExecutions = 10
+            NumberNodes = 500,
+            CsvPath = "results-5-cluster_20gb_noj_4mb_nodes_50_to_500_by_inc.csv",
+            NumberExecutions = 3
         };
 
         var runner = new BenchmarkRunner(config);
@@ -34,26 +36,14 @@ public class Program
     }
 }
 
-public class BenchmarkConfig
-{
-    public int NumberRuns { get; set; }
-    public int NumberNodes { get; set; }
-    public int StartTimeUnits { get; set; }
-    public int TimeUnitIncrement { get; set; }
-    public double PercentageActive { get; set; }
-    public double PercentageIncrement { get; set; }
-    public string CsvPath { get; set; } = "results-5-cluster.csv";
-    public int NumberExecutions { get; set; }
-    public int NodeIcrement { get; set; }
-}
 
-public class BenchmarkRunner
+public class BenchmarkRunnerDevstone
 {
     private readonly BenchmarkConfig _config;
     private HubConnection? _connection;
     private readonly Channel<Simulation.IsCompleted> _completionChannel = Channel.CreateUnbounded<Simulation.IsCompleted>();
 
-    public BenchmarkRunner(BenchmarkConfig config)
+    public BenchmarkRunnerDevstone(BenchmarkConfig config)
     {
         _config = config;
     }
@@ -76,7 +66,7 @@ public class BenchmarkRunner
                 var request = new BenchmarkRequest
                 {
                     NumberNodes = numberNodes,
-                    PercentageActive = Math.Round(percentageActive / 100.0,1),
+                    PercentageActive = percentageActive,
                     TimeUnits = timeUnits
                 };
 
@@ -87,7 +77,7 @@ public class BenchmarkRunner
                 
                 var completion = await _completionChannel.Reader.ReadAsync();
                 Console.WriteLine(completion);
-                WriteCsvRow(i+1,j + 1, request, completion);
+                WriteCsvRow(j + 1, request, completion);
                 Console.WriteLine("Completed.");
                 
                 // Allows akka to delete not used nodes after 5 seconds
@@ -101,8 +91,6 @@ public class BenchmarkRunner
         
         // Write path of csv
         Console.WriteLine($"Finished. Csv path: {Path.GetFullPath(_config.CsvPath)}");
-
-        await _connection!.DisposeAsync();
     }
 
     private async Task SetupConnection()
@@ -123,15 +111,14 @@ public class BenchmarkRunner
     {
         if (!File.Exists(_config.CsvPath))
         {
-            File.WriteAllText(_config.CsvPath, "Run,Execution,NumberNodes,TimeUnits,PercentageActive,CompletionType,TimeMs" + Environment.NewLine);
+            File.WriteAllText(_config.CsvPath, "Run,NumberNodes,TimeUnits,PercentageActive,CompletionType,TimeMs" + Environment.NewLine);
         }
     }
 
-    private void WriteCsvRow(int run,int execution, BenchmarkRequest request, Simulation.IsCompleted result)
+    private void WriteCsvRow(int run, BenchmarkRequest request, Simulation.IsCompleted result)
     {
         var csv = string.Join(",",
             run,
-            execution,
             request.NumberNodes,
             request.TimeUnits,
             request.PercentageActive.ToString(CultureInfo.InvariantCulture),

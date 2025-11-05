@@ -33,9 +33,9 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private TimeUnit _timeUntilShutdown = TimeUnit.Infinity;
 
-    private TimeUnit _timeNext;
+    public TimeUnit _timeNext;
 
-    private TimeUnit _currentTime = TimeUnit.Zero;
+    public TimeUnit _currentTime = TimeUnit.Zero;
     private TimeUnit? _lastTime;
 
     private readonly SortedList<TimeUnit, string> _checkpoints = new();
@@ -57,7 +57,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private ISnapshotManager SnapshotManager { get; }
 
-    private Guid Id { get; set; }
+    public Guid Id { get; set; }
 
     public RootCoordinator(IServiceProvider serviceProvider)
     {
@@ -176,7 +176,7 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         Sender.Tell(Id);
     }
 
-    private string ChildrenName { get; set; }
+    public string ChildrenName { get; set; }
 
     private async Task ReceiveResumeSimulationAsync(Simulation.ResumeSimulation obj)
     {
