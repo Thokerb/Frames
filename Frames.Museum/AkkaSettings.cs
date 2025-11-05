@@ -61,7 +61,7 @@ public class AkkaSettings
     public RemoteOptions RemoteOptions { get; set; } = new()
     {
         // can be overridden via config, but is dynamic by default
-        PublicHostName = Dns.GetHostName()
+        PublicHostName = Dns.GetHostName(),
     };
 
     public ClusterOptions ClusterOptions { get; set; } = new ClusterOptions()

@@ -10,12 +10,12 @@ public class CoupledBenchmarkModel : CoupledModel
         {
             for (int i = 0; i < numberActiveNodes; i += 2)
             {
-                AddModel(new CoupledBenchmarkModel($"coupled_active_{i}", 0, 2));
+                AddModel(new CoupledBenchmarkModel($"ca_{i}", 0, 2));
             }
 
             for (int i = 0; i < numberInactiveNodes; i += 2)
             {
-                AddModel(new CoupledBenchmarkModel($"coupled_inactive_{i}", 2, 0));
+                AddModel(new CoupledBenchmarkModel($"ci_{i}", 2, 0));
             }
             
             return;
@@ -24,7 +24,7 @@ public class CoupledBenchmarkModel : CoupledModel
         
         for (int i = 0; i < numberActiveNodes; i++)
         {
-            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{name}_BenchmarkModel_active_{i}",
+            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{name}_aa_{i}",
                 new AtomicBenchmarkModelState()
                 {
                     IsActive = true
@@ -33,7 +33,7 @@ public class CoupledBenchmarkModel : CoupledModel
 
         for (int i = 0; i < numberInactiveNodes; i++)
         {
-            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{name}_BenchmarkModel_inactive_{i}",
+            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{name}_ai_{i}",
                 new AtomicBenchmarkModelState()
                 {
                     IsActive = false

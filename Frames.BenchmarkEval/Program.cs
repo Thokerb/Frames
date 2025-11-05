@@ -25,8 +25,8 @@ public class Program
             TimeUnitIncrement = 0,
             PercentageActive = 0.2,
             PercentageIncrement = 0.1,
-            NumberNodes = 100,
-            CsvPath = "results-5-cluster_20gb.csv",
+            NumberNodes = 1000,
+            CsvPath = "results-5-cluster_20gb_noj_4mb.csv",
             NumberExecutions = 10
         };
 

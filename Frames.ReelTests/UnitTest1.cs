@@ -164,7 +164,7 @@ public class SerializationTest
          */
 
         
-        var model = new CoupledBenchmarkModel("root2", 100, 100, true);
+        var model = new CoupledBenchmarkModel("root2", 500, 500, true);
 
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
@@ -172,6 +172,9 @@ public class SerializationTest
         var serialize = JsonConvert.SerializeObject(msg, new JsonSerializerSettings()
         {
             TypeNameHandling = TypeNameHandling.Auto,
+            Formatting = Formatting.None,
+            NullValueHandling = NullValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Ignore
         });
         var modelDeserialized = JsonConvert.DeserializeObject<WithShardId>(serialize, new JsonSerializerSettings()
         {
