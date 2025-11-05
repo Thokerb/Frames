@@ -15,12 +15,9 @@ namespace Frames.Museum.ClusterOverview
         private readonly Cluster _cluster = Cluster.Get(Context.System);
         private readonly IHubContext<ClusterHub> _hubContext;
 
-        public static Props Props(IHubContext<ClusterHub> hubContext) =>
-            Akka.Actor.Props.Create(() => new ClusterGossipListenerActor(hubContext));
-
         public ClusterGossipListenerActor(IHubContext<ClusterHub> hubContext)
         {
-            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
+            _hubContext = hubContext;
 
             ReceiveAsync<ClusterEvent.MemberUp>(async msg => await HandleMemberUp(msg));
             ReceiveAsync<ClusterEvent.UnreachableMember>(async msg => await HandleUnreachable(msg));

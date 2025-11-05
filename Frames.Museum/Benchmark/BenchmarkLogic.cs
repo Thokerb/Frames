@@ -3,6 +3,7 @@ using Akka.Hosting;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model.ValueTypes;
+using Frames.Museum.Actors;
 using Frames.Museum.Benchmark.Model;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -11,7 +12,7 @@ namespace Frames.Museum.Benchmark;
 public static class BenchmarkLogic
 {
     public static async Task<Ok<string>> Run(
-        IRequiredActor<RootCoordinator> rootCoordinatorActorRef, BenchmarkRequest request)
+        IRequiredActor<RootCoordinator> rootCoordinatorActorRef,BenchmarkRequest request)
     {
         if (request.PercentageActive is < 0 or > 1)
         {

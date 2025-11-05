@@ -17,10 +17,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
+          cpus: "1"
         limits:
-          memory: "1gb"
-          cpus: "0.5"
+          memory: "2gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
@@ -36,6 +36,7 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
+      AkkaSettings__ClusterOptions__Roles__3: "listener"
       AkkaSettings__ShardOptions__StateStoreMode: "DData"
       AkkaSettings__ShardOptions__RememberEntities: "false"
       AkkaSettings__ShardOptions__Role: "root"
@@ -65,10 +66,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
+          cpus: "1"
         limits:
-          memory: "1gb"
-          cpus: "0.5"
+          memory: "2gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
@@ -113,10 +114,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
+          cpus: "1"
         limits:
-          memory: "1gb"
-          cpus: "0.5"
+          memory: "2gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
@@ -160,10 +161,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
+          cpus: "1"
         limits:
-          memory: "1gb"
-          cpus: "0.5"
+          memory: "2gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
@@ -207,10 +208,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
+          cpus: "1"
         limits:
-          memory: "1gb"
-          cpus: "0.5"
+          memory: "2gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile

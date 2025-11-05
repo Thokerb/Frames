@@ -174,13 +174,20 @@ public static class AkkaConfiguration
                         propsFactory: (_, _, _) =>
                         {
                             return Props.Create(() => new TracingActor());
+                        })
+                    .WithSingleton<SuperRootCoordinatorListenerActor>(
+                        "rootCoordinatorListenerActor",
+                        propsFactory: (system, extractor, di) =>
+                        {
+                            return Props.Create(() => new SuperRootCoordinatorListenerActor(di.GetService<IHubContext<BenchmarkHub>>()));
+                        },
+                        new ClusterSingletonOptions()
+                        {
+                            Role = "listener"
                         }
                         )
                     .WithActors((system, registry, _) =>
                     {
-                        // var hub = serviceProvider.GetRequiredService<IHubContext<MetricsHub>>();
-                        // var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, s => Props.Create(() => new MetricsListenerActor(hub))));
-                        // registry.Register<MetricsListenerActor>(parentTracingActor);
                         var metricListener =
                             system.ActorOf(
                                 Props.Create(() =>
@@ -203,7 +210,6 @@ public static class AkkaConfiguration
                                         serviceProvider.GetRequiredService<IHubContext<TracingHub>>())),
                                 "tracing-listener");
                         registry.Register<TracingStreamHubActor>(tracingListener);
-            
                     })
                     .WithShardRegion<RootCoordinator>(
                     typeName: "framesRegion1",

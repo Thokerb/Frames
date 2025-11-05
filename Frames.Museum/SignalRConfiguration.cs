@@ -16,6 +16,7 @@ public static class SignalRConfiguration
         app.MapHub<MetricsHub>("/metrics");
         app.MapHub<ClusterHub>("/clusterHub");
         app.MapHub<TracingHub>("/tracingHub");
+        app.MapHub<BenchmarkHub>("/benchmarkHub");
 
     }
     

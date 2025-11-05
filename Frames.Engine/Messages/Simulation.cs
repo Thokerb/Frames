@@ -14,8 +14,8 @@ public static class Simulation
 
     public sealed record QueryIsCompleted(Guid Id) : WithRootCoordinatorShardId(Id);
 
-    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id)
-        : WithRootCoordinatorShardId(Id);
+    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id, long TimeInMilliseconds)
+        ;
 
     public sealed record SetStopAfterTime(TimeUnit Time, Guid Id) : WithRootCoordinatorShardId(Id);
 

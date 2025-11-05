@@ -53,11 +53,11 @@ public class Coordinator : ReceiveActor, ILogReceive
     /// ActorRef is the address of the actor
     /// Is a 1:1 mapping
     /// </summary>
-    private readonly Dictionary<string, IActorRef> _children = new();
+    public readonly Dictionary<string, IActorRef> _children = new();
 
-    private ICoupledModel _coupledModel;
+    public ICoupledModel _coupledModel;
 
-    private IActorRef _parent => ParentName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
+    public IActorRef _parent => ParentName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
         .Get<RootCoordinator>() : ActorRegistry.For(Context.System).Get<Coordinator>();
 
     private TimeUnit _timeLast;

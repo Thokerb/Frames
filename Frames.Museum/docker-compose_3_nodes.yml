@@ -17,8 +17,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
-
+          cpus: "1"
+        limits:
+          memory: "1gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
@@ -61,8 +63,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
-
+          cpus: "1"
+        limits:
+          memory: "1gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
@@ -105,8 +109,10 @@ services:
       resources:
         reservations:
           memory: "500mb"
-          cpus: "0.25"
-
+          cpus: "1"
+        limits:
+          memory: "1gb"
+          cpus: "2"
     build:
       context: .
       dockerfile: Dockerfile
