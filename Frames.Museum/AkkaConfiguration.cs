@@ -66,7 +66,7 @@ public static class AkkaConfiguration
             .ConfigureLoggers(configBuilder =>
             {
                 configBuilder.LogConfigOnStart = settings.LogConfigOnStart;
-                configBuilder.LogLevel = LogLevel.DebugLevel;
+                configBuilder.LogLevel = LogLevel.InfoLevel;
                 configBuilder.AddLogger<SerilogLogger>();
                 configBuilder.DebugOptions = new DebugOptions()
                 {
