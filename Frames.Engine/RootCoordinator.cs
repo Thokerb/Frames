@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Timers;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
@@ -40,6 +41,8 @@ public class RootCoordinator : ReceiveActor, ILogReceive
 
     private readonly SortedList<TimeUnit, string> _checkpoints = new();
 
+    public const string TopicName = "CompletionTopic";
+    
 
     // TODO: for debugging purposes only
     private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(300);
@@ -119,10 +122,13 @@ public class RootCoordinator : ReceiveActor, ILogReceive
             // TODO: send this to the correct actors with correct ShardId and entity name, currently it is sent to root coordinator ????
             _benchmarkStopwatch.Stop();
 
-            Context.System.EventStream.Publish(
-                new Simulation.IsCompleted(_currentTime, CompletionType, Id, _benchmarkStopwatch.ElapsedMilliseconds)
-                {
-                });
+            var mediator = DistributedPubSub.Get(Context.System);
+            if (mediator == null || mediator.IsTerminated)
+            {
+                Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
+                return;
+            }
+            mediator.Mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_currentTime, CompletionType, Id, _benchmarkStopwatch.ElapsedMilliseconds) ));
         });
     }
 
@@ -138,8 +144,13 @@ public class RootCoordinator : ReceiveActor, ILogReceive
         CompletionType = completionType;
         _isRunning = false;
 
-        Context.System.EventStream.Publish(new Simulation.IsCompleted(_currentTime, CompletionType, Id,
-            _benchmarkStopwatch.ElapsedMilliseconds));
+        var mediator = DistributedPubSub.Get(Context.System);
+        if (mediator == null || mediator.IsTerminated)
+        {
+            Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
+            return;
+        }
+        mediator.Mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_currentTime, CompletionType, Id, _benchmarkStopwatch.ElapsedMilliseconds) ));
     }
 
     private async Task ReceiveCreateModelAsync(Simulation.CreateModel arg)

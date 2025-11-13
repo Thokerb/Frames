@@ -19,14 +19,14 @@ public class Program
         var config = new BenchmarkConfig
         {
             NumberRuns = 10, // 7
-            StartTimeUnits = 400,
+            StartTimeUnits = 600,
             TimeUnitIncrement = 0,
             PercentageActive = 10,
             PercentageIncrement = 10,
             NodeIcrement = 0,
-            NumberNodes = 1000,
-            CsvPath = "results-5-cluster_20gb_noj_4mb_nodes_200_to_2000_by_inc.csv",
-            NumberExecutions = 10
+            NumberNodes = 2000,
+            CsvPath = "results-3-cluster_20gb_noj_4mb_nodes_100_to_2000_by_inc.csv",
+            NumberExecutions = 4
         };
 
         var runner = new BenchmarkRunner(config);

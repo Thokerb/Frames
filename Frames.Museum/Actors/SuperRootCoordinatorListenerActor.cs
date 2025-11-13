@@ -1,5 +1,7 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
+using Frames.Engine;
 using Frames.Engine.Messages;
 using Microsoft.AspNetCore.SignalR;
 
@@ -15,6 +17,7 @@ public class SuperRootCoordinatorListenerActor : ReceiveActor
         HubContext = hubContext;
 
         _log.Info(Self.Path.Address.System);
+        Receive<SubscribeAck>(ack => Console.WriteLine($"Subscribed to '{ack.Subscribe.Topic}'"));
 
         ReceiveAsync<Simulation.IsCompleted>(async msg =>
         {
@@ -27,14 +30,14 @@ public class SuperRootCoordinatorListenerActor : ReceiveActor
     {
         base.PreStart();
         _log.Info(Self.Path.Address.System);
-        var success =Context.System.EventStream.Subscribe(Self, typeof(Simulation.IsCompleted));
-        _log.Info($" suc: {success}");
+        var mediator = DistributedPubSub.Get(Context.System);
+        mediator.Mediator.Tell(new Subscribe(RootCoordinator.TopicName, Self));
+        _log.Info("subscribed to topic " + RootCoordinator.TopicName);
     }
 
     protected override void PostStop()
     {
         _log.Info("stopping");
-        Context.System.EventStream.Unsubscribe(Self, typeof(Simulation.IsCompleted));
         base.PostStop();
     }
 }
