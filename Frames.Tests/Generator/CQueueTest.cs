@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -37,9 +38,11 @@ public class CQueueTest : BaseTestKit, IClassFixture<OpenTelemetryFixture>
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator("persist",serviceProviderMock));
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
-
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
+        
         ICoupledModel coupledModel = new CQueue();
 
         var coupledModelActor = await rootCoordinatorActor.Ask(
@@ -50,7 +53,6 @@ public class CQueueTest : BaseTestKit, IClassFixture<OpenTelemetryFixture>
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10), uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId), expectResultsProbe);
 
 
         // Assert

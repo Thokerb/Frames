@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -37,8 +38,10 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator("persist",serviceProviderMock));
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         
         ICoupledModel model = new CCounter();
         
@@ -48,7 +51,6 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(20),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
@@ -64,8 +66,10 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator("persist",serviceProviderMock));
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         
         ICoupledModel model = new CCounterWithStopCondition();
         
@@ -74,7 +78,6 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         });
         // Act
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));

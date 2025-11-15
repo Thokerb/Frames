@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -40,27 +41,26 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
     {
         var expectResultsProbe = CreateTestProbe();
         var uniqueId = Guid.NewGuid();
-        
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         // Arrange root coordinator
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         ICoupledModel coupledModel = new Table();
         
-        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-table",uniqueId)
+        await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,$"coordinator-table",uniqueId)
         {
         });
         
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(30),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.True(response.ElapsedTime <= new TimeUnit(31));
-        Assert.True(response.ElapsedTime > TimeUnit.Zero);
+        Assert.InRange<int>(response.ElapsedTime, TimeUnit.Zero + TimeUnit.Delta, new TimeUnit(31));
     }
     
     [Fact]
@@ -75,15 +75,16 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
         {
             Name = "blinking-light",
         };
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         
-        var blinkingLightActor  = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"coordinator-table",uniqueId)
+        await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"coordinator-table",uniqueId)
         {
         });
 
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));

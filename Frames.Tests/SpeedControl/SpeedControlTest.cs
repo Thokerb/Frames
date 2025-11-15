@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -37,7 +38,8 @@ public class SpeedControlTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture
         // Arrange root coordinator
         var uniqueId = Guid.NewGuid();
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
-
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
         {
             Name = "blinking-light",
@@ -52,7 +54,6 @@ public class SpeedControlTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture
         rootCoordinatorActor.Tell(new Simulation.SetSpeedControl(1000,uniqueId));
         var watch = Stopwatch.StartNew();
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(15));

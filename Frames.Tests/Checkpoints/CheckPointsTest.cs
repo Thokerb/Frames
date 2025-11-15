@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -47,7 +48,8 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         // Arrange root coordinator
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
-
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         ICoupledModel coupledModel = new CSuperArena();
 
         await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
@@ -57,7 +59,6 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         rootCoordinatorActor.Tell(new Simulation.SetCheckpoint("checkpoint1", new TimeUnit(10),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
 
 
         // Assert
@@ -68,7 +69,6 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         rootCoordinatorActor.Tell(new Simulation.LoadCheckpoint("checkpoint1"){ShardId = "root-coordinator", EntityName = "root-coordinator",RunId = uniqueId});
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId, "checkpoint1"));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         var response2 = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
         Assert.Equivalent(TimeUnit.Infinity, response2.ElapsedTime);
@@ -84,7 +84,9 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         // Arrange root coordinator
         var uniqueId = Guid.NewGuid();
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
-
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
+        
         ICoupledModel coupledModel = new CSuperArena2();
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena", uniqueId)
@@ -93,7 +95,6 @@ public class CheckPointsTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50), uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
 
 
         // Assert

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -55,7 +56,9 @@ public class InteractionControlTest : BaseTestKit,  IClassFixture<OpenTelemetryF
         var stopTime = new Stopwatch();
         stopTime.Start();
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
+        
         Thread.Sleep(3000);
         rootCoordinatorActor.Tell(new Simulation.PauseSimulation(uniqueId));
         Serilog.Log.Information($"Simulation stopped {stopTime.ElapsedMilliseconds} ms");
