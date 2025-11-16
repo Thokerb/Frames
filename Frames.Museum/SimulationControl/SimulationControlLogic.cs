@@ -4,11 +4,9 @@ using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
-using Frames.Museum.BlinkingLightBRTest;
 using Frames.ReelConnector;
 using Frames.ReelConnector.ReelDto;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Frames.Museum.SimulationControl;
 

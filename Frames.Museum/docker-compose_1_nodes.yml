@@ -40,7 +40,8 @@ services:
       AkkaSettings__ShardOptions__StateStoreMode: "DData"
       AkkaSettings__ShardOptions__RememberEntities: "false"
 
-      AkkaSettings__ShardOptions__PassivateIdleEntity: "false"
+      AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
+      AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
       AkkaSettings__AkkaManagementOptions__Hostname: "museum1"

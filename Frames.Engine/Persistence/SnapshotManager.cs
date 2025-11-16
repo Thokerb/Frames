@@ -85,7 +85,6 @@ public record SimulatorSnapshotObject
     public required TimeUnit TimeLast { get; init; }
     public required TimeUnit TimeElapsed { get; init; }
     public required IState AtomicModelState { get; init; }
-    public required Bag OutputBag { get; init; }
 }
 
 public record CoordinatorSnapshotObject

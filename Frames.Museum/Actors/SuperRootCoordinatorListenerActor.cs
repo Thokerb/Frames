@@ -21,7 +21,7 @@ public class SuperRootCoordinatorListenerActor : ReceiveActor
 
         ReceiveAsync<Simulation.IsCompleted>(async msg =>
         {
-            _log.Info("sending simulation completed");
+            _log.Info($"sending simulation completed {msg}");
             await HubContext.Clients.All.SendAsync("Completion", msg);
         });
     }

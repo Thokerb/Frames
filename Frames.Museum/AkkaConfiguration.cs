@@ -2,7 +2,6 @@
 using Akka.Hosting;
 using System.Diagnostics;
 using Akka.Cluster.Hosting;
-using Akka.Cluster.Metrics;
 using Akka.Cluster.Sharding;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Discovery.Config.Hosting;
@@ -77,7 +76,8 @@ public static class AkkaConfiguration
                 };
                 configBuilder.DeadLetterOptions = new DeadLetterOptions()
                 {
-                    ShouldLog = TriStateValue.All
+                    ShouldLog = TriStateValue.All,
+                    LogDuringShutdown = false
                 };
                 configBuilder.AddLoggerFactory();
             })

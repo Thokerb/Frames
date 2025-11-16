@@ -16,8 +16,16 @@ using Serilog;
 namespace Frames.Engine;
 
 
-public class CoordinatorState
+// this is only set once at the start of the simulation, therefore we store it in its own class
+public class CoordinatorBaseState
 {
+        
+    public string Name {set; get; }
+
+    public string ParentName { get; set; }
+    
+    public ICoupledModel _coupledModel;
+
     /// <summary>
     /// Build from coupledModel and Generator
     /// name is from model
@@ -25,8 +33,12 @@ public class CoordinatorState
     /// Is a 1:1 mapping
     /// </summary>
     public readonly Dictionary<string, IActorRef> _children = new();
+    public Guid RunId { get; set; }
+}
 
-    public ICoupledModel _coupledModel;
+// this is changing during the simulation, therefore it is stored in its own class
+public class CoordinatorState
+{
     
     public TimeUnit _timeLast;
 
@@ -61,17 +73,16 @@ public class CoordinatorState
     public Bag _outputMessageBagChildren = new();
 
     public bool _initializationCompleted;
-    
-    public string Name {set; get; }
-
-    public string ParentName { get; set; }
-    
-    public Guid RunId { get; set; }
-
     public int ChildrenLoadCheckpointCount { get; set; }
     
     public int ChildrenSaveCheckpointCount { get; set; }
 
+}
+
+public class CoordinatorStateSnapshot
+{
+    public required CoordinatorBaseState BaseState { get; init; }
+    public required CoordinatorState State { get; init; }
 }
 
 /// <summary>
@@ -102,17 +113,23 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         );
     }
     
+    private int CycleCounter { get; set; } = 0;
+    
+    private int CyclesUntilSnapshot { get; } = 100;
+    
     private Instrumentation Instrumentation { get; }
     private IServiceProvider ServiceProvider { get; }
-    public IActorRef _parent => _state.ParentName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
+    public IActorRef _parent => _baseState.ParentName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
         .Get<RootCoordinator>() : ActorRegistry.For(Context.System).Get<Coordinator>();
     
     private CoordinatorState _state = new ();
+    private CoordinatorBaseState _baseState = new ();
 
-    private async Task CreateChildrenAsync(Guid runId)
+    private async Task<Dictionary<string, IActorRef>> CreateChildrenAsync(Guid runId, string name)
     {
         // Create a new actor for each child
-        foreach (var child in _state._coupledModel.GetChildren())
+        var children = new Dictionary<string, IActorRef>();
+        foreach (var child in _baseState._coupledModel.GetChildren())
         {
             IActorRef actor;
             switch (child.Item2)
@@ -123,26 +140,28 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                     //     new Simulator(ServiceProvider)); //TODO Self, atomicModel,
                     
                     actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
-                    await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, _state.Name){
-                        ShardId = _state.Name,  // Simulator should be in the same shard as the coordinator
-                        RunId = _state.RunId,
+                    await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, name){
+                        ShardId = name,  // Simulator should be in the same shard as the coordinator
+                        RunId = runId,
                     });
 
                     break;
                 case ICoupledModel coupledModel:
                     actor = await ActorRegistry.For(Context.System).GetAsync<Coordinator>();
-                    await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, _state.Name)
+                    await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, name)
                     {
-                        RunId = _state.RunId,
+                        RunId = runId,
                     });
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            _state._children.Add(child.Item1, actor);
+             
+            children.Add(child.Item1, actor);
         }
-        SaveSnapshot(_state);
+
+        return children;
     }
 
     private ISnapshotManager SnapshotManager { get; }
@@ -159,6 +178,33 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         ActivitySource = Instrumentation.ActivitySource;
 
 
+        Recover<SnapshotOffer>(offer =>
+        {
+            if (offer.Snapshot is CoordinatorStateSnapshot state)
+            {
+                _state = state.State;
+                _baseState = state.BaseState;
+            }
+        });
+        Command<SaveSnapshotSuccess>(success => {
+            // soft-delete the journal up until the sequence # at
+            // which the snapshot was taken
+            DeleteMessages(success.Metadata.SequenceNr); 
+        });
+        
+        Recover<CoordinatorState>(state =>
+        {
+            _state = state;
+        });
+        
+        Recover<CoordinatorBaseState>(baseState =>
+        {
+            _baseState = baseState;
+        });
+        Command<DeleteMessagesSuccess>(success =>
+        {
+            Serilog.Log.Verbose("[{Name} - PERSISTENCE] Deleted messages up to sequence number {SequenceNr}", Self.Path.Name, success.ToSequenceNr);
+        });
         // Simulation Messages
         Command<EngineMessages.StartInitialization>(HandleInitialization);
         Command<EngineMessages.InitializationCompleted>(HandleInitializationCompleted);
@@ -167,14 +213,25 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             // This is used to setup the simulator actor with the coordinator
             // It is not used in the coordinator itself, but in the simulator actor
             // Therefore we just ignore it here
-            _state.ParentName = msg.ParentName;
-            _state.Name = msg.Name;
-            _state.RunId = msg.RunId;
-            _state._coupledModel = msg.CoupledModel;
+
             // _parent = msg.Parent;
-            await CreateChildrenAsync(msg.RunId);
+            _baseState.ParentName = msg.ParentName;
+            _baseState.Name = msg.Name;
+            _baseState.RunId = msg.RunId;
+            _baseState._coupledModel = msg.CoupledModel;
+            var children = await CreateChildrenAsync(msg.RunId, msg.Name);
+
+            foreach (var child in children)
+            {
+                _baseState._children.Add(child.Key, child.Value);
+            }
+            Persist(_baseState, st =>
+            {
+                _baseState = st;
+            });
             Sender.Tell("done");
         });
+
         Command<ComputeOutput.StartComputeOutput>(HandleStartComputeOutput);
         Command<ComputeOutput.ComputedOutput>(HandleComputedOutput); // (y,t)
         Command<ExecuteTransition.StartExecuteTransition>(HandleExecuteTransition);
@@ -182,14 +239,14 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
 
         CommandAsync<Simulation.HasStopCondition>((async _ =>
         {
-            foreach (var child in _state._children)
+            foreach (var child in _baseState._children)
             {
                 var actor = child.Value;
                 var resp = await actor.Ask<bool>(new Simulation.HasStopCondition()
                 {
-                    ShardId = ActorHelper.GetShardId(_state.Name, child.Key),
+                    ShardId = ActorHelper.GetShardId(_baseState.Name, child.Key),
                     EntityName = child.Key,
-                    RunId = _state.RunId,
+                    RunId = _baseState.RunId,
                 });
                 if (resp)
                 {
@@ -213,12 +270,35 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         await LoadCheckpointAsync(obj.Name);
         
         _state.ChildrenLoadCheckpointCount = 0;
-        foreach (var child in _state._children)
+        foreach (var child in _baseState._children)
         {
-            child.Value.Tell(obj with { EntityName = child.Key, ShardId = ActorHelper.GetShardId(_state.Name, child.Key) });
+            child.Value.Tell(obj with { EntityName = child.Key, ShardId = ActorHelper.GetShardId(_baseState.Name, child.Key) });
         }
-        
-        SaveSnapshot(_state);
+
+        PersistState();
+    }
+
+    private void PersistState()
+    {
+        // lower consistency, much higher performance. Doesn't wait for the message to be persisted before processing the next message in the mailbox.
+        // order in which those events are persisted will be preserved 
+        // This means you probably have to modify your actor's in-memory state before
+        // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
+        PersistAsync(_state, st =>
+        {
+            
+            _state = st;
+            
+            if(++CycleCounter >= CyclesUntilSnapshot)
+            {
+                CycleCounter = 0;
+                SaveSnapshot(new CoordinatorStateSnapshot()
+                {
+                    BaseState = _baseState,
+                    State = _state,
+                });
+            }
+        });
     }
     
     private async Task LoadCheckpointAsync(string checkpointName)
@@ -233,23 +313,23 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         _state._timeLast = snapshot.TimeLast;
         _state._timeNext = snapshot.TimeNext;
         _state._eventList = snapshot.EventList;
-        
-        SaveSnapshot(_state);
     }
     
     private void HandleFinishedLoadCheckpoint(Simulation.FinishedLoadCheckpoint obj)
     {
         _state.ChildrenLoadCheckpointCount += 1;
-        if (_state.ChildrenLoadCheckpointCount == _state._children.Count)
+        if (_state.ChildrenLoadCheckpointCount == _baseState._children.Count)
         {
             _parent.Tell(new Simulation.FinishedLoadCheckpoint(obj.Name)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name, _state.ParentName),
-                EntityName = _state.ParentName,
-                RunId = _state.RunId,
+                ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.ParentName),
+                EntityName = _baseState.ParentName,
+                RunId = _baseState.RunId,
             });
         }
-        SaveSnapshot(_state);
+        PersistState();
+
+        
     }
 
     private void HandleFinishedSaveCheckpoint(Simulation.FinishedSaveCheckpoint obj)
@@ -259,16 +339,18 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             throw new SynchronisationException("error: bad synchronization");
         }
         _state.ChildrenSaveCheckpointCount += 1;
-        if (_state.ChildrenSaveCheckpointCount == _state._children.Count)
+        if (_state.ChildrenSaveCheckpointCount == _baseState._children.Count)
         {
             _parent.Tell(new Simulation.FinishedSaveCheckpoint(obj.Name, obj.CurrentTime)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name, _state.ParentName),
-                EntityName = _state.ParentName,
-                RunId = _state.RunId,
+                ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.ParentName),
+                EntityName = _baseState.ParentName,
+                RunId = _baseState.RunId,
 
             });
         }
+        PersistState();
+
     }
 
     private async Task HandleSaveCheckpoint(Simulation.SaveCheckpoint obj)
@@ -280,11 +362,13 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         await SaveCheckpointAsync(obj.Name);
         
         _state.ChildrenSaveCheckpointCount = 0;
-        foreach (var child in _state._children)
+        foreach (var child in _baseState._children)
         {
-            child.Value.Tell(obj with {EntityName = child.Key, ShardId = ActorHelper.GetShardId(_state.Name, child.Key)});
+            child.Value.Tell(obj with {EntityName = child.Key, ShardId = ActorHelper.GetShardId(_baseState.Name, child.Key)});
         }
-        SaveSnapshot(_state);
+        PersistState();
+
+        
     }
 
 
@@ -306,7 +390,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
     private void HandleComputedOutput(ComputeOutput.ComputedOutput obj)
     {
         // mark d as reporting
-        var name = _state._children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
+        var name = _baseState._children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
         _state._imminentChildren[name] = true;
 
 
@@ -332,7 +416,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         {
             foreach (var input in entry.Value.Inputs)
             {
-                if (_state._coupledModel.HasCouplingOut(input.Key, out var outPort))
+                if (_baseState._coupledModel.HasCouplingOut(input.Key, out var outPort))
                 {
                     if (outPort != null)
                     {
@@ -347,9 +431,9 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Serilog.Log.Debug("Sending output to parent {Parent}, Bag {Bag}", _parent.Path.Name, _state._outputMessageBagParent);
         _parent.Tell(new ComputeOutput.ComputedOutput(_state._outputMessageBagParent, obj.CurrentTime)
         {
-            ShardId = ActorHelper.GetShardId(_state.Name, _state.ParentName),
-            EntityName = _state.ParentName,
-            RunId = _state.RunId,
+            ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.ParentName),
+            EntityName = _baseState.ParentName,
+            RunId = _baseState.RunId,
         });
 
 
@@ -364,7 +448,8 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         _state._outputMessageBagChildren = CreateOutputMessageBagChildrenFromMail(_state._outputMailBag);
         _state._outputMailBag.Clear();
         
-        SaveSnapshot(_state);
+        PersistState();
+
     }
 
 
@@ -373,7 +458,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Bag outputMessageBagChildren = new Bag();
 
         // naming r_child, is so that it matches the book with single letter variable names
-        foreach (var r_child in _state._children)
+        foreach (var r_child in _baseState._children)
         {
             // for d such that d ∈ Ir do (=  receiver of the child)
             // we kept track of senders, therefore we can just check if the child is in the list
@@ -385,7 +470,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
 
                 foreach (var entry in message.Value.Inputs)
                 {
-                    if (_state._coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
+                    if (_baseState._coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
                     {
                         outputMessageBagChildren.AddBag(message.Value);
                     }
@@ -400,7 +485,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
     {
         // TODO: add save guards
 
-        var name = _state._children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
+        var name = _baseState._children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
 
         _state._timeNextExecuteTransition.Add(name, obj);
 
@@ -434,14 +519,16 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                 ToStringState = _state._timeNextExecuteTransition.Values
                     .SelectMany(x => x.ToStringState ?? []).ToList(),
                 StopConditionReached = _state._timeNextExecuteTransition.Values.Any(x => x.StopConditionReached),
-                ShardId = ActorHelper.GetShardId(_state.Name, _state.ParentName),
-                EntityName = _state.ParentName,
-                RunId = _state.RunId,
+                ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.ParentName),
+                EntityName = _baseState.ParentName,
+                RunId = _baseState.RunId,
             };
 
             _parent.Tell(result);
         }
-        SaveSnapshot(_state);
+        PersistState();
+
+        
     }
 
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
@@ -450,7 +537,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         using var activity =
             ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Internal, parentContext: parentContext);
         activity?.SetTag("Name", Self.Path.Name);
-        activity?.SetTag("Model", _state._coupledModel.GetType().Name);
+        activity?.SetTag("Model", _baseState._coupledModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         activity?.SetTag("Input", obj.Input?.ToString() ?? "null");
         activity?.WriteSharding(obj);
@@ -481,7 +568,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Dictionary<string, Bag> receivers = new Dictionary<string, Bag>();
         foreach (var bagChild in _state._outputMessageBagChildren.Inputs)
         {
-            var outModelAndPort = _state._coupledModel.GetReceivers(bagChild.Key);
+            var outModelAndPort = _baseState._coupledModel.GetReceivers(bagChild.Key);
             foreach (var outModelAndPortEntry in outModelAndPort)
             {
                 if (receivers.ContainsKey(outModelAndPortEntry.model))
@@ -512,27 +599,29 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
 
         foreach (var receiver in receivers)
         {
-            var receiverActors = _state._children[receiver.Key];
+            var receiverActors = _baseState._children[receiver.Key];
             receiverActors.Tell(new ExecuteTransition.StartExecuteTransition(receiver.Value, obj.CurrentTime, activity)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name, receiver.Key),
+                ShardId = ActorHelper.GetShardId(_baseState.Name, receiver.Key),
                 EntityName = receiver.Key,
-                RunId = _state.RunId,
+                RunId = _baseState.RunId,
             });
         }
 
         foreach (var uncoupledChild in imminentButNoReceiver)
         {
-            var actor = _state._children[uncoupledChild.Key];
+            var actor = _baseState._children[uncoupledChild.Key];
             actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime, activity)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name,  uncoupledChild.Key),
+                ShardId = ActorHelper.GetShardId(_baseState.Name,  uncoupledChild.Key),
                 EntityName = uncoupledChild.Key,
-                RunId = _state.RunId,
+                RunId = _baseState.RunId,
             });
         }
         
-        SaveSnapshot(_state);
+        PersistState();
+
+        
     }
 
     private void HandleStartComputeOutput(ComputeOutput.StartComputeOutput obj)
@@ -552,16 +641,18 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
 
         foreach (var imminentChild in _state._imminentChildren)
         {
-            var actor = _state._children[imminentChild.Key];
+            var actor = _baseState._children[imminentChild.Key];
             actor.Tell(new ComputeOutput.StartComputeOutput(obj.CurrentTime, activity)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name, imminentChild.Key),
+                ShardId = ActorHelper.GetShardId(_baseState.Name, imminentChild.Key),
                 EntityName = imminentChild.Key,
-                RunId =_state. RunId,
+                RunId =_baseState.RunId,
             });
         }
         
-        SaveSnapshot(_state);
+        PersistState();
+
+        
     }
 
     private void HandleInitializationCompleted(EngineMessages.InitializationCompleted obj)
@@ -575,11 +666,11 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         
             
         // Get the sender name
-        var name = _state._children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
+        var name = _baseState._children.FirstOrDefault(x => x.Key.Equals(ActorHelper.GetEntityNameFromSender(Sender))).Key;
 
         _state._eventList.Add(name, new TimeEventTuple(obj.TimeLast, obj.TimeNext));
 
-        if (_state._eventList.Count == _state._children.Count)
+        if (_state._eventList.Count == _baseState._children.Count)
         {
             _state._initializationCompleted = true;
 
@@ -590,13 +681,15 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             // tell parent
             _parent.Tell(new EngineMessages.InitializationCompleted(_state._timeLast, _state._timeNext)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name, _state.ParentName),
-                EntityName = _state.ParentName,
-                RunId = _state.RunId
+                ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.ParentName),
+                EntityName = _baseState.ParentName,
+                RunId = _baseState.RunId
             });
         }
         
-        SaveSnapshot(_state);
+        PersistState();
+
+        
     }
 
     private void HandleInitialization(EngineMessages.StartInitialization obj)
@@ -605,16 +698,16 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         using var activity =
             ActivitySource.StartActivity("Initialization", ActivityKind.Internal, parentContext: parentContext);
         activity?.SetTag("Name", Self.Path.Name);
-        activity?.SetTag("Model", _state._coupledModel.GetType().Name);
+        activity?.SetTag("Model", _baseState._coupledModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         activity?.WriteSharding(obj);
-        foreach (var child in _state._children)
+        foreach (var child in _baseState._children)
         {
             child.Value.Tell(new EngineMessages.StartInitialization(obj.CurrentTime, activity)
             {
-                ShardId = ActorHelper.GetShardId(_state.Name,  child.Key), 
+                ShardId = ActorHelper.GetShardId(_baseState.Name,  child.Key), 
                 EntityName = child.Key,
-                RunId = _state.RunId,
+                RunId = _baseState.RunId,
             });
         }
     }

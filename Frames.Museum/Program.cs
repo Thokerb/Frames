@@ -1,11 +1,8 @@
-using Akka.Actor.Setup;
 using Akka.HealthCheck.Hosting;
 using Akka.HealthCheck.Hosting.Web;
-using Akka.Hosting;
 using Frames.Engine.DependencyInjection;
 using Frames.Museum;
 using Frames.Museum.Benchmark;
-using Frames.Museum.ClusterOverview;
 using Frames.Museum.Devstone;
 using Frames.Museum.HelloWorld;
 using Frames.Museum.SimulationControl;

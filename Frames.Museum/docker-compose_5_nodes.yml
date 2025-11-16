@@ -49,8 +49,8 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__1: "museum3:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum4:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
-
-      AkkaSettings__ShardOptions__PassivateIdleEntity: "false"
+      AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
+      AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
@@ -99,7 +99,8 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum4:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
 
-      AkkaSettings__ShardOptions__PassivateIdleEntity: "false"
+      AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
+      AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__ServiceName: "akka-management"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
@@ -150,7 +151,8 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum4:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
 
-      AkkaSettings__ShardOptions__PassivateIdleEntity: "false"
+      AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
+      AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
       AkkaSettings__PersistenceMode: "InMemory"
@@ -199,7 +201,8 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum3:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
 
-      AkkaSettings__ShardOptions__PassivateIdleEntity: "false"
+      AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
+      AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
       AkkaSettings__PersistenceMode: "InMemory"
@@ -248,7 +251,8 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum3:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum4:8558"
 
-      AkkaSettings__ShardOptions__PassivateIdleEntity: "false"
+      AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
+      AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
       AkkaSettings__PersistenceMode: "InMemory"

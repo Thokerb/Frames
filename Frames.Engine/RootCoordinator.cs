@@ -19,9 +19,17 @@ using Timer = System.Timers.Timer;
 namespace Frames.Engine;
 
 
+
+public class RootCoordinatorBaseState
+{
+    public Guid RunId { get; set; }
+    public IActorRef _child;
+    public string ChildName { get; set; }
+
+}
+
 public class RootCoordinatorState
 {
-    public IActorRef _children;
 
     public bool _hasStopCondition;
     public bool _isCompleted;
@@ -32,19 +40,22 @@ public class RootCoordinatorState
 
     public TimeUnit _currentTime = TimeUnit.Zero;
     public TimeUnit? _lastTime;
-    public readonly SortedList<TimeUnit, string> _checkpoints = new();
-    public CompletionType CompletionType { get; set; } = CompletionType.NotCompleted;
 
     public int? _timeUnitInMilliseconds;
     public bool _isRunning;
     public bool _isLoadingCheckpoint;
     public bool _manualStop;
     public bool _manualPause;
-    public Guid Id { get; set; }
-    public string ChildrenName { get; set; }
     public bool StopConditionReached { get; set; }
     public string? RestoredCheckpointName { get; set; }
+    public readonly SortedList<TimeUnit, string> _checkpoints = new();
+    public CompletionType CompletionType { get; set; } = CompletionType.NotCompleted;
+}
 
+public class AkkaRootCoordinatorSnapshot
+{
+    public required RootCoordinatorState State { get; init; }
+    public required RootCoordinatorBaseState BaseState { get; init; } 
 }
 
 
@@ -69,6 +80,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
 
     private RootCoordinatorState _state = new();
+    private RootCoordinatorBaseState _baseState = new();
 
 
     private Stopwatch _stopwatch = new();
@@ -110,8 +122,8 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
                 ManualPause = _state._manualPause,
                 ManualStop = _state._manualStop,
                 TimeUnitInMilliseconds = _state._timeUnitInMilliseconds,
-                ChildrenName = _state.ChildrenName,
-                Id = _state.Id,
+                ChildrenName = _baseState.ChildName,
+                Id = _baseState.RunId,
                 LastTime = _state._lastTime,
                 StopConditionReached = _state.StopConditionReached,
                 CheckpointName = _state.RestoredCheckpointName,
@@ -125,6 +137,37 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
         CommandAsync<Simulation.CreateModel>(ReceiveCreateModelAsync);
 
+        
+        // Persistance
+        
+        Recover<SnapshotOffer>(offer =>
+        {
+            if (offer.Snapshot is AkkaRootCoordinatorSnapshot state)
+            {
+                _state = state.State;
+                _baseState = state.BaseState;
+            }
+        });
+        Command<SaveSnapshotSuccess>(success => {
+            // soft-delete the journal up until the sequence # at
+            // which the snapshot was taken
+            DeleteMessages(success.Metadata.SequenceNr); 
+        });
+        
+        Recover<RootCoordinatorState>(state =>
+        {
+            _state = state;
+        });
+        
+        Recover<RootCoordinatorBaseState>(baseState =>
+        {
+            _baseState = baseState;
+        });
+        Command<DeleteMessagesSuccess>(success =>
+        {
+            Serilog.Log.Verbose("[{Name} - PERSISTENCE] Deleted messages up to sequence number {SequenceNr}", Self.Path.Name, success.ToSequenceNr);
+        });
+        
         // Simulation Messages
         CommandAsync<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
         Command<ComputeOutput.ComputedOutput>(ReceiveComputationCompleted);
@@ -137,10 +180,9 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
             _timer?.Stop();
             _state._isCompleted = true;
             _state.CompletionType = CompletionType.Error;
-            // TODO: send this to the correct actors with correct ShardId and entity name, currently it is sent to root coordinator ????
             _benchmarkStopwatch.Stop();
 
-            SaveSnapshot(_state);
+            PersistState();
             
             var mediator = Context.System.Settings.HasCluster ? DistributedPubSub.Get(Context.System).Mediator : ActorRegistry.For(Context.System).Get<DistributedPubSubMediator>();
             if (mediator == null)
@@ -148,11 +190,37 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
                 Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
                 return;
             }
-            mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _state.Id, _benchmarkStopwatch.ElapsedMilliseconds) ));
+            mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId, _benchmarkStopwatch.ElapsedMilliseconds) ));
         });
     }
 
-
+    private const int CyclesUntilSnapshot = 100;
+    private int CycleCounter = 0;
+    
+    private void PersistState()
+    {
+        // lower consistency, much higher performance. Doesn't wait for the message to be persisted before processing the next message in the mailbox.
+        // order in which those events are persisted will be preserved 
+        // This means you probably have to modify your actor's in-memory state before
+        // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
+        PersistAsync(_state, st =>
+        {
+            
+            _state = st;
+            
+            if(++CycleCounter >= CyclesUntilSnapshot)
+            {
+                CycleCounter = 0;
+                SaveSnapshot(new AkkaRootCoordinatorSnapshot()
+                {
+                    // base state never changes but we need it in the snapshot
+                    BaseState = _baseState,
+                    State = _state,
+                });
+            }
+        });
+    }
+    
     private void HaltExecution(CompletionType completionType)
     {
         _benchmarkStopwatch.Stop();
@@ -164,7 +232,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         _state.CompletionType = completionType;
         _state._isRunning = false;
 
-        SaveSnapshot(_state);
+        PersistState();
         
         var mediator = Context.System.Settings.HasCluster ? DistributedPubSub.Get(Context.System).Mediator : ActorRegistry.For(Context.System).Get<DistributedPubSubMediator>();
         if (mediator == null )
@@ -172,13 +240,13 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
             Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
             return;
         }
-        mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _state.Id, _benchmarkStopwatch.ElapsedMilliseconds) ));
+        mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId, _benchmarkStopwatch.ElapsedMilliseconds) ));
     }
 
     private async Task ReceiveCreateModelAsync(Simulation.CreateModel arg)
     {
         IActorRef actor;
-        _state.Id = arg.Id;
+        _baseState.RunId = arg.Id;
         switch (arg.Model)
         {
             // TODO: DI
@@ -203,12 +271,15 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
                 throw new ArgumentOutOfRangeException();
         }
 
-        _state.ChildrenName = arg.Name;
-        _state._children = actor;
+        _baseState.ChildName = arg.Name;
+        _baseState._child = actor;
 
-        SaveSnapshot(_state);
+        Persist(_baseState, st =>
+        {
+            _baseState = st;
+        });
         
-        Sender.Tell(_state.Id);
+        Sender.Tell(_baseState.RunId);
     }
 
 
@@ -233,7 +304,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         Serilog.Log.Information("[ROOT] Simulation stopped");
         _timer?.Stop();
         _state._manualStop = true;
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private void ReceivePauseSimulation(Simulation.PauseSimulation obj)
@@ -241,7 +312,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         Serilog.Log.Information("[ROOT] Received Simulation paused");
         _timer?.Stop();
         _state._manualPause = true;
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private void ReceiveSetSpeedControl(Simulation.SetSpeedControl obj)
@@ -258,7 +329,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         }
 
         _state._timeUnitInMilliseconds = obj.TimeUnitInMilliseconds;
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private Instrumentation Instrumentation { get; set; }
@@ -273,13 +344,13 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         {
             StartSimulationAfterLoadingCheckpoint = false;
 
-            if (_state._children == null)
+            if (_baseState._child == null)
             {
                 throw new SimulatorException("Simulation was not setup properly");
             }
-            Self.Tell(new Simulation.StartSimulation(_state.Id, _state.RestoredCheckpointName));
+            Self.Tell(new Simulation.StartSimulation(_baseState.RunId, _state.RestoredCheckpointName));
         }
-        SaveSnapshot(_state);
+        PersistState();
     }
 
 
@@ -308,13 +379,13 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
         _state._isLoadingCheckpoint = true;
         Log.Debug("[ROOT] Loading checkpoint {Checkpoint}", arg.Name);
-        _state._children.Tell(new Simulation.LoadCheckpoint(arg.Name)
+        _baseState._child.Tell(new Simulation.LoadCheckpoint(arg.Name)
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_state.Id), _state.ChildrenName),
-            EntityName = _state.ChildrenName,
-            RunId = _state.Id
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+            EntityName = _baseState.ChildName,
+            RunId = _baseState.RunId
         });
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private async Task ReceiveFinishedSaveCheckpointAsync(Simulation.FinishedSaveCheckpoint obj)
@@ -341,7 +412,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         _state._checkpoints.Add(obj.Time, obj.Name);
         Serilog.Log.Information("[ROOT] Checkpoint set at time {Time}", obj.Time);
         Sender.Tell(new ActionResponse(true, "Checkpoint set successfully"));
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private void ReceiveRemoveCheckpoint(Simulation.RemoveCheckpoint obj)
@@ -355,7 +426,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
         _state._checkpoints.Remove(checkpoint.Key);
         Serilog.Log.Information("[ROOT] Checkpoint {Checkpoint} removed", obj.Name);
-        SaveSnapshot(_state);
+        PersistState();
         Sender.Tell(new ActionResponse(true, "Checkpoint removed successfully"));
     }
 
@@ -373,12 +444,12 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         if (_state._isCompleted)
         {
             _benchmarkStopwatch.Stop();
-            Sender.Tell(new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _state.Id,
+            Sender.Tell(new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId,
                 _benchmarkStopwatch.ElapsedMilliseconds));
         }
         else
         {
-            Sender.Tell(new Simulation.IsCompleted(_state._currentTime, CompletionType.NotCompleted, _state.Id,
+            Sender.Tell(new Simulation.IsCompleted(_state._currentTime, CompletionType.NotCompleted, _baseState.RunId,
                 _benchmarkStopwatch.ElapsedMilliseconds));
         }
     }
@@ -387,7 +458,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
     {
         _state._hasStopCondition = true;
         _state._timeUntilShutdown = obj.Time;
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private Stopwatch _benchmarkStopwatch = new ();
@@ -413,17 +484,17 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         }
 
 
-        if (!ActorHelper.IsSimulator(_state.ChildrenName) && !ActorHelper.IsCoordinator(_state.ChildrenName))
+        if (!ActorHelper.IsSimulator(_baseState.ChildName) && !ActorHelper.IsCoordinator(_baseState.ChildName))
         {
             throw new SimulatorException("Wrong actor type or naming, expected simulator or coordinator, got: " +
-                                         _state._children.Path.Name);
+                                         _baseState._child.Path.Name);
         }
 
-        _state._hasStopCondition = _state._hasStopCondition || _state._children.Ask<bool>(new Simulation.HasStopCondition
+        _state._hasStopCondition = _state._hasStopCondition || _baseState._child.Ask<bool>(new Simulation.HasStopCondition
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_state.Id), _state.ChildrenName),
-            EntityName = _state.ChildrenName,
-            RunId = _state.Id
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+            EntityName = _baseState.ChildName,
+            RunId = _baseState.RunId
         }).Result;
 
         if (!_state._hasStopCondition)
@@ -470,17 +541,17 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         _state._isRunning = true;
         _state.RestoredCheckpointName = string.Empty;
 
-        SaveSnapshot(_state);
+        PersistState();
         
         if (_state._timeUnitInMilliseconds.HasValue)
         {
             _stopwatch.Start();
         }
 
-        _state._children.Tell(new EngineMessages.StartInitialization(_state._currentTime, InitializationActivity)
+        _baseState._child.Tell(new EngineMessages.StartInitialization(_state._currentTime, InitializationActivity)
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(obj.Id), _state.ChildrenName),
-            EntityName = _state.ChildrenName,
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(obj.Id), _baseState.ChildName),
+            EntityName = _baseState.ChildName,
             RunId = obj.Id
         });
     }
@@ -494,7 +565,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         _timer!.Stop();
         _state._isCompleted = true;
         _state.CompletionType = CompletionType.Timeout;
-        SaveSnapshot(_state);
+        PersistState();
         throw new TimeoutException("Simulation timed out after " + _timeOut.TotalMilliseconds + " milliseconds");
     }
 
@@ -524,14 +595,14 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         ComputeOutputActivity?.Dispose();
         // update the timeNext for the child
         _state._currentTime = obj.CurrentTime;
-        SaveSnapshot(_state);
+        PersistState();
         ExecuteTransitionActivity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Client,
             parentContext: SimulationStep?.Context ?? new ActivityContext());
-        _state._children.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _state._timeNext, ExecuteTransitionActivity)
+        _baseState._child.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _state._timeNext, ExecuteTransitionActivity)
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_state.Id), _state.ChildrenName),
-            EntityName = _state.ChildrenName,
-            RunId = _state.Id
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+            EntityName = _baseState.ChildName,
+            RunId = _baseState.RunId
         });
     }
 
@@ -552,15 +623,15 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         {
             Log.Debug("[ROOT] Checkpoint reached at time {Time}", _state._currentTime);
             _state._checkpoints.Remove(checkpoint.Key);
-            _state._children.Tell(new Simulation.SaveCheckpoint(checkpoint.Value, checkpoint.Key)
+            _baseState._child.Tell(new Simulation.SaveCheckpoint(checkpoint.Value, checkpoint.Key)
             {
-                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_state.Id), _state.ChildrenName),
-                EntityName = _state.ChildrenName,
-                RunId = _state.Id,
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+                EntityName = _baseState.ChildName,
+                RunId = _baseState.RunId,
             });
             await SaveCheckpoint(checkpoint.Value, checkpoint.Key);
             // RoundCompleted will be called again when the checkpoint is saved
-            SaveSnapshot(_state);
+            PersistState();
             return;
         }
 
@@ -647,14 +718,14 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
 
         _state._currentTime = _state._timeNext;
-        _state._children.Tell(new ComputeOutput.StartComputeOutput(_state._currentTime, ComputeOutputActivity)
+        _baseState._child.Tell(new ComputeOutput.StartComputeOutput(_state._currentTime, ComputeOutputActivity)
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_state.Id), _state.ChildrenName),
-            EntityName = _state.ChildrenName,
-            RunId = _state.Id
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+            EntityName = _baseState.ChildName,
+            RunId = _baseState.RunId
         });
         
-        SaveSnapshot(_state);
+        PersistState();
     }
 
     private async Task SaveCheckpoint(string checkpoint, TimeUnit timeUnit)
