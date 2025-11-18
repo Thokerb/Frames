@@ -21,7 +21,7 @@ public class Program
             NumberRuns = 40, // 7
             StartTimeUnits = 600,
             TimeUnitIncrement = 0,
-            PercentageActive = 0,
+            PercentageActive = 70,
             PercentageIncrement = 3.3333,
             NodeIcrement = 0,
             NumberNodes = 3000,

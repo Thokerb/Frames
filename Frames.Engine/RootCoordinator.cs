@@ -205,9 +205,6 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
         PersistAsync(_state, st =>
         {
-            
-            _state = st;
-            
             if(++CycleCounter >= CyclesUntilSnapshot)
             {
                 CycleCounter = 0;

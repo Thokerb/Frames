@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Akka.DependencyInjection;
 using Akka.Hosting;
 using Akka.Persistence;
@@ -32,7 +33,7 @@ public class CoordinatorBaseState
     /// ActorRef is the address of the actor
     /// Is a 1:1 mapping
     /// </summary>
-    public readonly Dictionary<string, IActorRef> _children = new();
+    public Dictionary<string, IActorRef> _children = new();
     public Guid RunId { get; set; }
 }
 
@@ -48,7 +49,7 @@ public class CoordinatorState
     /// key - name of the child
     /// Can be mapped to address with the _children dictionary
     /// </summary>
-    public IDictionary<string, TimeEventTuple> _eventList = new Dictionary<string, TimeEventTuple>();
+    public Dictionary<string, TimeEventTuple> _eventList = new();
 
     public Dictionary<string, ExecuteTransition.FinishedExecuteTransition> _timeNextExecuteTransition = new();
     public int _timeNextExecuteTransitionCount;
@@ -64,7 +65,7 @@ public class CoordinatorState
     /// </summary>
     public Dictionary<string, Bag> _outputMailBag = new();
 
-    public Bag _outputMessageBagParent = new Bag();
+    public Bag _outputMessageBagParent = new();
 
     /// <summary>
     /// Key - name of the child
@@ -77,6 +78,24 @@ public class CoordinatorState
     
     public int ChildrenSaveCheckpointCount { get; set; }
 
+    public CoordinatorState DeepCopy()
+    {
+        return new CoordinatorState()
+        {
+            _eventList = this._eventList.ToDictionary(),
+            _imminentChildren = this._imminentChildren.ToDictionary(),
+            _initializationCompleted = this._initializationCompleted,
+            _outputMailBag = this._outputMailBag.ToDictionary(),
+            _outputMessageBagChildren = this._outputMessageBagChildren.DeepCopy(),
+            _outputMessageBagParent = this._outputMessageBagParent.DeepCopy(),
+            _timeLast = this._timeLast.Value,
+            _timeNext = this._timeNext.Value,
+            _timeNextExecuteTransition = this._timeNextExecuteTransition.ToDictionary(),
+            _timeNextExecuteTransitionCount = this._timeNextExecuteTransitionCount,
+            ChildrenLoadCheckpointCount = this.ChildrenLoadCheckpointCount,
+            ChildrenSaveCheckpointCount = this.ChildrenSaveCheckpointCount,
+        };
+    }
 }
 
 public class CoordinatorStateSnapshot
@@ -284,18 +303,15 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         // order in which those events are persisted will be preserved 
         // This means you probably have to modify your actor's in-memory state before
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
-        PersistAsync(_state, st =>
+        PersistAsync(_state.DeepCopy(), st =>
         {
-            
-            _state = st;
-            
             if(++CycleCounter >= CyclesUntilSnapshot)
             {
                 CycleCounter = 0;
                 SaveSnapshot(new CoordinatorStateSnapshot()
                 {
                     BaseState = _baseState,
-                    State = _state,
+                    State = _state.DeepCopy(),
                 });
             }
         });

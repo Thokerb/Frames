@@ -73,7 +73,7 @@ builder.Services.ConfigureWebApiAkka(builder.Configuration, (akkaConfigurationBu
 {
     // we configure instrumentation separately from the internals of the ActorSystem
     akkaConfigurationBuilder.ConfigurePetabridgeCmd();
-    akkaConfigurationBuilder.WithWebHealthCheck(serviceProvider);
+    // akkaConfigurationBuilder.WithWebHealthCheck(serviceProvider);
 });
 builder.Services.AddHWDependencies();
 builder.Services.AddFrameServices();

@@ -14,6 +14,8 @@
         <PackageReference Include="Akka.HealthCheck.Hosting" Version="1.5.37" />
         <PackageReference Include="Akka.HealthCheck.Hosting.Web" Version="1.5.37" />
         <PackageReference Include="Akka.Management" Version="1.5.42" />
+        <PackageReference Include="Akka.Persistence.MongoDb.Hosting" Version="1.5.55.1" />
+        <PackageReference Include="Akka.Persistence.Sql.Hosting" Version="1.5.55.1" />
         <PackageReference Include="Akka.Streams.SignalR.AspNetCore" Version="1.5.15" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2"/>
         <PackageReference Include="OpenTelemetry" Version="1.12.0" />
@@ -27,6 +29,7 @@
         <PackageReference Include="Petabridge.Cmd.Host" Version="1.4.4" />
         <PackageReference Include="Petabridge.Cmd.Remote" Version="1.4.4" />
         <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.1" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -45,6 +48,10 @@
       <None Include="HelloWorld\ReelTestData\arena2.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="data\" />
     </ItemGroup>
 
 </Project>

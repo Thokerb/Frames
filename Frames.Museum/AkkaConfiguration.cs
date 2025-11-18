@@ -9,6 +9,8 @@ using Akka.Logger.Serilog;
 using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Hosting;
+using Akka.Persistence.MongoDb.Hosting;
+using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using Akka.Serialization;
 using Frames.Engine;
@@ -16,7 +18,9 @@ using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Museum.Actors;
 using Frames.Museum.ClusterOverview;
+using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using LogLevel = Akka.Event.LogLevel;
@@ -154,11 +158,25 @@ public static class AkkaConfiguration
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
         switch (settings.PersistenceMode)
         {
             case PersistenceMode.InMemory:
                 return builder.WithInMemoryJournal().WithInMemorySnapshotStore();
+            case PersistenceMode.SqlServer:
+            {
+                var connectionStringName = configuration.GetSection("AkkaPersistenceStorageSettings")
+                    .Get<AkkaPersistenceStorageSettings>()?.ConnectionStringName;
+                Debug.Assert(connectionStringName != null, nameof(connectionStringName) + " != null");
+                var connectionString = configuration.GetConnectionString(connectionStringName);
+                Debug.Assert(connectionString != null, nameof(connectionString) + " != null");
+                return builder.WithSqlPersistence(connectionString, providerName: ProviderName.SqlServer2022,
+                    journalBuilder: journal => journal.WithHealthCheck(HealthStatus.Degraded),
+                    snapshotBuilder: snapshot => snapshot.WithHealthCheck(HealthStatus.Degraded)
+                    );
+
+            }
             default:
                 throw new ArgumentOutOfRangeException();
         }

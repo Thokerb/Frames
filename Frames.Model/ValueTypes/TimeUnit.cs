@@ -1,11 +1,16 @@
-﻿namespace Frames.Model.ValueTypes;
+﻿using Newtonsoft.Json;
+
+namespace Frames.Model.ValueTypes;
 
 /// <summary>
 /// Value type for time units
 /// </summary>
 public record struct TimeUnit : IComparable<TimeUnit>
 {
+    [JsonProperty]
     public int Value { get; init; }
+    
+    [JsonProperty]
     public bool IsInfinity { get; init; }
     public TimeUnit(int value, bool isInfinity = false)
     {

@@ -42,12 +42,13 @@ public enum DiscoveryMethod
 public enum PersistenceMode
 {
     InMemory,
-    Azure
+    Azure,
+    SqlServer
 }
 
-public class AzureStorageSettings
+public class AkkaPersistenceStorageSettings
 {
-    public string ConnectionStringName { get; set; } = "Azurite";
+    public string ConnectionStringName { get; set; } = "MongoDb";
 }
 
 public class AkkaSettings
