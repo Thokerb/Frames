@@ -280,6 +280,14 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Command<Simulation.FinishedSaveCheckpoint>(HandleFinishedSaveCheckpoint);
         CommandAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpoint);
         Command<Simulation.FinishedLoadCheckpoint>(HandleFinishedLoadCheckpoint);
+        Command<Simulation.Cleanup>(msg =>
+        {
+            DeleteSnapshots(SnapshotSelectionCriteria.Latest);
+            foreach (var child in _baseState._children)
+            {
+                child.Value.Tell(msg with { EntityName = child.Key, ShardId = ActorHelper.GetShardId(_baseState.Name, child.Key) });
+            }
+        });
     }
 
 

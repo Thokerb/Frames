@@ -23,4 +23,8 @@
       <ProjectReference Include="..\Frames.Model\Frames.Model.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Akka.Persistence\" />
+    </ItemGroup>
+
 </Project>

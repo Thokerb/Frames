@@ -231,6 +231,18 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
         PersistState();
         
+        DeleteMessages(LastSequenceNr);
+        
+        DeleteSnapshots(SnapshotSelectionCriteria.Latest);
+        _baseState._child.Tell(new Simulation.Cleanup()
+        {
+            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+            EntityName = _baseState.ChildName,
+            RunId = _baseState.RunId,
+        });
+        
+        
+        
         var mediator = Context.System.Settings.HasCluster ? DistributedPubSub.Get(Context.System).Mediator : ActorRegistry.For(Context.System).Get<DistributedPubSubMediator>();
         if (mediator == null )
         {

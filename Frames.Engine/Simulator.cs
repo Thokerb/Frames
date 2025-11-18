@@ -154,6 +154,10 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         });
         CommandAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpointAsync);
         CommandAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
+        Command<Simulation.Cleanup>(msg =>
+        {
+            DeleteSnapshots(SnapshotSelectionCriteria.Latest);
+        });
     }
 
     private int CycleCounter = 0;

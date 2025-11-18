@@ -55,6 +55,8 @@ public static class Simulation
     public sealed record FinishedLoadCheckpoint(string Name) : WithShardId;
 
     public sealed record GetStatus(Guid Id) : WithRootCoordinatorShardId(Id);
+    
+    public sealed record Cleanup() : WithShardId;
 }
 
 public enum CompletionType
