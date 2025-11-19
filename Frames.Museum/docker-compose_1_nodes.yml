@@ -46,7 +46,8 @@ services:
     environment:
       APP_UID: "1000"
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__MongoDB: "mongodb://mongodb:27017/akka"
+      ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
+      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum1" 

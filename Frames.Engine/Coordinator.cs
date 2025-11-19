@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Akka.DependencyInjection;
 using Akka.Hosting;
 using Akka.Persistence;
+using Akka.Persistence.Journal;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -88,8 +89,8 @@ public class CoordinatorState
             _outputMailBag = this._outputMailBag.ToDictionary(),
             _outputMessageBagChildren = this._outputMessageBagChildren.DeepCopy(),
             _outputMessageBagParent = this._outputMessageBagParent.DeepCopy(),
-            _timeLast = this._timeLast.Value,
-            _timeNext = this._timeNext.Value,
+            _timeLast = new TimeUnit(this._timeLast),
+            _timeNext = new TimeUnit(this._timeNext),
             _timeNextExecuteTransition = this._timeNextExecuteTransition.ToDictionary(),
             _timeNextExecuteTransitionCount = this._timeNextExecuteTransitionCount,
             ChildrenLoadCheckpointCount = this.ChildrenLoadCheckpointCount,

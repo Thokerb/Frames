@@ -52,6 +52,7 @@ public static class AkkaConfiguration
                 settings.TypeNameHandling = TypeNameHandling.Objects;
                 settings.Formatting = Formatting.None;
             });
+            
 
             builder.Setups.Add(jsonSerializerSetup);
 
@@ -175,7 +176,6 @@ public static class AkkaConfiguration
                     journalBuilder: journal => journal.WithHealthCheck(HealthStatus.Degraded),
                     snapshotBuilder: snapshot => snapshot.WithHealthCheck(HealthStatus.Degraded)
                     );
-
             }
             default:
                 throw new ArgumentOutOfRangeException();
@@ -199,7 +199,8 @@ public static class AkkaConfiguration
                         propsFactory: (system, extractor, di) =>
                         {
                             return Props.Create(() =>
-                                new SuperRootCoordinatorListenerActor(di.GetService<IHubContext<BenchmarkHub>>()));
+                                new SuperRootCoordinatorListenerActor(di.GetService<IHubContext<BenchmarkHub>>(),
+                                    di.GetService<IConfiguration>()));
                         },
                         new ClusterSingletonOptions()
                         {

@@ -12,6 +12,13 @@ public record struct TimeUnit : IComparable<TimeUnit>
     
     [JsonProperty]
     public bool IsInfinity { get; init; }
+
+    public TimeUnit(TimeUnit timeUnit)
+    {
+        Value = timeUnit.Value;
+        IsInfinity = timeUnit.IsInfinity;
+    }
+    
     public TimeUnit(int value, bool isInfinity = false)
     {
         Value = value;

@@ -17,7 +17,9 @@
         <PackageReference Include="Akka.Persistence.MongoDb.Hosting" Version="1.5.55.1" />
         <PackageReference Include="Akka.Persistence.Sql.Hosting" Version="1.5.55.1" />
         <PackageReference Include="Akka.Streams.SignalR.AspNetCore" Version="1.5.15" />
+        <PackageReference Include="Dapper" Version="2.1.66" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2"/>
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0-preview2.25289.6" />
         <PackageReference Include="OpenTelemetry" Version="1.12.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
