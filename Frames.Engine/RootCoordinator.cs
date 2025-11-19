@@ -1,8 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Timers;
 using Akka.Cluster.Tools.PublishSubscribe;
+using Akka.Dispatch.SysMsg;
 using Akka.Hosting;
 using Akka.Persistence;
+using Frames.Engine.Akka.Persistence;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -18,6 +20,11 @@ using Timer = System.Timers.Timer;
 
 namespace Frames.Engine;
 
+
+public sealed record Timeout()
+{
+    
+}
 
 
 public class RootCoordinatorBaseState
@@ -65,7 +72,7 @@ public class AkkaRootCoordinatorSnapshot
 /// Merge of Basic Root Coordinator and Parallel Coordinator
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
-public class RootCoordinator : ReceivePersistentActor, ILogReceive
+public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
 {
     private IServiceProvider ServiceProvider { get; }
 
@@ -75,9 +82,6 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
     
 
     // TODO: for debugging purposes only
-    private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(300);
-    private Timer? _timer;
-
 
     private RootCoordinatorState _state = new();
     private RootCoordinatorBaseState _baseState = new();
@@ -172,12 +176,20 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         CommandAsync<EngineMessages.InitializationCompleted>(ReceiveInitializationCompleted);
         Command<ComputeOutput.ComputedOutput>(ReceiveComputationCompleted);
         CommandAsync<ExecuteTransition.FinishedExecuteTransition>(ReceiveFinishedExecuteTransition);
-
+        Command<PoisonPill>(msg =>
+        {
+            PersistState(true);
+        });
+        Command<Stop>(msg =>
+        {
+            PersistState(true);
+            Context.Stop(Self);
+        });
 
         Command<Exception>(ex =>
         {
             Log.Error(ex, "[ROOT] Exception in RootCoordinator");
-            _timer?.Stop();
+            Timers?.Cancel(TimeoutKey);
             _state._isCompleted = true;
             _state.CompletionType = CompletionType.Error;
             _benchmarkStopwatch.Stop();
@@ -194,18 +206,23 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         });
     }
 
-    private const int CyclesUntilSnapshot = 100;
     private int CycleCounter = 0;
     
-    private void PersistState()
+    private void PersistState(bool fromPoisonPill = false)
     {
+        if (!fromPoisonPill)
+        {
+            // we only want to persist state if we are stopping the actor, otherwise there are just too many messages
+            return;
+        }
+        
         // lower consistency, much higher performance. Doesn't wait for the message to be persisted before processing the next message in the mailbox.
         // order in which those events are persisted will be preserved 
         // This means you probably have to modify your actor's in-memory state before
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
         PersistAsync(_state, st =>
         {
-            if(++CycleCounter >= CyclesUntilSnapshot)
+            if(++CycleCounter >= PersistenceConfiguration.CyclesUntilSnapshot)
             {
                 CycleCounter = 0;
                 SaveSnapshot(new AkkaRootCoordinatorSnapshot()
@@ -223,7 +240,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         _benchmarkStopwatch.Stop();
         SimulationStep?.Dispose();
         SimulationRun?.Dispose();
-        _timer?.Stop();
+        Timers.Cancel(TimeoutKey);
         _stopwatch.Stop();
         _state._isCompleted = true;
         _state.CompletionType = completionType;
@@ -300,7 +317,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
             throw new SimulatorException("Simulation is not paused");
         }
 
-        _timer?.Start();
+        Timers.StartSingleTimer(TimeoutKey, new Timeout(), _timeOut);
         _state._manualPause = false;
         _state._isRunning = true;
         _state._isCompleted = false;
@@ -308,10 +325,15 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         await RoundCompleted();
     }
 
+    private const string TimeoutKey = "Timeout";
+
+    private TimeSpan _timeOut { get; set; } = TimeSpan.FromMinutes(5);
+
     private void ReceiveStopSimulation(Simulation.StopSimulation obj)
     {
         Serilog.Log.Information("[ROOT] Simulation stopped");
-        _timer?.Stop();
+        
+        Timers.Cancel(TimeoutKey);
         _state._manualStop = true;
         PersistState();
     }
@@ -319,7 +341,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
     private void ReceivePauseSimulation(Simulation.PauseSimulation obj)
     {
         Serilog.Log.Information("[ROOT] Received Simulation paused");
-        _timer?.Stop();
+        Timers.Cancel(TimeoutKey);
         _state._manualPause = true;
         PersistState();
     }
@@ -517,12 +539,8 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         // initialize _timeNext with children and null
 
         // Set timeout
-        _timer = new Timer(_timeOut.TotalMilliseconds);
-        _timer.Elapsed += HandleTimeout;
-        _timer.AutoReset = false;
-        _timer.Enabled = true;
-        _timer.Start();
-
+        Timers.StartSingleTimer(TimeoutKey, new Timeout(), _timeOut);
+        
         SimulationRun = ActivitySource.StartActivity(name: "SimulationRun");
         SimulationStep =
             ActivitySource.StartActivity("SimulationStep", ActivityKind.Internal,
@@ -571,7 +589,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
     private void HandleTimeout(object? sender, ElapsedEventArgs e)
     {
         Log.Error("[ROOT] Timeout reached, simulation will be interrupted");
-        _timer!.Stop();
+        Timers.Cancel(TimeoutKey);
         _state._isCompleted = true;
         _state.CompletionType = CompletionType.Timeout;
         PersistState();
@@ -625,6 +643,8 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
 
     private async Task RoundCompleted()
     {
+        // reset timeout
+        Timers.StartSingleTimer(TimeoutKey, new Timeout(), _timeOut);
         var checkpoint = _state._checkpoints.FirstOrDefault();
 
 
@@ -748,6 +768,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive
         }, Self.Path.Name);
     }
 
+    public ITimerScheduler Timers { get; set; }
 }
 
 public record SimulationStatus

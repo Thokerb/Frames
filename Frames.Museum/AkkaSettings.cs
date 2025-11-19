@@ -68,7 +68,11 @@ public class AkkaSettings
     public ClusterOptions ClusterOptions { get; set; } = new ClusterOptions()
     {
         // use our dynamic local host name by default
-        SeedNodes = new[] { $"akka.tcp://AkkaWebApi@{Dns.GetHostName()}:8081" }
+        SeedNodes = new[] { $"akka.tcp://AkkaWebApi@{Dns.GetHostName()}:8081" },
+        FailureDetector = new PhiAccrualFailureDetectorOptions()
+        {
+            AcceptableHeartbeatPause = TimeSpan.FromSeconds(10)
+        }
     };
 
     public ShardOptions ShardOptions { get; set; } = new ShardOptions();

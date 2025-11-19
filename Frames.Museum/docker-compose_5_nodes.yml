@@ -30,6 +30,7 @@ services:
       - ./log:/var/opt/mssql/log
       - ./secrets:/var/opt/mssql/secrets
   museum1:
+    hostname: museum1
     deploy:
       resources:
         reservations:
@@ -47,7 +48,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
       ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
-      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum1" 
@@ -57,8 +57,8 @@ services:
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
       AkkaSettings__ClusterOptions__Roles__3: "listener"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
-      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
+      AkkaSettings__ShardOptions__RememberEntities: "true"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
       AkkaSettings__AkkaManagementOptions__Hostname: "museum1"
@@ -83,6 +83,7 @@ services:
       - mongodb
 
   museum2:
+    hostname: museum2
     deploy:
       resources:
         reservations:
@@ -100,7 +101,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
       ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
-      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum2"
@@ -109,8 +109,8 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
-      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
+      AkkaSettings__ShardOptions__RememberEntities: "true"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
       AkkaSettings__AkkaManagementOptions__Hostname: "museum2"
@@ -136,6 +136,7 @@ services:
       - mongodb
 
   museum3:
+    hostname: museum3
     deploy:
       resources:
         reservations:
@@ -153,7 +154,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
       ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
-      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum3"
@@ -162,8 +162,8 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
-      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
+      AkkaSettings__ShardOptions__RememberEntities: "true"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
       AkkaSettings__AkkaManagementOptions__Hostname: "museum3"
@@ -188,6 +188,7 @@ services:
     depends_on:
       - mongodb
   museum4:
+    hostname: museum4
     deploy:
       resources:
         reservations:
@@ -205,7 +206,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
       ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
-      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum4"
@@ -214,8 +214,8 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
-      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
+      AkkaSettings__ShardOptions__RememberEntities: "true"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
       AkkaSettings__AkkaManagementOptions__Hostname: "museum4"
@@ -240,6 +240,7 @@ services:
     depends_on:
       - mongodb
   museum5:
+    hostname: museum5
     deploy:
       resources:
         reservations:
@@ -257,7 +258,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
       ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
-      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum5"
@@ -266,8 +266,8 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
-      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
+      AkkaSettings__ShardOptions__RememberEntities: "true"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
       AkkaSettings__AkkaManagementOptions__Hostname: "museum5"

@@ -1,9 +1,12 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Akka.Cluster.Sharding;
 using Akka.DependencyInjection;
+using Akka.Dispatch.SysMsg;
 using Akka.Hosting;
 using Akka.Persistence;
 using Akka.Persistence.Journal;
+using Frames.Engine.Akka.Persistence;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -135,8 +138,6 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
     
     private int CycleCounter { get; set; } = 0;
     
-    private int CyclesUntilSnapshot { get; } = 100;
-    
     private Instrumentation Instrumentation { get; }
     private IServiceProvider ServiceProvider { get; }
     public IActorRef _parent => _baseState.ParentName.StartsWith(ActorHelper.RootCoordinatorIdentifier) ?  ActorRegistry.For(Context.System)
@@ -209,7 +210,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Command<SaveSnapshotSuccess>(success => {
             // soft-delete the journal up until the sequence # at
             // which the snapshot was taken
-            DeleteMessages(success.Metadata.SequenceNr); 
+            // DeleteMessages(success.Metadata.SequenceNr); 
         });
         
         Recover<CoordinatorState>(state =>
@@ -288,6 +289,17 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             {
                 child.Value.Tell(msg with { EntityName = child.Key, ShardId = ActorHelper.GetShardId(_baseState.Name, child.Key) });
             }
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
+        });
+        Command<PoisonPill>(msg =>
+        {
+            PersistState(true);
+            Context.Stop(Self);
+        });
+        Command<Stop>(msg =>
+        {
+            PersistState(true);
+            Context.Stop(Self);
         });
     }
 
@@ -306,15 +318,20 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         PersistState();
     }
 
-    private void PersistState()
+    private void PersistState(bool fromPoisonPill = false)
     {
+        if (!fromPoisonPill)
+        {
+            // we only want to persist state if we are stopping the actor, otherwise there are just too many messages
+            return;
+        }
         // lower consistency, much higher performance. Doesn't wait for the message to be persisted before processing the next message in the mailbox.
         // order in which those events are persisted will be preserved 
         // This means you probably have to modify your actor's in-memory state before
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
         PersistAsync(_state.DeepCopy(), st =>
         {
-            if(++CycleCounter >= CyclesUntilSnapshot)
+            if(++CycleCounter >= PersistenceConfiguration.CyclesUntilSnapshot)
             {
                 CycleCounter = 0;
                 SaveSnapshot(new CoordinatorStateSnapshot()

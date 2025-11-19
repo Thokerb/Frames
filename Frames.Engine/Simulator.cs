@@ -1,6 +1,9 @@
 ﻿using System.Diagnostics;
+using Akka.Cluster.Sharding;
+using Akka.Dispatch.SysMsg;
 using Akka.Hosting;
 using Akka.Persistence;
+using Frames.Engine.Akka.Persistence;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -113,7 +116,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         Command<SaveSnapshotSuccess>(success => {
             // soft-delete the journal up until the sequence # at
             // which the snapshot was taken
-            DeleteMessages(success.Metadata.SequenceNr); 
+            // DeleteMessages(success.Metadata.SequenceNr); 
         });
         
         Recover<SimulatorState>(state =>
@@ -157,21 +160,36 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         Command<Simulation.Cleanup>(msg =>
         {
             DeleteSnapshots(SnapshotSelectionCriteria.Latest);
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
+        });
+        Command<PoisonPill>(msg =>
+        {
+            PersistState(true);
+            Context.Stop(Self);
+        });
+        Command<Stop>(msg =>
+        {
+            PersistState(true);
+            Context.Stop(Self);
         });
     }
 
     private int CycleCounter = 0;
-    private const int CyclesUntilSnapshot = 100;
     
-    private void PersistState()
+    private void PersistState(bool fromPoisonPill = false)
     {
+        if (!fromPoisonPill)
+        {
+            // we only want to persist state if we are stopping the actor, otherwise there are just too many messages
+            return;
+        }
         // lower consistency, much higher performance. Doesn't wait for the message to be persisted before processing the next message in the mailbox.
         // order in which those events are persisted will be preserved 
         // This means you probably have to modify your actor's in-memory state before
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
         PersistAsync(_state, st =>
         {
-            if(++CycleCounter >= CyclesUntilSnapshot)
+            if(++CycleCounter >= PersistenceConfiguration.CyclesUntilSnapshot)
             {
                 CycleCounter = 0;
                 SaveSnapshot(new AkkaSimulatorSnapshotObject()

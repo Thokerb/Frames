@@ -25,7 +25,7 @@ public class Program
             PercentageIncrement = 3.3333,
             NodeIcrement = 0,
             NumberNodes = 3000,
-            CsvPath = "results-3-cluster_20gb_noj_4mb_nodes_100_to_3000_by_inc_v4_persistance.csv",
+            CsvPath = "results-3-cluster_20gb_noj_4mb_nodes_100_to_3000_by_inc_v5_persistance.csv",
             NumberExecutions = 4
         };
 

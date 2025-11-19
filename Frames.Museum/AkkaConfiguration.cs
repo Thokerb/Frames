@@ -350,7 +350,7 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeparation)
         {
-            return shardSeparation.ShardId;
+            return shardSeparation.ShardId + shardSeparation.RunId;
         }
 
         if (message is JObject jObject)
@@ -384,12 +384,7 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            return shardSeparationFromJson.ShardId;
-        }
-
-        if (messageHint is ShardRegion.StartEntity startEntity)
-        {
-            return startEntity.EntityId;
+            return shardSeparationFromJson.ShardId + shardSeparationFromJson.RunId;
         }
 
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint?.GetType());

@@ -56,8 +56,8 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
-      AkkaSettings__ShardOptions__RememberEntities: "false"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
+      AkkaSettings__ShardOptions__RememberEntities: "true"
 
       AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
       AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
