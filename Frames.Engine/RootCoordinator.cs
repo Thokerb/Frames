@@ -185,6 +185,10 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             PersistState(true);
             Context.Stop(Self);
         });
+        Command<DeleteSnapshotsSuccess>(msg =>
+        {
+            Serilog.Log.Verbose("[{Name} - PERSISTENCE] Deleted snapshots up to sequence number {SequenceNr}", Self.Path.Name, msg.Criteria.MaxSequenceNr);
+        });
 
         Command<Exception>(ex =>
         {

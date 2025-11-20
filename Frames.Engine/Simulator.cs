@@ -157,6 +157,11 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         });
         CommandAsync<Simulation.SaveCheckpoint>(HandleSaveCheckpointAsync);
         CommandAsync<Simulation.LoadCheckpoint>(HandleLoadCheckpointAsync);
+        Command<DeleteSnapshotsSuccess>(msg =>
+        {
+            Serilog.Log.Verbose("[{Name} - PERSISTENCE] Deleted snapshots up to sequence number {SequenceNr}", Self.Path.Name, msg.Criteria.MaxSequenceNr);
+        });
+
         Command<Simulation.Cleanup>(msg =>
         {
             DeleteSnapshots(SnapshotSelectionCriteria.Latest);

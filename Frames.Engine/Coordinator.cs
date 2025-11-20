@@ -212,6 +212,11 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             // which the snapshot was taken
             // DeleteMessages(success.Metadata.SequenceNr); 
         });
+        Command<DeleteSnapshotsSuccess>(msg =>
+        {
+            Serilog.Log.Verbose("[{Name} - PERSISTENCE] Deleted snapshots up to sequence number {SequenceNr}", Self.Path.Name, msg.Criteria.MaxSequenceNr);
+        });
+
         
         Recover<CoordinatorState>(state =>
         {
