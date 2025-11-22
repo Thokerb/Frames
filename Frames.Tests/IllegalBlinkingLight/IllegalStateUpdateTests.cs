@@ -40,7 +40,7 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
 
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
-        var props = Props.Create<RootCoordinator>(() => new RootCoordinator(serviceProviderMock));
+        var props = Props.Create<RootCoordinator>(() => new RootCoordinator("persist",serviceProviderMock));
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
 
         IAtomicModelBase model = new IllegalBlinkingLightAtomicModel()

@@ -25,7 +25,7 @@ public static class Tracing
         public Guid RunId { get; set; } = Guid.Empty;
         public override string ToString()
         {
-            return $"Step completed, Current TimeStep: {LasTimeUnit}, Next TimeStep: {NexTimeUnit}, Number of messages: {StepIds.Count}";
+            return $"Step completed, Current TimeStep: {LasTimeUnit}, Next TimeStep: {NexTimeUnit}, Number of messages: {StepIds.Count}\n===============================================";
         }
     }
     

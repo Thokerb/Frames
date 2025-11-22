@@ -7,12 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Akka" Version="1.5.55" />
         <PackageReference Include="Akka.Analyzers" Version="0.3.3" />
+        <PackageReference Include="Akka.Cluster.Sharding" Version="1.5.44" />
         <PackageReference Include="Akka.Cluster.Tools" Version="1.5.44" />
         <PackageReference Include="Akka.DependencyInjection" Version="1.5.44" />
         <PackageReference Include="Akka.Hosting" Version="1.5.38"/>
         <PackageReference Include="Akka.Logger.Serilog" Version="1.5.25" />
         <PackageReference Include="Akka.Monitoring" Version="1.1.0" />
+        <PackageReference Include="Akka.Persistence" Version="1.5.44" />
         <PackageReference Include="Akka.Streams" Version="1.5.40" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
         <PackageReference Include="MongoDB.Driver" Version="3.3.0" />

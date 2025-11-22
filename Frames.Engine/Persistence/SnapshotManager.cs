@@ -85,14 +85,13 @@ public record SimulatorSnapshotObject
     public required TimeUnit TimeLast { get; init; }
     public required TimeUnit TimeElapsed { get; init; }
     public required IState AtomicModelState { get; init; }
-    public required Bag OutputBag { get; init; }
 }
 
 public record CoordinatorSnapshotObject
 {
     public required TimeUnit TimeNext { get; init; }
     public required TimeUnit TimeLast { get; init; }
-    public required IDictionary<string, TimeEventTuple> EventList { get; init; }
+    public required Dictionary<string, TimeEventTuple> EventList { get; init; }
 }
 
 [BsonIgnoreExtraElements]

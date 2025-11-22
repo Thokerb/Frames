@@ -14,6 +14,8 @@
         <PackageReference Include="Akka.Hosting.TestKit" Version="1.5.44" />
         <PackageReference Include="Akka.Logger.Serilog" Version="1.5.25" />
         <PackageReference Include="Akka.Monitoring" Version="1.1.0" />
+        <PackageReference Include="Akka.MultiNode.TestAdapter" Version="1.5.40" />
+        <PackageReference Include="Akka.Remote.TestKit" Version="1.5.55" />
         <PackageReference Include="coverlet.collector" Version="6.0.2"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
         <PackageReference Include="NSubstitute" Version="5.3.0" />
@@ -33,12 +35,6 @@
       <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
       <ProjectReference Include="..\Frames.Model\Frames.Model.csproj" />
       <ProjectReference Include="..\Frames.Museum\Frames.Museum.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="logConfig.conf">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
     </ItemGroup>
 
 </Project>

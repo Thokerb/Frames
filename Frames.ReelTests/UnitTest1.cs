@@ -180,6 +180,34 @@ public class SerializationTest
         
 
         Assert.InRange( System.Text.Encoding.Unicode.GetByteCount(serialize) ,0, 128000);
+    }    [Fact]
+    public void TestSerializationTimeUnit()
+    {
+        // Akka.Remote.OversizedPayloadException  max allowed size 128000 bytes, actual size of encoded Frames.Engine.Messages.Simulation+CreateModel was 177351 bytes.
+        /*
+         * {
+              "numberNodes": 200,
+              "percentageActive": 0.5,
+              "timeUnits": 400
+            }
+         */
+
+
+        var model = new TimeUnit(222);
+
+        
+        // serialize and deserialize
+        var serialize = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Auto,
+        });
+        var modelDeserialized = JsonConvert.DeserializeObject<TimeUnit>(serialize, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Auto
+        });
+        
+
+        Assert.Equal(modelDeserialized.Value,model.Value);
     }
 }
 

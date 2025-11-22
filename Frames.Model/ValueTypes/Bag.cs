@@ -80,4 +80,12 @@ public record struct Bag
     {
         Inputs.Clear();
     }
+
+    public Bag DeepCopy()
+    {
+        return new Bag()
+        {
+            Inputs = Inputs.ToDictionary()
+        };
+    }
 }

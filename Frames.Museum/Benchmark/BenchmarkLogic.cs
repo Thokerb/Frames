@@ -3,7 +3,6 @@ using Akka.Hosting;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model.ValueTypes;
-using Frames.Museum.Actors;
 using Frames.Museum.Benchmark.Model;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Serilog;

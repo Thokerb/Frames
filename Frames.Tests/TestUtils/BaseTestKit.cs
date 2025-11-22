@@ -1,4 +1,5 @@
-﻿using Akka.Hosting;
+﻿using Akka.Cluster.Hosting;
+using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine.Monitoring;
 using Frames.Museum;
@@ -11,12 +12,20 @@ public class BaseTestKit : TestKit
 {
     protected override void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     {
-        var settings = new AkkaSettings() { UseClustering = false, PersistenceMode = PersistenceMode.InMemory };
+        var settings = new AkkaSettings()
+        {
+            UseClustering = false,
+            ActorSystemName = "test2",
+            ClusterOptions = new ClusterOptions() {
+                
+            },
+            PersistenceMode = PersistenceMode.InMemory
+        };
         services.AddSingleton(settings);
         base.ConfigureServices(context, services);
     }
 
-    
+
     protected override void ConfigureAkka(AkkaConfigurationBuilder builder, IServiceProvider provider)
     {
         var serviceProviderMock = ServiceProviderMock.CreateMock(new Instrumentation());

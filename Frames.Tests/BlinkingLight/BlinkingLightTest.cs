@@ -1,10 +1,12 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
 using Frames.Engine.Messages;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.Museum.Actors;
 using Frames.Tests.PingPong;
 using Frames.Tests.TestUtils;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +41,8 @@ public class BlinkingLightTest : BaseTestKit,  IClassFixture<OpenTelemetryFixtur
         // Arrange root coordinator
         var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
 
         IAtomicModelBase model = new BlinkingLight.BlinkingLightAtomicModel()
         {
@@ -51,10 +55,10 @@ public class BlinkingLightTest : BaseTestKit,  IClassFixture<OpenTelemetryFixtur
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
+        
         
         // Assert
-        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(7));
 
         Assert.InRange(response.ElapsedTime.Value, new TimeUnit(11).Value, new TimeUnit(11).Value);
     }

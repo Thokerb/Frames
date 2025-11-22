@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Hosting;
 using Akka.Hosting.TestKit;
 using Frames.Engine;
@@ -45,9 +46,11 @@ public class CArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
 
         
         // // Arrange root coordinator
-        // var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator(serviceProviderMock));
+        // var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator("persist",serviceProviderMock));
         // var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
         var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
             
         ICoupledModel coupledModel = new CArena();
         
@@ -57,7 +60,6 @@ public class CArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         // Act
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
-        rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId),expectResultsProbe);
         
         
         // Assert

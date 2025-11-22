@@ -2,12 +2,14 @@
 
 services:
   mongodb:
-    image: mongodb/mongodb-community-server:6.0-ubi8
-    environment:
-      - MONGODB_INITDB_ROOT_USERNAME=user
-      - MONGODB_INITDB_ROOT_PASSWORD=pass
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongodb
+    restart: always
     ports:
-      - "27017:27017"
+      - "27017:27017" # Expose MongoDB on the default port
+    environment:
+      - MONGODB_INITDB_ROOT_USERNAME=root
+      - MONGODB_INITDB_ROOT_PASSWORD=password
     volumes:
       - type: bind
         source: ./data
@@ -20,7 +22,8 @@ services:
     environment:
       APP_UID: "1000"
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
+      ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
+      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum1" 
@@ -28,7 +31,7 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
       AkkaSettings__ShardOptions__RememberEntities: "false"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
@@ -40,7 +43,7 @@ services:
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "3"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
-      AkkaSettings__PersistenceMode: "InMemory"
+      AkkaSettings__PersistenceMode: "SqlServer"
       SWAGGER_HOST: "http://localhost:8080"
     ports:
       - "8080:8080"
@@ -56,7 +59,8 @@ services:
     environment:
       APP_UID: "1000"
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
+      ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
+      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum2"
@@ -64,7 +68,7 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
       AkkaSettings__ShardOptions__RememberEntities: "false"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
@@ -75,7 +79,7 @@ services:
       AkkaSettings__AkkaManagementOptions__ServiceName: "akka-management"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "3"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
-      AkkaSettings__PersistenceMode: "InMemory"
+      AkkaSettings__PersistenceMode: "SqlServer"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
       SWAGGER_HOST: "http://localhost:8082"
     ports:
@@ -92,7 +96,8 @@ services:
     environment:
       APP_UID: "1000"
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__MongoDB: "mongodb://user:pass@mongodb:27017"
+      ConnectionStrings__MongoDB: "mongodb://museum_user:NightAtTheMuseum2024!@mongodb:27017/akka"
+      ConnectionStrings__SqlServer: "Server=mssql-db;Database=master;User Id=sa;Password=Passw0rd;TrustServerCertificate=True"
       AkkaSettings__ActorSystemName: "AkkaWebApi"
       AkkaSettings__UseClustering: "true"
       AkkaSettings__RemoteOptions__HostName: "museum3"
@@ -100,7 +105,7 @@ services:
       AkkaSettings__ClusterOptions__Roles__0: "root"
       AkkaSettings__ClusterOptions__Roles__1: "root-compute"
       AkkaSettings__ClusterOptions__Roles__2: "compute"
-      AkkaSettings__ShardOptions__StateStoreMode: "DData"
+      AkkaSettings__ShardOptions__StateStoreMode: "persistence"
       AkkaSettings__ShardOptions__RememberEntities: "false"
       AkkaSettings__ShardOptions__Role: "root"
       AkkaSettings__AkkaManagementOptions__Enabled: "true"
@@ -111,7 +116,7 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__1: "museum2:8558"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "3"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
-      AkkaSettings__PersistenceMode: "InMemory"
+      AkkaSettings__PersistenceMode: "SqlServer"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
       SWAGGER_HOST: "http://localhost:8084"
     ports:
@@ -129,3 +134,9 @@ services:
     environment:
       COLLECTOR_OLTP_ENABLED: true
       QUERY_MAX_CLOCK_SKEW_ADJUSTMENT: 1000000000
+
+volumes:
+  mongo-data:
+    driver: local
+  mongo-config:
+    driver: local

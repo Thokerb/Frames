@@ -8,14 +8,23 @@ public class CoupledBenchmarkModel : CoupledModel
     {
         if (isRoot)
         {
-            for (int i = 0; i < numberActiveNodes; i += 2)
+            var stepSize = 20;
+            int i = 0;
+            while (i < numberActiveNodes)
             {
-                AddModel(new CoupledBenchmarkModel($"ca_{i}", 0, 2));
+                var nodeNumber = Math.Min(stepSize, numberActiveNodes - i);
+                
+                AddModel(new CoupledBenchmarkModel($"ca_{i}", 0, nodeNumber));
+                i += stepSize;
             }
-
-            for (int i = 0; i < numberInactiveNodes; i += 2)
+            
+            i = 0;
+            while (i < numberInactiveNodes)
             {
-                AddModel(new CoupledBenchmarkModel($"ci_{i}", 2, 0));
+                var nodeNumber = Math.Min(stepSize, numberInactiveNodes - i);
+                
+                AddModel(new CoupledBenchmarkModel($"ci_{i}", nodeNumber, 0));
+                i += stepSize;
             }
             
             return;

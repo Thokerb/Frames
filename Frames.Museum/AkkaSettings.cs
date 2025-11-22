@@ -42,12 +42,13 @@ public enum DiscoveryMethod
 public enum PersistenceMode
 {
     InMemory,
-    Azure
+    Azure,
+    SqlServer
 }
 
-public class AzureStorageSettings
+public class AkkaPersistenceStorageSettings
 {
-    public string ConnectionStringName { get; set; } = "Azurite";
+    public string ConnectionStringName { get; set; } = "MongoDb";
 }
 
 public class AkkaSettings
@@ -67,7 +68,11 @@ public class AkkaSettings
     public ClusterOptions ClusterOptions { get; set; } = new ClusterOptions()
     {
         // use our dynamic local host name by default
-        SeedNodes = new[] { $"akka.tcp://AkkaWebApi@{Dns.GetHostName()}:8081" }
+        SeedNodes = new[] { $"akka.tcp://AkkaWebApi@{Dns.GetHostName()}:8081" },
+        FailureDetector = new PhiAccrualFailureDetectorOptions()
+        {
+            AcceptableHeartbeatPause = TimeSpan.FromSeconds(10)
+        }
     };
 
     public ShardOptions ShardOptions { get; set; } = new ShardOptions();

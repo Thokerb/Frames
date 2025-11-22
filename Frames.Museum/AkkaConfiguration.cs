@@ -3,11 +3,14 @@ using Akka.Hosting;
 using System.Diagnostics;
 using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Discovery.Config.Hosting;
 using Akka.Logger.Serilog;
 using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Hosting;
+using Akka.Persistence.MongoDb.Hosting;
+using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using Akka.Serialization;
 using Frames.Engine;
@@ -15,7 +18,9 @@ using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Museum.Actors;
 using Frames.Museum.ClusterOverview;
+using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using LogLevel = Akka.Event.LogLevel;
@@ -36,23 +41,21 @@ public static class AkkaConfiguration
         Debug.Assert(akkaSettings != null, nameof(akkaSettings) + " != null");
 
         services.AddSingleton(akkaSettings);
-        
 
-        
 
         return services.AddAkka(akkaSettings.ActorSystemName, (builder, serviceProvider) =>
         {
             builder.ConfigureActorSystem(serviceProvider);
+
+            NewtonSoftJsonSerializerSetup? jsonSerializerSetup = NewtonSoftJsonSerializerSetup.Create(settings =>
+            {
+                settings.TypeNameHandling = TypeNameHandling.Objects;
+                settings.Formatting = Formatting.None;
+            });
             
-            NewtonSoftJsonSerializerSetup? jsonSerializerSetup = NewtonSoftJsonSerializerSetup.Create(
-                settings =>
-                {
-                    settings.TypeNameHandling = TypeNameHandling.Objects;
-                    settings.Formatting = Formatting.None;
-                });
 
             builder.Setups.Add(jsonSerializerSetup);
-            
+
             additionalConfig(builder, serviceProvider);
         });
     }
@@ -78,7 +81,8 @@ public static class AkkaConfiguration
                 };
                 configBuilder.DeadLetterOptions = new DeadLetterOptions()
                 {
-                    ShouldLog = TriStateValue.All
+                    ShouldLog = TriStateValue.All,
+                    LogDuringShutdown = false
                 };
                 configBuilder.AddLoggerFactory();
             })
@@ -122,7 +126,7 @@ public static class AkkaConfiguration
                     break;
                 case DiscoveryMethod.Config:
                 {
-                    Console.WriteLine(string.Join(",",settings.AkkaManagementOptions.ExternalEndpoints));
+                    Console.WriteLine(string.Join(",", settings.AkkaManagementOptions.ExternalEndpoints));
                     builder
                         .WithConfigDiscovery(options =>
                         {
@@ -130,7 +134,11 @@ public static class AkkaConfiguration
                             {
                                 Name = settings.AkkaManagementOptions.ServiceName,
                                 // TODO: use endpoints from configuration which should be set by environment variables so that in docker we can add them 
-                                Endpoints = settings.AkkaManagementOptions.ExternalEndpoints.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).Append($"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}").ToArray() 
+                                Endpoints = settings.AkkaManagementOptions.ExternalEndpoints
+                                    .Where(x => !string.IsNullOrEmpty(x)).Select(x => x)
+                                    .Append(
+                                        $"{settings.AkkaManagementOptions.Hostname}:{settings.AkkaManagementOptions.Port}")
+                                    .ToArray()
                             });
                         });
                     break;
@@ -151,11 +159,24 @@ public static class AkkaConfiguration
         IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
         switch (settings.PersistenceMode)
         {
             case PersistenceMode.InMemory:
                 return builder.WithInMemoryJournal().WithInMemorySnapshotStore();
+            case PersistenceMode.SqlServer:
+            {
+                var connectionStringName = configuration.GetSection("AkkaPersistenceStorageSettings")
+                    .Get<AkkaPersistenceStorageSettings>()?.ConnectionStringName;
+                Debug.Assert(connectionStringName != null, nameof(connectionStringName) + " != null");
+                var connectionString = configuration.GetConnectionString(connectionStringName);
+                Debug.Assert(connectionString != null, nameof(connectionString) + " != null");
+                return builder.WithSqlPersistence(connectionString, providerName: ProviderName.SqlServer2022,
+                    journalBuilder: journal => journal.WithHealthCheck(HealthStatus.Degraded),
+                    snapshotBuilder: snapshot => snapshot.WithHealthCheck(HealthStatus.Degraded)
+                    );
+            }
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -172,21 +193,20 @@ public static class AkkaConfiguration
             return builder
                     .WithSingleton<TracingActor>(
                         "tracingActor",
-                        propsFactory: (_, _, _) =>
-                        {
-                            return Props.Create(() => new TracingActor());
-                        })
+                        propsFactory: (_, _, _) => { return Props.Create(() => new TracingActor()); })
                     .WithSingleton<SuperRootCoordinatorListenerActor>(
                         "rootCoordinatorListenerActor",
                         propsFactory: (system, extractor, di) =>
                         {
-                            return Props.Create(() => new SuperRootCoordinatorListenerActor(di.GetService<IHubContext<BenchmarkHub>>()));
+                            return Props.Create(() =>
+                                new SuperRootCoordinatorListenerActor(di.GetService<IHubContext<BenchmarkHub>>(),
+                                    di.GetService<IConfiguration>()));
                         },
                         new ClusterSingletonOptions()
                         {
                             Role = "listener"
                         }
-                        )
+                    )
                     .WithActors((system, registry, _) =>
                     {
                         var metricListener =
@@ -202,8 +222,8 @@ public static class AkkaConfiguration
                                     new ClusterGossipListenerActor(
                                         serviceProvider.GetRequiredService<IHubContext<ClusterHub>>())),
                                 "gossip-listener");
-                        registry.Register<ClusterGossipListenerActor>(gossipListener);                        
-                        
+                        registry.Register<ClusterGossipListenerActor>(gossipListener);
+
                         var tracingListener =
                             system.ActorOf(
                                 Props.Create(() =>
@@ -213,42 +233,22 @@ public static class AkkaConfiguration
                         registry.Register<TracingStreamHubActor>(tracingListener);
                     })
                     .WithShardRegion<RootCoordinator>(
-                    typeName: "framesRegion1",
-                    entityPropsFactory: (_, _, _) =>
-                    {
-
-                        
-                        return _ =>
-                        {
-                            return Props.Create(() => new RootCoordinator(serviceProvider));
-                        };
-                    },
-                    extractor,
-                    settings.ShardOptions
-                )
-                .WithShardRegion<Simulator>(
-                    typeName: "framesRegion2",
-                    entityPropsFactory: (_, _, _) =>
-                    {
-                        return _ =>
-                        {
-                            return Props.Create(() => new Simulator(serviceProvider));
-                        };
-                    },
-                    extractor,
-                    settings.ShardOptions
-                    )    
-                .WithShardRegion<Coordinator>(
-                    typeName: "framesRegion3",
-                    entityPropsFactory: (_, _, _) =>
-                    {
-                        return _ =>
-                        {
-                            return Props.Create(() => new Coordinator(serviceProvider));
-                        };
-                    },
-                    extractor,
-                    settings.ShardOptions
+                        typeName: "framesRegion1",
+                        entityPropsFactory: s => Props.Create(() => new RootCoordinator(s, serviceProvider)),
+                        extractor,
+                        settings.ShardOptions
+                    )
+                    .WithShardRegion<Simulator>(
+                        typeName: "framesRegion2",
+                        entityPropsFactory: s => Props.Create(() => new Simulator(s, serviceProvider)),
+                        extractor,
+                        settings.ShardOptions
+                    )
+                    .WithShardRegion<Coordinator>(
+                        typeName: "framesRegion3",
+                        entityPropsFactory: s => Props.Create(() => new Coordinator(s, serviceProvider)),
+                        extractor,
+                        settings.ShardOptions
                     )
                 ;
         }
@@ -258,21 +258,26 @@ public static class AkkaConfiguration
         {
             var parent =
                 system.ActorOf(
-                    GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new RootCoordinator(serviceProvider))),
+                    GenericChildPerEntityParent.Props(extractor,
+                        s => Props.Create(() => new RootCoordinator(s, serviceProvider))),
                     "root-coordinator");
             registry.Register<RootCoordinator>(parent);
-            var parentCoordinator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new Coordinator(serviceProvider))));
+            var parentCoordinator = system.ActorOf(GenericChildPerEntityParent.Props(extractor,
+                s => Props.Create(() => new Coordinator(s, serviceProvider))));
             registry.Register<Coordinator>(parentCoordinator);
-            var parentSimulator = system.ActorOf(GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new Simulator(serviceProvider))));
-            registry.Register<Simulator>(parentSimulator);            
-            var parentTracingActor = system.ActorOf(GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new TracingActor())));
+            var parentSimulator = system.ActorOf(GenericChildPerEntityParent.Props(extractor,
+                s => Props.Create(() => new Simulator(s, serviceProvider))));
+            registry.Register<Simulator>(parentSimulator);
+            var parentTracingActor =
+                system.ActorOf(
+                    GenericChildPerEntityParent.Props(extractor, _ => Props.Create(() => new TracingActor())));
             registry.Register<TracingActor>(parentTracingActor);
-            
-            
+            var localPubSub = system.ActorOf(GenericChildPerEntityParent.Props(extractor,
+                _ => Props.Create(() => new LocalPubSubMediator())));
+            registry.Register<DistributedPubSubMediator>(localPubSub);
         });
     }
 }
-
 
 /// <summary>
 /// Here we have to decide which message to which shard region.
@@ -305,18 +310,21 @@ public class FramesMessageExtractor : IMessageExtractor
             {
                 throw new Exception("Unable to deserialize shard seperation");
             }
-            
+
             return $"{shardSeparationFromJson.EntityName}-{shardSeparationFromJson.RunId}";
         }
-        
-                
-        
-        if (message is ShardRegion.StartEntity startEntity)
-        {
-            return startEntity.EntityId;
-        }
 
+        // this is a hack, since publish messages do not implement IShardSeperation and this only occurs in non cluster mode
+        if (message is Publish publish)
+        {
+            return "pubsub-singleton-entity";
+        }
+        if (message is Subscribe subscribe)
+        {
+            return "pubsub-singleton-entity";
+        }
         
+
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
@@ -328,7 +336,7 @@ public class FramesMessageExtractor : IMessageExtractor
     /// <exception cref="NotImplementedException"></exception>
     public object EntityMessage(object message)
     {
-       
+        
         return message;
     }
 
@@ -342,8 +350,9 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeparation)
         {
-            return shardSeparation.ShardId;
+            return shardSeparation.ShardId + shardSeparation.RunId;
         }
+
         if (message is JObject jObject)
         {
             IShardSeperation? shardSeparationFromJson = jObject.ToObject<WithShardId>();
@@ -352,7 +361,7 @@ public class FramesMessageExtractor : IMessageExtractor
             {
                 throw new Exception("Unable to deserialize shard seperation");
             }
-            
+
             return shardSeparationFromJson.ShardId;
         }
 
@@ -364,8 +373,8 @@ public class FramesMessageExtractor : IMessageExtractor
         if (messageHint is IShardSeperation shardSeparation)
         {
             return shardSeparation.ShardId;
-        } 
-        
+        }
+
         if (messageHint is JObject jObject)
         {
             IShardSeperation? shardSeparationFromJson = jObject.ToObject<WithShardId>();
@@ -375,15 +384,9 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            return shardSeparationFromJson.ShardId;
+            return shardSeparationFromJson.ShardId + shardSeparationFromJson.RunId;
         }
 
-        if (messageHint is ShardRegion.StartEntity startEntity)
-        {
-            return startEntity.EntityId;
-        }
-        
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint?.GetType());
-        
     }
 }

@@ -1,3 +1,4 @@
+using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
 using Frames.Engine;
 using Frames.Engine.Monitoring;
@@ -30,7 +31,10 @@ public static class ServiceProviderMock
         // mock IServiceProvider
         serviceProvider.GetService(typeof(IServiceProvider)).Returns(serviceProvider);
         
-        var settings = new AkkaSettings() { UseClustering = false, PersistenceMode = PersistenceMode.InMemory };
+        var settings = new AkkaSettings() { UseClustering = false, ClusterOptions = new ClusterOptions()
+        {
+            
+        },PersistenceMode = PersistenceMode.InMemory };
         serviceProvider.GetService(typeof(AkkaSettings)).Returns(settings);
         
         // var simulatorProps = Props.Create(() => new Simulator(serviceProvider));

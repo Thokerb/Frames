@@ -1,6 +1,4 @@
-﻿using Frames.Museum.HelloWorld;
-
-namespace Frames.Museum.SimulationControl;
+﻿namespace Frames.Museum.SimulationControl;
 
 public static class SimulationControlEndpoints
 {
