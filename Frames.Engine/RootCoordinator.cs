@@ -255,14 +255,17 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         DeleteMessages(LastSequenceNr);
         
         DeleteSnapshots(SnapshotSelectionCriteria.Latest);
-        _baseState._child.Tell(new Simulation.Cleanup()
+
+        // this is the total cleanup, which should not happen on manual pause or stop
+        if (completionType is CompletionType.StopAfterTime or CompletionType.StopAfterCondition)
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
-            EntityName = _baseState.ChildName,
-            RunId = _baseState.RunId,
-        });
-        
-        
+            _baseState._child.Tell(new Simulation.Cleanup()
+            {
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+                EntityName = _baseState.ChildName,
+                RunId = _baseState.RunId,
+            });
+        }
         
         var mediator = Context.System.Settings.HasCluster ? DistributedPubSub.Get(Context.System).Mediator : ActorRegistry.For(Context.System).Get<DistributedPubSubMediator>();
         if (mediator == null )
