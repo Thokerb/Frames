@@ -333,9 +333,10 @@ public class Simulator : ReceivePersistentActor, ILogReceive
 
         using var activity =
             ActivitySource.StartActivity("RunExecuteTransition", ActivityKind.Internal, parentContext);
+        var oldState = _baseState._atomicModel.StateInternal.ToString();
         activity?.SetTag("Name", Self.Path.Name);
         activity?.SetTag("Model", _baseState._atomicModel.GetType().Name);
-        activity?.SetTag("OldState", _baseState._atomicModel.StateInternal.ToString());
+        activity?.SetTag("OldState", oldState);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         activity?.SetTag("Input", obj.Input?.ToString() ?? "null");
         activity?.WriteSharding(obj);
@@ -369,7 +370,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         
         var msgId = Guid.NewGuid();
         
-        TracingStreamActor.Tell(new Messages.Tracing.MessageWithId(this._baseState._atomicModel.StateInternal.ToString() ?? string.Empty,msgId));
+        TracingStreamActor.Tell(new Messages.Tracing.MessageWithId($"[[{_baseState._atomicModel.Name}]]:\nPrevious State: {oldState}\nNew State: {_baseState._atomicModel.StateInternal}\n",msgId));
 
         PersistState();
         

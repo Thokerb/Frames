@@ -17,7 +17,7 @@ export class ExecutionSignalRService {
       .withAutomaticReconnect()
       .build();
     this.connection.on('TraceEvent', (message: string) => {
-      this.logs.update(logs => [...logs, JSON.stringify(message)]);
+      this.logs.update(logs => [...logs, message]);
     });
     this.connection.start().catch(err => {
       this.logs.update(logs => [...logs, '[SignalR] Connection error: ' + err]);

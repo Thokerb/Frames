@@ -1,10 +1,17 @@
-﻿namespace Frames.ReelConnector.ReelDto;
+﻿using System.Text.Json;
+
+namespace Frames.ReelConnector.ReelDto;
 
 public record StatePropertyJson
 {
     public required string Name { get; init; }
     public required StatePropertyValueType Type { get; init; }
     public required object Value { get; init; } // string | number | boolean | undefined
+    
+    public override string ToString()
+    {
+        return $"{Name}: {Value}";
+    }
 }
 
 public record StateJson
@@ -13,6 +20,39 @@ public record StateJson
     public required List<string> States { get; init; }
     public required string InitialState { get; init; }
     public required List<StatePropertyJson> Properties { get; init; }
+
+    public override string ToString()
+    {
+        var root = new Dictionary<string, object?>();
+        
+        foreach (var elem in Properties)
+        {
+            AddValue(root, elem.Name.Split('.'), 0, elem.Value);
+        }
+
+        return JsonSerializer.Serialize(root, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        });
+    }
+    private static void AddValue(Dictionary<string, object?> node, string[] parts, int index, object? value)
+    {
+        string key = parts[index];
+
+        if (index == parts.Length - 1)
+        {
+            node[key] = value;
+            return;
+        }
+
+        if (!node.ContainsKey(key) || node[key] is not Dictionary<string, object?>)
+        {
+            node[key] = new Dictionary<string, object?>();
+        }
+
+        AddValue((Dictionary<string, object?>)node[key]!, parts, index + 1, value);
+    }
 }
 
 public record ExpressionJson

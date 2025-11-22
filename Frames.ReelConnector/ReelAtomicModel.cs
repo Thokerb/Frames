@@ -19,6 +19,11 @@ public class ReelState : IState
         }
         return 1; // or throw an exception if comparison is not valid
     }
+
+    public override string ToString()
+    {
+        return $"| {CurrentState} | StateJson = {StateJson}";
+    }
 }
 
 public sealed class ReelAtomicModel : AtomicModel<ReelState>
