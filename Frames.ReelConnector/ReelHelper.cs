@@ -14,8 +14,16 @@ public static class ReelHelper
             return state;
         }
         
-        var newState = state with { Properties = state.Properties.Select(OverrideIfExists(overrides)).ToList() };
-        return newState;
+        foreach (var overrideProp in overrides)
+        {
+            if (!state.Properties.ContainsKey(overrideProp.Name))
+            {
+                throw new ArgumentException($"Override property '{overrideProp.Name}' does not exist in the state.");
+            }
+            state.Properties[overrideProp.Name] = state.Properties[overrideProp.Name] with { Value = overrideProp.Value };
+        }
+        
+        return state;
     }
 
     private static Func<StatePropertyJson, StatePropertyJson> OverrideIfExists(List<StatePropertyJson> overrides)
@@ -96,66 +104,10 @@ public static class ReelHelper
         };
     }
 
-    public static StateJson UpdateState(StateJson stateStateJson,
-        List<ExpressionJson> transitionTransitionStateModifications, List<PortJson> ports, Bag bag)
+    public static void UpdateState(StateJson stateStateJson, string key, object? value)
     {
         var state = stateStateJson;
-        var interpreter = new Interpreter();
-        foreach (var expressionJson in transitionTransitionStateModifications)
-        {
-            var parameters = expressionJson.Variables.Select(p => CreateParameter(p, state.Properties, ports, bag))
-                .ToList();
-            var result = interpreter.Eval(expressionJson.Expression.PrepareExpression(), parameters.ToArray());
-            var assignmentPropertyName = expressionJson.Expression.PrepareExpression().Split("=")[0].Trim();
-            state = state with
-            {
-                Properties = state.Properties
-                    .Select(OverrideIfExists(assignmentPropertyName, result)).ToList()
-            };
-        }
-        return state;
-    }
-
-    private static Func<StatePropertyJson, StatePropertyJson> OverrideIfExists(string name, object value)
-    {
-        return property =>
-        {
-            if (property.Name == name)
-            {
-                return property with { Value = value };
-            }
-
-            return property;
-        };
-    }
-
-    public static StateJson UpdateState(StateJson stateStateJson, List<ExpressionJson> transitionTransitionStateModifications)
-    {
-        var state = stateStateJson;
-        var interpreter = new Interpreter();
-        foreach (var expressionJson in transitionTransitionStateModifications)
-        {
-            var assignmentPropertyName = expressionJson.Expression.Split("=")[0].Trim();
-            
-            var parameters = expressionJson.Variables.Distinct().Select(p => CreateParameter(p, state.Properties))
-                .ToList();
-            var result = interpreter.Eval(expressionJson.Expression, parameters.ToArray());
-            state = state with
-            {
-                Properties = state.Properties
-                    .Select(OverrideIfExists(assignmentPropertyName, result)).ToList()
-            };
-        }
-        return state;    
-    }
-    
-    public static string PrepareExpression(this string expression)
-    {
-        // Remove whitespace and ensure the expression is ready for evaluation
-        return expression
-            .Replace("InPort", "")
-            .Replace("OutPort", "")
-            .Replace(" and ", " && ")
-            .Replace(" or ", " || ");
+        var elem = state.Properties[key];
+        state.Properties[key] = elem with { Value = value };
     }
 }

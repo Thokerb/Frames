@@ -6,7 +6,9 @@ public record StatePropertyJson
 {
     public required string Name { get; init; }
     public required StatePropertyValueType Type { get; init; }
-    public required object Value { get; init; } // string | number | boolean | undefined
+    
+    public required bool IsArray { get; init; }
+    public required object Value { get; init; } // string | number | boolean  | Array<string> | Array<number> | Array<boolean> | undefined
     
     public override string ToString()
     {
@@ -19,7 +21,7 @@ public record StateJson
     public required string Name { get; init; }
     public required List<string> States { get; init; }
     public required string InitialState { get; init; }
-    public required List<StatePropertyJson> Properties { get; init; }
+    public required Dictionary<string, StatePropertyJson> Properties { get; init; }
 
     public override string ToString()
     {
@@ -27,7 +29,7 @@ public record StateJson
         
         foreach (var elem in Properties)
         {
-            AddValue(root, elem.Name.Split('.'), 0, elem.Value);
+            AddValue(root, elem.Value.Name.Split('.'), 0, elem.Value);
         }
 
         return JsonSerializer.Serialize(root, new JsonSerializerOptions
@@ -55,32 +57,32 @@ public record StateJson
     }
 }
 
-public record ExpressionJson
-{
-    public required string Expression { get; init; }
-    public bool? IsAssignment { get; init; } // Indicates if this expression is an assignment
-    public required List<string> Variables { get; init; }
-    public ExpressionValueType? ReturnType { get; init; } // The type of the expression, e.g., 'int', 'bool', 'string', etc.
-}
+// public record ExpressionJson
+// {
+//     public required string Expression { get; init; }
+//     public bool? IsAssignment { get; init; } // Indicates if this expression is an assignment
+//     public required List<string> Variables { get; init; }
+//     public ExpressionValueType? ReturnType { get; init; } // The type of the expression, e.g., 'int', 'bool', 'string', etc.
+// }
 
 public record OutputJson
 {
     public required string Port { get; init; } // Name of the port
-    public required ExpressionJson Value { get; init; }
+    public required ExpressionTreeJson Value { get; init; }
 }
 
 public record TransitionJson
 {
     public string? Name { get; init; }
-    public required ExpressionJson TransitionCondition { get; init; }
+    public required ExpressionTreeJson TransitionCondition { get; init; }
     public required string TransitionNewStateTypeRef { get; init; }
-    public required List<ExpressionJson> TransitionStateModifications { get; init; }
+    public required List<ExpressionTreeJson> TransitionStateModifications { get; init; }
 }
 
 public record StateConfigurationJson
 {
     public required string StateTypeRef { get; init; }
-    public required ExpressionJson TimeAdvanceExpression { get; init; }
+    public required ExpressionTreeJson TimeAdvanceExpression { get; init; }
     public required List<OutputJson> Output { get; init; }
     public required List<TransitionJson> Transitions { get; init; }
 }
@@ -150,16 +152,67 @@ public enum PortType
     OutPort
 }
 
-public enum ExpressionValueType
-{
-    BooleanExpression,
-    IntegerExpression,
-    StringExpression,
-    ObjectExpression
-}
+
 public enum StatePropertyValueType
 {
     BooleanExpression,
     IntegerExpression,
     StringExpression,
+}
+
+public enum ExpressionValueType
+{
+    String,
+    Number,
+    Boolean,
+    StringArray,
+    NumberArray,
+    BooleanArray
+}
+
+public enum Operator
+{
+    Literal,
+    ArrayGet,
+    ArrayAppend,
+    ArrayPrepend,
+    ArrayLength,
+    ArrayRemove,
+    Equal,          // ==
+    NotEqual,       // !=
+    LessThan,       // <
+    LessThanOrEqual,// <=
+    GreaterThan,    // >
+    GreaterThanOrEqual, // >=
+    Add,            // +
+    Subtract,       // -
+    Multiply,       // *
+    Divide,         // /
+    Modulo,         // %
+    And,            // and
+    Or,             // or
+    Not,            // !
+    Assign          // =
+}
+
+public record ExpressionTreeJson
+{
+    
+    // Literal value → can be string | number | bool | arrays of those.
+    // Represented as object? so it can hold any of these.
+    public object? Value { get; init; }
+
+    public ExpressionValueType? ValueType { get; init; }
+
+    public string? VariableName { get; init; }
+
+    public Operator? Operator { get; init; }
+
+    public bool? IsPort { get; init; }
+
+    public ExpressionTreeJson? Left { get; init; }
+
+    public ExpressionTreeJson? Right { get; init; }
+
+    public bool? IsLeaf { get; init; }
 }

@@ -1,0 +1,200 @@
+{
+  "states": [
+    {
+      "name": "QueueState",
+      "properties": [
+        {
+          "name": "remaining_time",
+          "type": "IntegerExpression",
+          "value": 0
+        },
+        {
+          "name": "processing",
+          "type": "IntegerExpression"
+        },
+        {
+          "name": "idle_procs",
+          "type": "IntegerExpression",
+          "isArray": true,
+          "value": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "name": "queue",
+          "type": "IntegerExpression",
+          "isArray": true,
+          "value": [
+            2
+          ]
+        }
+      ],
+      "states": [
+        "Idle",
+        "Busy"
+      ],
+      "initialState": "Idle"
+    }
+  ],
+  "atomicModels": [
+    {
+      "name": "Queue",
+      "ports": [
+        {
+          "name": "in_event",
+          "type": "InPort",
+          "valueType": "int"
+        },
+        {
+          "name": "in_finish",
+          "type": "InPort",
+          "valueType": "int"
+        },
+        {
+          "name": "proc_0",
+          "type": "OutPort",
+          "valueType": "int"
+        },
+        {
+          "name": "proc_1",
+          "type": "OutPort",
+          "valueType": "int"
+        },
+        {
+          "name": "proc_2",
+          "type": "OutPort",
+          "valueType": "int"
+        }
+      ],
+      "stateRef": "QueueState",
+      "stateDefinitions": [],
+      "initialState": "Idle",
+      "states": [
+        {
+          "stateTypeRef": "Idle",
+          "timeAdvanceExpression": {
+            "returnType": "IntegerExpression",
+            "variables": [],
+            "isAssignment": false,
+            "expression": "Infinity"
+          },
+          "transitions": [
+            {
+              "name": "in_event",
+              "transitionCondition": {
+                "expression": "in_event",
+                "variables": [
+                  "in_event"
+                ],
+                "isAssignment": false,
+                "returnType": "IntegerExpression"
+              },
+              "transitionNewStateTypeRef": "Busy",
+              "transitionStateModifications": [
+                {
+                  "returnType": "IntegerExpression",
+                  "variables": [
+                    "processing",
+                    "in_event"
+                  ],
+                  "isAssignment": true,
+                  "expression": "processing = InPort in_event.0"
+                },
+                {
+                  "returnType": "IntegerExpression",
+                  "variables": [
+                    "remaining_time"
+                  ],
+                  "isAssignment": true,
+                  "expression": "remaining_time = 1"
+                }
+              ]
+            }
+          ],
+          "output": []
+        },
+        {
+          "stateTypeRef": "Busy",
+          "timeAdvanceExpression": {
+            "expression": "remaining_time",
+            "variables": [
+              "remaining_time"
+            ],
+            "isAssignment": false,
+            "returnType": "IntegerExpression"
+          },
+          "transitions": [
+            {
+              "name": "in_event",
+              "transitionCondition": {
+                "expression": "in_event",
+                "variables": [
+                  "in_event"
+                ],
+                "isAssignment": false,
+                "returnType": "IntegerExpression"
+              },
+              "transitionNewStateTypeRef": "Busy",
+              "transitionStateModifications": [
+                {
+                  "expression": "queue.get(0)",
+                  "variables": [
+                    "queue"
+                  ],
+                  "isAssignment": false,
+                  "returnType": "ArrayExpression"
+                },
+                {
+                  "expression": "queue.remove(queue.length())",
+                  "variables": [
+                    "queue",
+                    "queue"
+                  ],
+                  "isAssignment": false,
+                  "returnType": "ArrayExpression"
+                },
+                {
+                  "expression": "queue.append(2)",
+                  "variables": [
+                    "queue"
+                  ],
+                  "isAssignment": false,
+                  "returnType": "ArrayExpression"
+                }
+              ]
+            },
+            {
+              "name": "in_finish",
+              "transitionCondition": {
+                "expression": "in_finish",
+                "variables": [
+                  "in_finish"
+                ],
+                "isAssignment": false,
+                "returnType": "IntegerExpression"
+              },
+              "transitionNewStateTypeRef": "Busy",
+              "transitionStateModifications": []
+            }
+          ],
+          "output": [
+            {
+              "port": "proc_0",
+              "value": {
+                "expression": "processing",
+                "variables": [
+                  "processing"
+                ],
+                "isAssignment": false,
+                "returnType": "IntegerExpression"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "coupledModels": []
+}
