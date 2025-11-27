@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Frames.ReelConnector.Converter;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Frames.ReelConnector.ReelDto;
@@ -19,6 +20,19 @@ public record StatePropertyJson
     {
         get
         {
+            if (this.IsArray)
+            {
+                return this.Type switch
+                {
+                    StatePropertyValueType.BooleanExpression => _value as List<bool>,
+                    StatePropertyValueType.IntegerExpression =>_value as List<long>,
+                    StatePropertyValueType.StringExpression => _value as List<string>,
+                    StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
+            
+            
             return this.Type switch
             {
                 StatePropertyValueType.BooleanExpression => _value is bool b ? b : null,
@@ -28,7 +42,34 @@ public record StatePropertyJson
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
-        init { _value = value; }
+        init
+        {
+            if (IsArray)
+            {
+                if (value is JArray jArray)
+                {
+                    _value = Type switch
+                    {
+                        StatePropertyValueType.BooleanExpression  => jArray.ToObject<List<bool>>(),
+                        StatePropertyValueType.IntegerExpression => jArray.ToObject<List<long>>(),
+                        StatePropertyValueType.StringExpression => jArray.ToObject<List<string>>(),
+                        StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+                    return;
+                }
+                _value = Type switch
+                {
+                    StatePropertyValueType.BooleanExpression  => value as List<bool>,
+                    StatePropertyValueType.IntegerExpression => value as List<long>,
+                    StatePropertyValueType.StringExpression => value as List<string>,
+                    StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
+            _value = value;
+            
+        }
     } // string | number | boolean | undefined
 
     public override string ToString()
@@ -214,7 +255,7 @@ public record ExpressionTreeJson
     // Represented as object? so it can hold any of these.
     public object? Value { get; init; }
 
-    public StatePropertyValueType? ValueType { get; init; }
+    public StatePropertyValueType ValueType { get; init; }
 
     public string? VariableName { get; init; }
 

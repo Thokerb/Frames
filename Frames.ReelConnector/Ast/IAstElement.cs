@@ -86,7 +86,35 @@ public class LiteralAstElement : BaseAstElement
             }
             else
             {
-                result =  stateJson.Properties[tree.VariableName].Value;
+                var prop =  stateJson.Properties[tree.VariableName];
+                
+                if(prop.IsArray )
+                {
+                    if (prop.Value is null)
+                    {
+                        result = prop.Type switch
+                        {
+                            StatePropertyValueType.BooleanExpression => new List<bool>(),
+                            StatePropertyValueType.IntegerExpression => new List<long>(),
+                            StatePropertyValueType.StringExpression => new List<string>(),
+                            StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
+                        };
+                        return result;
+                    }
+
+                    return prop.Type switch
+                    {
+                        StatePropertyValueType.BooleanExpression => prop.Value as List<bool>,
+                        StatePropertyValueType.IntegerExpression => prop.Value as List<long>,
+                        StatePropertyValueType.StringExpression => prop.Value as List<string>,
+                        StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
+                    };
+
+
+                }
+                result = prop.Value;
+                
+                
             }
 
         }
@@ -114,12 +142,9 @@ public class LiteralAstElement : BaseAstElement
         return tree.ValueType switch
         {
             StatePropertyValueType.BooleanExpression => result is bool b ? b : Convert.ToBoolean(result),
-            StatePropertyValueType.IntegerExpression => result is long l
-                ? l
-                : Convert.ToInt64(result), // using long to cover both int and long
+            StatePropertyValueType.IntegerExpression => result is long l ? l : Convert.ToInt64(result), // using long to cover both int and long
             StatePropertyValueType.StringExpression => result.ToString(),
             StatePropertyValueType.VoidExpression => null,
-            null => throw new InvalidCastException($"Cannot cast result to type {result.GetType().Name}"),
             _ => throw new ArgumentOutOfRangeException()
         };
 

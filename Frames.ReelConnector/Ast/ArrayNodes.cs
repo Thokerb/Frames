@@ -1,4 +1,5 @@
-﻿using Frames.Model.ValueTypes;
+﻿using System.Collections;
+using Frames.Model.ValueTypes;
 using Frames.ReelConnector.ReelDto;
 
 namespace Frames.ReelConnector.Ast;
@@ -30,19 +31,34 @@ public class ArrayAppendAstElement : BaseAstElement
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var value = Evaluate(tree.Right, stateJson, bag);
 
-        if (arrVal is not List<object> arr)
-        {
-            throw new InvalidOperationException("ArrayAppend requires the left operand to be a List<object>.");
 
-        }
+        // pattern match arr val List<string> or List<long> or List<bool>
 
-        if (value is null)
-        {
-            throw new InvalidOperationException("ArrayAppend does not support appending null values.");
-        }
         
-        arr.Add(value);
-        return arr;
+        
+        IList updated = arrVal switch
+        {
+            List<string> strList =>
+                value is string strValue
+                    ? (strList.Append(strValue).ToList()) // Use Append and ToList to return a new list/object
+                    : throw new InvalidOperationException("ArrayAppend requires a string list and a string value."),
+
+            List<long> longList =>
+                value is long longValue
+                    ? (longList.Append(longValue).ToList())
+                    : throw new InvalidOperationException("ArrayAppend requires a long list and a long value."),
+
+            List<bool> boolList =>
+                value is bool boolValue
+                    ? (boolList.Append(boolValue).ToList())
+                    : throw new InvalidOperationException("ArrayAppend requires a boolean list and a boolean value."),
+
+            _ => throw new InvalidOperationException($"ArrayAppend requires a supported list type, but received {arrVal?.GetType().Name ?? "null"}."),
+        };
+        
+        stateJson.Properties[tree.Left.VariableName] = stateJson.Properties[tree.Left.VariableName] with { Value = updated };
+        return updated;
+        
     }
 }
 
@@ -53,7 +69,7 @@ public class ArrayPrependAstElement : BaseAstElement
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var value = Evaluate(tree.Right, stateJson, bag);
 
-        if (arrVal is not List<object> arr)
+        if (arrVal is not IList arr)
             throw new InvalidOperationException("ArrayPrepend requires the left operand to be a List<object>.");
 
         if (value is null)
@@ -71,10 +87,10 @@ public class ArrayLengthAstElement : BaseAstElement
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
 
-        if (arrVal is not List<object> arr)
+        if (arrVal is not IList arr)
             throw new InvalidOperationException("ArrayLength requires the operand to be a List<object>.");
 
-        return arr.Count;
+        return (long)arr.Count;
     }
 }
 
@@ -85,20 +101,24 @@ public class ArrayRemoveAstElement : BaseAstElement
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var value = Evaluate(tree.Right, stateJson, bag);
 
-        if (arrVal is not List<object> arr)
+        if (arrVal is not IList arr)
             throw new InvalidOperationException("ArrayRemove requires the left operand to be a List<object>.");
 
-        if (value is not int idx)
+        
+        var idx = value switch
         {
-            throw new InvalidOperationException("ArrayAppend does not support appending null values.");
-        }
+            long l => (int)l,
+            double d => (d % 1) == 0 ? (int)d : throw new InvalidOperationException("ArrayRemove requires the right operand to be an integer index."),
+            int i => i,
+            _ => throw new InvalidOperationException("ArrayRemove requires the right operand to be an integer index.")
+        };
         
         if (idx < 0 || idx >= arr.Count)
             throw new IndexOutOfRangeException($"ArrayRemove index {idx} is out of bounds for array length {arr.Count}.");
 
         
         
-        arr.RemoveAt(idx);
+        arr.RemoveAt((int)idx);
         return arr;
     }
 }

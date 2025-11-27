@@ -1,33 +1,30 @@
 {
   "states": [
     {
-      "name": "QueueState",
+      "name": "ArrayTestState",
       "properties": [
         {
-          "name": "remaining_time",
+          "name": "test",
           "type": "IntegerExpression",
-          "value": 0
+          "isArray": true,
+          "value": []
         },
         {
-          "name": "processing",
-          "type": "IntegerExpression"
-        },
-        {
-          "name": "idle_procs",
+          "name": "test2",
           "type": "IntegerExpression",
           "isArray": true,
           "value": [
-            0,
             1,
-            2
+            2,
+            3
           ]
         },
         {
-          "name": "queue",
-          "type": "IntegerExpression",
+          "name": "test3",
+          "type": "StringExpression",
           "isArray": true,
           "value": [
-            2
+            "val1"
           ]
         }
       ],
@@ -40,35 +37,9 @@
   ],
   "atomicModels": [
     {
-      "name": "Queue",
-      "ports": [
-        {
-          "name": "in_event",
-          "type": "InPort",
-          "valueType": "int"
-        },
-        {
-          "name": "in_finish",
-          "type": "InPort",
-          "valueType": "int"
-        },
-        {
-          "name": "proc_0",
-          "type": "OutPort",
-          "valueType": "int"
-        },
-        {
-          "name": "proc_1",
-          "type": "OutPort",
-          "valueType": "int"
-        },
-        {
-          "name": "proc_2",
-          "type": "OutPort",
-          "valueType": "int"
-        }
-      ],
-      "stateRef": "QueueState",
+      "name": "ArrayTest",
+      "ports": [],
+      "stateRef": "ArrayTestState",
       "stateDefinitions": [],
       "initialState": "Idle",
       "states": [
@@ -82,127 +53,73 @@
           },
           "transitions": [
             {
-              "name": "in_event",
+              "name": "proc2",
               "transitionCondition": {
-                "operator": "Literal",
-                "valueType": "IntegerExpression",
-                "isLeaf": true,
-                "variableName": "in_event",
-                "isPort": true
-              },
-              "transitionNewStateTypeRef": "Busy",
-              "transitionStateModifications": [
-                {
-                  "operator": "=",
-                  "isLeaf": false,
-                  "valueType": "VoidExpression",
+                "operator": ">",
+                "isLeaf": false,
+                "valueType": "VoidExpression",
+                "left": {
+                  "valueType": "IntegerExpression",
+                  "isLeaf": true,
+                  "variableName": "test2",
+                  "operator": "ArrayLength",
                   "left": {
                     "operator": "Literal",
-                    "valueType": "IntegerExpression",
                     "isLeaf": true,
-                    "variableName": "processing"
-                  },
-                  "right": {
-                    "operator": "Literal",
-                    "valueType": "IntegerExpression",
-                    "isLeaf": true,
-                    "variableName": "in_event",
-                    "isPort": true
+                    "variableName": "test2"
                   }
                 },
+                "right": {
+                  "operator": "Literal",
+                  "valueType": "IntegerExpression",
+                  "isLeaf": true,
+                  "value": 4
+                }
+              },
+              "transitionNewStateTypeRef": "Idle",
+              "transitionStateModifications": [
                 {
-                  "operator": "=",
-                  "isLeaf": false,
                   "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test",
+                  "operator": "ArrayRemove",
                   "left": {
                     "operator": "Literal",
-                    "valueType": "IntegerExpression",
                     "isLeaf": true,
-                    "variableName": "remaining_time"
+                    "variableName": "test"
                   },
                   "right": {
-                    "operator": "+",
+                    "operator": "-",
                     "isLeaf": false,
                     "valueType": "VoidExpression",
                     "left": {
-                      "operator": "*",
-                      "isLeaf": false,
-                      "valueType": "VoidExpression",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "variableName": "test",
+                      "operator": "ArrayLength",
                       "left": {
                         "operator": "Literal",
-                        "valueType": "IntegerExpression",
                         "isLeaf": true,
-                        "value": 1
-                      },
-                      "right": {
-                        "operator": "+",
-                        "isLeaf": false,
-                        "valueType": "VoidExpression",
-                        "left": {
-                          "operator": "Literal",
-                          "valueType": "IntegerExpression",
-                          "isLeaf": true,
-                          "value": 3
-                        },
-                        "right": {
-                          "operator": "Literal",
-                          "valueType": "IntegerExpression",
-                          "isLeaf": true,
-                          "value": 5
-                        }
+                        "variableName": "test"
                       }
                     },
                     "right": {
                       "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
-                      "value": 2
+                      "value": 1
                     }
                   }
-                }
-              ]
-            },
-            {
-              "name": "wasd",
-              "transitionCondition": {
-                "operator": "Literal",
-                "valueType": "BooleanExpression",
-                "isLeaf": true,
-                "value": true
-              },
-              "transitionNewStateTypeRef": "Busy",
-              "transitionStateModifications": []
-            }
-          ],
-          "output": []
-        },
-        {
-          "stateTypeRef": "Busy",
-          "timeAdvanceExpression": {
-            "operator": "Literal",
-            "valueType": "IntegerExpression",
-            "isLeaf": true,
-            "variableName": "remaining_time"
-          },
-          "transitions": [
-            {
-              "name": "in_event",
-              "transitionCondition": {
-                "operator": "Literal",
-                "valueType": "IntegerExpression",
-                "isLeaf": true,
-                "variableName": "in_event",
-                "isPort": true
-              },
-              "transitionNewStateTypeRef": "Busy",
-              "transitionStateModifications": [
+                },
                 {
+                  "valueType": "VoidExpression",
                   "isLeaf": false,
-                  "variableName": "queue",
-                  "operator": "ArrayGet",
+                  "variableName": "test2",
+                  "operator": "ArrayPrepend",
                   "left": {
+                    "operator": "Literal",
                     "isLeaf": true,
-                    "variableName": "queue"
+                    "variableName": "test2"
                   },
                   "right": {
                     "operator": "Literal",
@@ -214,68 +131,87 @@
                 {
                   "valueType": "VoidExpression",
                   "isLeaf": false,
-                  "variableName": "queue",
-                  "operator": "ArrayRemove",
-                  "left": {
-                    "operator": "Literal",
-                    "isLeaf": true,
-                    "variableName": "queue"
-                  },
-                  "right": {
-                    "valueType": "IntegerExpression",
-                    "isLeaf": true,
-                    "variableName": "queue",
-                    "operator": "ArrayLength",
-                    "left": {
-                      "operator": "Literal",
-                      "isLeaf": true,
-                      "variableName": "queue"
-                    }
-                  }
-                },
-                {
-                  "valueType": "VoidExpression",
-                  "isLeaf": false,
-                  "variableName": "queue",
+                  "variableName": "test3",
                   "operator": "ArrayAppend",
                   "left": {
                     "operator": "Literal",
                     "isLeaf": true,
-                    "variableName": "queue"
+                    "variableName": "test3"
                   },
                   "right": {
                     "operator": "Literal",
-                    "valueType": "IntegerExpression",
+                    "valueType": "StringExpression",
                     "isLeaf": true,
-                    "value": 2
+                    "value": "\"val3\""
                   }
                 }
               ]
             },
             {
-              "name": "in_finish",
+              "name": "proc",
               "transitionCondition": {
                 "operator": "Literal",
-                "valueType": "IntegerExpression",
+                "valueType": "BooleanExpression",
                 "isLeaf": true,
-                "variableName": "in_finish",
-                "isPort": true
+                "value": true
               },
-              "transitionNewStateTypeRef": "Busy",
-              "transitionStateModifications": []
+              "transitionNewStateTypeRef": "Idle",
+              "transitionStateModifications": [
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "isLeaf": true,
+                    "variableName": "test"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 1
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test2",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "isLeaf": true,
+                    "variableName": "test2"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 4
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test3",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "isLeaf": true,
+                    "variableName": "test3"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "StringExpression",
+                    "isLeaf": true,
+                    "value": "\"val2\""
+                  }
+                }
+              ]
             }
           ],
-          "output": [
-            {
-              "port": "proc_0",
-              "value": {
-                "operator": "Literal",
-                "valueType": "IntegerExpression",
-                "isLeaf": true,
-                "variableName": "processing"
-              }
-            }
-          ]
+          "output": []
         }
       ]
     }
