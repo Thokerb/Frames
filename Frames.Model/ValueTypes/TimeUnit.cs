@@ -56,6 +56,15 @@ public record struct TimeUnit : IComparable<TimeUnit>
         return timeUnit.Value;
     }
     
+    public static explicit operator TimeUnit(long value)
+    {
+        if (value > int.MaxValue)
+        {
+            throw new OverflowException("Cannot convert long value greater than int.MaxValue to TimeUnit.");
+        }
+        return new TimeUnit((int)value);
+    }    
+    
     public static TimeUnit operator +(TimeUnit a, TimeUnit b)
     {
         if (a.IsInfinity || b.IsInfinity)

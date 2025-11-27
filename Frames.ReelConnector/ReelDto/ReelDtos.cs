@@ -1,4 +1,7 @@
 ﻿using System.Text.Json;
+using Frames.ReelConnector.Converter;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Frames.ReelConnector.ReelDto;
 
@@ -8,8 +11,26 @@ public record StatePropertyJson
     public required StatePropertyValueType Type { get; init; }
     
     public required bool IsArray { get; init; }
-    public required object Value { get; init; } // string | number | boolean  | Array<string> | Array<number> | Array<boolean> | undefined
+
+    [JsonIgnore]
+    private object? _value;
     
+    public required object? Value
+    {
+        get
+        {
+            return this.Type switch
+            {
+                StatePropertyValueType.BooleanExpression => _value is bool b ? b : null,
+                StatePropertyValueType.IntegerExpression =>_value is long value ? value : null,
+                StatePropertyValueType.StringExpression => _value as string,
+                StatePropertyValueType.VoidExpression => null,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+        init { _value = value; }
+    } // string | number | boolean | undefined
+
     public override string ToString()
     {
         return $"{Name}: {Value}";
@@ -21,6 +42,8 @@ public record StateJson
     public required string Name { get; init; }
     public required List<string> States { get; init; }
     public required string InitialState { get; init; }
+    
+    [JsonConverter(typeof(PropertyArrayToDictionaryConverter))]
     public required Dictionary<string, StatePropertyJson> Properties { get; init; }
 
     public override string ToString()
@@ -108,7 +131,7 @@ public record CouplingJson
     public required string SourcePort { get; init; } // Port name
     public required string TargetModel { get; init; } // 'this' or model name
     public required string TargetPort { get; init; } // Port name
-    public ExpressionValueType Type { get; init; } // Type of the port value
+    public StatePropertyValueType Type { get; init; } // Type of the port value
 }
 
 public record ModelReferenceJson
@@ -139,10 +162,7 @@ public record AtomicModelJson
     public required string StateRef { get; init; } // Reference to the state type
     public required List<PortJson> Ports { get; init; }
     public required List<StateConfigurationJson> States { get; init; }
-
-    public required List<StatePropertyJson>
-        StateDefinitions { get; init; } // Assuming state definitions are similar to states
-
+    public required List<StatePropertyJson> StateDefinitions { get; init; } // Assuming state definitions are similar to states
     public string? InitialState { get; init; } // Optional initial state
 }
 
@@ -158,17 +178,9 @@ public enum StatePropertyValueType
     BooleanExpression,
     IntegerExpression,
     StringExpression,
+    VoidExpression
 }
 
-public enum ExpressionValueType
-{
-    String,
-    Number,
-    Boolean,
-    StringArray,
-    NumberArray,
-    BooleanArray
-}
 
 public enum Operator
 {
@@ -202,10 +214,11 @@ public record ExpressionTreeJson
     // Represented as object? so it can hold any of these.
     public object? Value { get; init; }
 
-    public ExpressionValueType? ValueType { get; init; }
+    public StatePropertyValueType? ValueType { get; init; }
 
     public string? VariableName { get; init; }
 
+    [JsonConverter(typeof(OperatorConverter))]
     public Operator? Operator { get; init; }
 
     public bool? IsPort { get; init; }

@@ -27,7 +27,7 @@
 
     <ItemGroup>
       <None Update="Data\arena2.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Data\blinking_light.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

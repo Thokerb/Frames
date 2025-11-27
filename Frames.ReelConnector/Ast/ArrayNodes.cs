@@ -5,7 +5,7 @@ namespace Frames.ReelConnector.Ast;
 
 public class ArrayGetAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var indexVal = Evaluate(tree.Right, stateJson, bag);
@@ -25,7 +25,7 @@ public class ArrayGetAstElement : BaseAstElement
 
 public class ArrayAppendAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var value = Evaluate(tree.Right, stateJson, bag);
@@ -48,7 +48,7 @@ public class ArrayAppendAstElement : BaseAstElement
 
 public class ArrayPrependAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var value = Evaluate(tree.Right, stateJson, bag);
@@ -67,7 +67,7 @@ public class ArrayPrependAstElement : BaseAstElement
 
 public class ArrayLengthAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
 
@@ -80,7 +80,7 @@ public class ArrayLengthAstElement : BaseAstElement
 
 public class ArrayRemoveAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var value = Evaluate(tree.Right, stateJson, bag);

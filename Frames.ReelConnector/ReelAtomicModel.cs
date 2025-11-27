@@ -136,7 +136,9 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
         
         foreach (var output in currentState.Output)
         {
-            output.Value.Evaluate(state.StateJson,bag);
+            // todo: make this a complete expression with assignment
+            var result = output.Value.Evaluate<object>(state.StateJson,bag);
+            bag.Inputs.Add(output.Port, result);
         }
         
         return bag;

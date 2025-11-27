@@ -75,42 +75,103 @@
         {
           "stateTypeRef": "Idle",
           "timeAdvanceExpression": {
-            "returnType": "IntegerExpression",
-            "variables": [],
-            "isAssignment": false,
-            "expression": "Infinity"
+            "operator": "Literal",
+            "valueType": "IntegerExpression",
+            "isLeaf": true,
+            "value": "Infinity"
           },
           "transitions": [
             {
               "name": "in_event",
               "transitionCondition": {
-                "expression": "in_event",
-                "variables": [
-                  "in_event"
-                ],
-                "isAssignment": false,
-                "returnType": "IntegerExpression"
+                "operator": "Literal",
+                "valueType": "IntegerExpression",
+                "isLeaf": true,
+                "variableName": "in_event",
+                "isPort": true
               },
               "transitionNewStateTypeRef": "Busy",
               "transitionStateModifications": [
                 {
-                  "returnType": "IntegerExpression",
-                  "variables": [
-                    "processing",
-                    "in_event"
-                  ],
-                  "isAssignment": true,
-                  "expression": "processing = InPort in_event.0"
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "processing"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "in_event",
+                    "isPort": true
+                  }
                 },
                 {
-                  "returnType": "IntegerExpression",
-                  "variables": [
-                    "remaining_time"
-                  ],
-                  "isAssignment": true,
-                  "expression": "remaining_time = 1"
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "remaining_time"
+                  },
+                  "right": {
+                    "operator": "+",
+                    "isLeaf": false,
+                    "valueType": "VoidExpression",
+                    "left": {
+                      "operator": "*",
+                      "isLeaf": false,
+                      "valueType": "VoidExpression",
+                      "left": {
+                        "operator": "Literal",
+                        "valueType": "IntegerExpression",
+                        "isLeaf": true,
+                        "value": 1
+                      },
+                      "right": {
+                        "operator": "+",
+                        "isLeaf": false,
+                        "valueType": "VoidExpression",
+                        "left": {
+                          "operator": "Literal",
+                          "valueType": "IntegerExpression",
+                          "isLeaf": true,
+                          "value": 3
+                        },
+                        "right": {
+                          "operator": "Literal",
+                          "valueType": "IntegerExpression",
+                          "isLeaf": true,
+                          "value": 5
+                        }
+                      }
+                    },
+                    "right": {
+                      "operator": "Literal",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "value": 2
+                    }
+                  }
                 }
               ]
+            },
+            {
+              "name": "wasd",
+              "transitionCondition": {
+                "operator": "Literal",
+                "valueType": "BooleanExpression",
+                "isLeaf": true,
+                "value": true
+              },
+              "transitionNewStateTypeRef": "Busy",
+              "transitionStateModifications": []
             }
           ],
           "output": []
@@ -118,62 +179,87 @@
         {
           "stateTypeRef": "Busy",
           "timeAdvanceExpression": {
-            "expression": "remaining_time",
-            "variables": [
-              "remaining_time"
-            ],
-            "isAssignment": false,
-            "returnType": "IntegerExpression"
+            "operator": "Literal",
+            "valueType": "IntegerExpression",
+            "isLeaf": true,
+            "variableName": "remaining_time"
           },
           "transitions": [
             {
               "name": "in_event",
               "transitionCondition": {
-                "expression": "in_event",
-                "variables": [
-                  "in_event"
-                ],
-                "isAssignment": false,
-                "returnType": "IntegerExpression"
+                "operator": "Literal",
+                "valueType": "IntegerExpression",
+                "isLeaf": true,
+                "variableName": "in_event",
+                "isPort": true
               },
               "transitionNewStateTypeRef": "Busy",
               "transitionStateModifications": [
                 {
-                  "expression": "queue.get(0)",
-                  "variables": [
-                    "queue"
-                  ],
-                  "isAssignment": false,
-                  "returnType": "ArrayExpression"
+                  "isLeaf": false,
+                  "variableName": "queue",
+                  "operator": "ArrayGet",
+                  "left": {
+                    "isLeaf": true,
+                    "variableName": "queue"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 0
+                  }
                 },
                 {
-                  "expression": "queue.remove(queue.length())",
-                  "variables": [
-                    "queue",
-                    "queue"
-                  ],
-                  "isAssignment": false,
-                  "returnType": "ArrayExpression"
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "queue",
+                  "operator": "ArrayRemove",
+                  "left": {
+                    "operator": "Literal",
+                    "isLeaf": true,
+                    "variableName": "queue"
+                  },
+                  "right": {
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "queue",
+                    "operator": "ArrayLength",
+                    "left": {
+                      "operator": "Literal",
+                      "isLeaf": true,
+                      "variableName": "queue"
+                    }
+                  }
                 },
                 {
-                  "expression": "queue.append(2)",
-                  "variables": [
-                    "queue"
-                  ],
-                  "isAssignment": false,
-                  "returnType": "ArrayExpression"
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "queue",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "isLeaf": true,
+                    "variableName": "queue"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 2
+                  }
                 }
               ]
             },
             {
               "name": "in_finish",
               "transitionCondition": {
-                "expression": "in_finish",
-                "variables": [
-                  "in_finish"
-                ],
-                "isAssignment": false,
-                "returnType": "IntegerExpression"
+                "operator": "Literal",
+                "valueType": "IntegerExpression",
+                "isLeaf": true,
+                "variableName": "in_finish",
+                "isPort": true
               },
               "transitionNewStateTypeRef": "Busy",
               "transitionStateModifications": []
@@ -183,12 +269,10 @@
             {
               "port": "proc_0",
               "value": {
-                "expression": "processing",
-                "variables": [
-                  "processing"
-                ],
-                "isAssignment": false,
-                "returnType": "IntegerExpression"
+                "operator": "Literal",
+                "valueType": "IntegerExpression",
+                "isLeaf": true,
+                "variableName": "processing"
               }
             }
           ]

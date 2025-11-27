@@ -20,6 +20,12 @@ public static class ReelHelper
             {
                 throw new ArgumentException($"Override property '{overrideProp.Name}' does not exist in the state.");
             }
+
+            if (overrideProp.Value == null)
+            {
+                continue;
+            }
+            
             state.Properties[overrideProp.Name] = state.Properties[overrideProp.Name] with { Value = overrideProp.Value };
         }
         

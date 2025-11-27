@@ -5,7 +5,7 @@ namespace Frames.ReelConnector.Ast;
 
 public class AdditionAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var left = Evaluate(tree.Left, stateJson, bag);
         var right = Evaluate(tree.Right, stateJson, bag);
@@ -23,7 +23,7 @@ public class AdditionAstElement : BaseAstElement
 
 public class SubtractAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var left = Evaluate(tree.Left, stateJson, bag);
         var right = Evaluate(tree.Right, stateJson, bag);
@@ -40,7 +40,7 @@ public class SubtractAstElement : BaseAstElement
 
 public class MultiplyAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var left = Evaluate(tree.Left, stateJson, bag);
         var right = Evaluate(tree.Right, stateJson, bag);
@@ -57,7 +57,7 @@ public class MultiplyAstElement : BaseAstElement
 
 public class DivideAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
         var left = Evaluate(tree.Left, stateJson, bag);
         var right = Evaluate(tree.Right, stateJson, bag);
@@ -74,10 +74,10 @@ public class DivideAstElement : BaseAstElement
 
 public class ModuloAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
-        var l = Convert.ToInt64(Evaluate(tree.Left, stateJson, bag));
-        var r = Convert.ToInt64(Evaluate(tree.Right, stateJson, bag));
+        var l = Convert.ToInt32(Evaluate(tree.Left, stateJson, bag));
+        var r = Convert.ToInt32(Evaluate(tree.Right, stateJson, bag));
         return l % r;
     }
 }

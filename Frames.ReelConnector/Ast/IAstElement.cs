@@ -11,11 +11,25 @@ public interface IAstElement
 
 public static class ExpressionTreeJsonExtension
 {
-    public static T Evaluate<T>(this ExpressionTreeJson tree, StateJson stateJson, Bag? bag = null)
+    public static T? Evaluate<T>(this ExpressionTreeJson tree, StateJson stateJson, Bag? bag = null)
     {
         var element = AstBuilder.Build(tree);
         var result = element.Evaluate(tree, stateJson, bag);
-        return result is T ? (T)result : throw new InvalidCastException($"Cannot cast result to type {typeof(T).Name}");
+
+        if (typeof(T) == typeof(TimeUnit))
+        {
+            
+            var converted = result switch
+            {
+                long l => (TimeUnit)l,
+                int i => (TimeUnit)(long)i,
+                TimeUnit tu => tu,
+                _ => throw new InvalidCastException($"Cannot convert {result.GetType()} to TimeUnit")
+            };
+            return (T)(object)converted;
+        }
+
+        return (T) result ;
 
     }    
     
@@ -53,60 +67,81 @@ public abstract class BaseAstElement : IAstElement
         return element.EvaluateImpl(tree, stateJson, bag);
     }
 
-    protected abstract object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag);
+    protected abstract object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag);
 }
 
 public class LiteralAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
+        object? result = null;
+        bool resultSet = false;
         if (tree.VariableName is not null)
         {
+            resultSet = true;
             if (tree.IsPort.HasValue && tree.IsPort.Value)
             {
                 var variableFromBag = bag?.Inputs.GetValueOrDefault(tree.VariableName);
-                if(variableFromBag is not null && (string)variableFromBag == "Infinity")
-                {
-                    return TimeUnit.Infinity;
-                }
-                return variableFromBag;
+                result = variableFromBag;
             }
-            
-            var variable =  stateJson.Properties[tree.VariableName].Value;
-            if((string)variable == "Infinity")
+            else
             {
-                return TimeUnit.Infinity;
+                result =  stateJson.Properties[tree.VariableName].Value;
             }
+
         }
         if (tree.Value is not null)
         {
-            if((string)tree.Value == "Infinity")
-            {
-                return TimeUnit.Infinity;
-            }
-            
-            return tree.Value;
+            resultSet = true;
+            result = tree.Value;
         }
-        throw new InvalidOperationException("Leaf node must have either VariableName or Value.");
+
+        if (!resultSet)
+        {
+            throw new InvalidOperationException("Literal must have either a Value or a VariableName");
+        }
+        
+        if (result is null)
+        {
+            return null;
+        }
+
+        if(result is "Infinity")
+        {
+            return TimeUnit.Infinity;
+        }
+        
+        return tree.ValueType switch
+        {
+            StatePropertyValueType.BooleanExpression => result is bool b ? b : Convert.ToBoolean(result),
+            StatePropertyValueType.IntegerExpression => result is long l
+                ? l
+                : Convert.ToInt64(result), // using long to cover both int and long
+            StatePropertyValueType.StringExpression => result.ToString(),
+            StatePropertyValueType.VoidExpression => null,
+            null => throw new InvalidCastException($"Cannot cast result to type {result.GetType().Name}"),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
     }
 }
 
 public class AssignAstElement : BaseAstElement
 {
-    protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
     {
-        if (tree.VariableName == null)
-            throw new InvalidOperationException("Assign must have a VariableName");
+
+        var key = tree.Left.VariableName;
 
         var value = Evaluate(tree.Right, stateJson, bag);
 
-        if (tree.IsPort.HasValue && tree.IsPort.Value && bag.HasValue)
+        if (tree.Left.IsPort.HasValue && tree.Left.IsPort.Value && bag.HasValue)
         {
-            bag.Value.Inputs[tree.VariableName] = value;
+            bag.Value.Inputs[key] = value;
             return value;
         }
         
-        ReelHelper.UpdateState(stateJson, tree.VariableName, value);
+        ReelHelper.UpdateState(stateJson, key, value);
         return value;
     }
 }

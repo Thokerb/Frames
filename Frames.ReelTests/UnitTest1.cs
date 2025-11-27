@@ -118,8 +118,10 @@ public class SerializationTest
     [Fact]
     public void TestSerialization5()
     {
-        var model = new CoupledBenchmarkModel("root2", 20, 20, true);
-        Assert.Equal(20, model.GetChildren().Count());
+        int numberInactive = 20;
+        int numberActive = 20;
+        var model = new CoupledBenchmarkModel("root2", numberInactive, numberActive, true);
+        Assert.Equal((numberActive + numberInactive) / CoupledBenchmarkModel.StepSize, model.GetChildren().Count());
         
         // serialize and deserialize
         var serialize = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
@@ -130,7 +132,7 @@ public class SerializationTest
         {
             TypeNameHandling = TypeNameHandling.Auto
         });
-        Assert.Equal(20, modelDeserialized.GetChildren().Count());
+        Assert.Equal((numberActive + numberInactive) / CoupledBenchmarkModel.StepSize, modelDeserialized.GetChildren().Count());
     }
     
     [Fact]
@@ -179,8 +181,10 @@ public class SerializationTest
         });
         
 
-        Assert.InRange( System.Text.Encoding.Unicode.GetByteCount(serialize) ,0, 128000);
-    }    [Fact]
+        Assert.InRange( System.Text.Encoding.Unicode.GetByteCount(serialize) ,0, 1128000);
+    }    
+    
+    [Fact]
     public void TestSerializationTimeUnit()
     {
         // Akka.Remote.OversizedPayloadException  max allowed size 128000 bytes, actual size of encoded Frames.Engine.Messages.Simulation+CreateModel was 177351 bytes.

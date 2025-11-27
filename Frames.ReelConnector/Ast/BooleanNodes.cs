@@ -7,7 +7,7 @@ public class BooleanNodes
 {
     public class AndAstElement : BaseAstElement
     {
-        protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
         {
             var left = Evaluate(tree.Left, stateJson, bag);
             var right = Evaluate(tree.Right, stateJson, bag);
@@ -22,7 +22,7 @@ public class BooleanNodes
 
     public class OrAstElement : BaseAstElement
     {
-        protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
         {
             var left = Evaluate(tree.Left, stateJson, bag);
             var right = Evaluate(tree.Right, stateJson, bag);
@@ -37,7 +37,7 @@ public class BooleanNodes
 
     public class NotAstElement : BaseAstElement
     {
-        protected override object EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
         {
             var left = Evaluate(tree.Left, stateJson, bag);
 

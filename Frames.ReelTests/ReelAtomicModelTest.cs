@@ -1,6 +1,7 @@
 ﻿using Frames.Model.ValueTypes;
 using Frames.ReelConnector;
 using Frames.ReelConnector.ReelDto;
+using Newtonsoft.Json;
 
 namespace Frames.Test2;
 
@@ -56,8 +57,8 @@ public class ReelAtomicModelTest
         Assert.NotNull(reelAtomicModel);
 
 
-        var currentCycle = reelAtomicModel.State.StateJson.Properties.FirstOrDefault(x => x.Name == "CurrentCycle")?.Value;
-        var maxCycles = reelAtomicModel.State.StateJson.Properties.FirstOrDefault(x => x.Name == "MaxCycles")?.Value;
+        var currentCycle = reelAtomicModel.State.StateJson.Properties["CurrentCycle"].Value;
+        var maxCycles = reelAtomicModel.State.StateJson.Properties["MaxCycles"].Value;
         
         Assert.Equal((long)0, currentCycle);
         Assert.Equal((long)5, maxCycles);
@@ -69,8 +70,8 @@ public class ReelAtomicModelTest
         });
         
         Assert.NotNull(result);
-        Assert.Equal((long)1, result.StateJson.Properties.FirstOrDefault(x => x.Name == "CurrentCycle")?.Value);
-        Assert.Equal((long)5, result.StateJson.Properties.FirstOrDefault(x => x.Name == "MaxCycles")?.Value);
+        Assert.Equal((long)1, result.StateJson.Properties["CurrentCycle"].Value);
+        Assert.Equal((long)5, result.StateJson.Properties["MaxCycles"].Value);
         Assert.Equal("Off",result.CurrentState);
     }
     
@@ -91,7 +92,7 @@ public class ReelAtomicModelTest
         Assert.NotNull(reelAtomicModel);
 
 
-        var enginepower = reelAtomicModel.State.StateJson.Properties.FirstOrDefault(x => x.Name == "engineSEPpower")?.Value;
+        var enginepower = reelAtomicModel.State.StateJson.Properties["engineSEPpower"].Value;
         
         Assert.Equal((long)500, enginepower);
         
@@ -102,7 +103,7 @@ public class ReelAtomicModelTest
         }, new Bag(("awasd", 5)));
         
         Assert.NotNull(result);
-        Assert.Equal((long)5, result.StateJson.Properties.FirstOrDefault(x => x.Name == "engineSEPpower")?.Value);
+        Assert.Equal((long)5, result.StateJson.Properties["engineSEPpower"].Value);
         Assert.Equal("kabumm",result.CurrentState);
     }
     
@@ -123,7 +124,7 @@ public class ReelAtomicModelTest
         Assert.NotNull(reelAtomicModel);
 
 
-        var cycles = reelAtomicModel.State.StateJson.Properties.FirstOrDefault(x => x.Name == "MaxCycles")?.Value;
+        var cycles = reelAtomicModel.State.StateJson.Properties["MaxCycles"].Value;
         
         Assert.Equal((long)5, cycles);
         
