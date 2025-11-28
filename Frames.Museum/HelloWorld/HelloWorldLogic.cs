@@ -48,7 +48,7 @@ public static class HelloWorldLogic
     public static async Task ReelTest(HttpContext context, IRequiredActor<RootCoordinator> rootCoordinatorActorRef,
         IServiceProvider serviceProvider)
     {
-        string coupledModelRef = "CArena";
+        string coupledModelRef = "QueueSystem";
         ReelJson reelJson = ReadReelJsonFromFile("HelloWorld/ReelTestData/arena2.json");
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
         var uniqueId = Guid.NewGuid();
@@ -59,7 +59,7 @@ public static class HelloWorldLogic
       
         
         // Act
-        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(50),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(200000),uniqueId));
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
         Thread.Sleep(2000);
         rootCoordinatorActor.Tell(new Simulation.QueryIsCompleted(uniqueId)

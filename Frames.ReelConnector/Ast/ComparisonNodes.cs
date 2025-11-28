@@ -24,7 +24,7 @@ public class LessThanAstElement : BaseAstElement
         
         return left switch
         {
-            long l when right is long r => l < r,
+            double l when right is double r => l < r,
             int l when right is int r => l < r,
             double l when right is double r => l < r,
             _ => throw new InvalidOperationException($"Incompatible types {left.GetType()} and {right.GetType()}")
@@ -41,7 +41,7 @@ public class LessThanOrEqualAstElement : BaseAstElement
         
         return left switch
         {
-            long l when right is long r => l <= r,
+            double l when right is double r => l <= r,
             int l when right is int r => l <= r,
             double l when right is double r => l <= r,
             _ => throw new InvalidOperationException($"Incompatible types {left.GetType()} and {right.GetType()}")
@@ -58,7 +58,7 @@ public class GreaterThanAstElement : BaseAstElement
         
         return left switch
         {
-            long l when right is long r => l > r,
+            double l when right is double r => l > r,
             int l when right is int r => l > r,
             double l when right is double r => l > r,
             _ => throw new InvalidOperationException($"Incompatible types {left.GetType()} and {right.GetType()}")
@@ -75,7 +75,7 @@ public class GreaterThanOrEqualAstElement : BaseAstElement
         
         return left switch
         {
-            long l when right is long r => l >= r,
+            double l when right is double r => l >= r,
             int l when right is int r => l >= r,
             double l when right is double r => l >= r,
             _ => throw new InvalidOperationException($"Incompatible types {left.GetType()} and {right.GetType()}")

@@ -9,8 +9,19 @@ public class ReelCoupledModel : CoupledModel
 
     public ReelCoupledModel(ReelJson reelJson, string coupledModelRef, string? name) : base(name ?? coupledModelRef)
     {
-        CoupledModelJson = reelJson.CoupledModels.First(x => x.Name == coupledModelRef);
+        
+        if (!reelJson.CoupledModels.Exists(m => m.Name == coupledModelRef))
+        {
+            var available = string.Join(", ",
+                reelJson.CoupledModels.Select(m => m.Name));
 
+            throw new KeyNotFoundException(
+                $"Coupled model '{coupledModelRef}' was not found. " +
+                $"Available models: {available}");
+        }
+        CoupledModelJson = reelJson.CoupledModels.First(x => x.Name == coupledModelRef);
+        
+        
         AddModels(reelJson);
         
         AddReelPorts();

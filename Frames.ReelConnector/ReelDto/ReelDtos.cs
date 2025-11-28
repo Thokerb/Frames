@@ -25,7 +25,7 @@ public record StatePropertyJson
                 return this.Type switch
                 {
                     StatePropertyValueType.BooleanExpression => _value as List<bool>,
-                    StatePropertyValueType.IntegerExpression =>_value as List<long>,
+                    StatePropertyValueType.IntegerExpression =>_value as List<double>,
                     StatePropertyValueType.StringExpression => _value as List<string>,
                     StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
                     _ => throw new ArgumentOutOfRangeException()
@@ -36,7 +36,7 @@ public record StatePropertyJson
             return this.Type switch
             {
                 StatePropertyValueType.BooleanExpression => _value is bool b ? b : null,
-                StatePropertyValueType.IntegerExpression =>_value is long value ? value : null,
+                StatePropertyValueType.IntegerExpression => Convert.ToDouble(_value),
                 StatePropertyValueType.StringExpression => _value as string,
                 StatePropertyValueType.VoidExpression => null,
                 _ => throw new ArgumentOutOfRangeException()
@@ -51,7 +51,7 @@ public record StatePropertyJson
                     _value = Type switch
                     {
                         StatePropertyValueType.BooleanExpression  => jArray.ToObject<List<bool>>(),
-                        StatePropertyValueType.IntegerExpression => jArray.ToObject<List<long>>(),
+                        StatePropertyValueType.IntegerExpression => jArray.ToObject<List<double>>(),
                         StatePropertyValueType.StringExpression => jArray.ToObject<List<string>>(),
                         StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
                         _ => throw new ArgumentOutOfRangeException()
@@ -61,7 +61,7 @@ public record StatePropertyJson
                 _value = Type switch
                 {
                     StatePropertyValueType.BooleanExpression  => value as List<bool>,
-                    StatePropertyValueType.IntegerExpression => value as List<long>,
+                    StatePropertyValueType.IntegerExpression => value as List<double>,
                     StatePropertyValueType.StringExpression => value as List<string>,
                     StatePropertyValueType.VoidExpression => throw new NotSupportedException("Void type cannot be an array"),
                     _ => throw new ArgumentOutOfRangeException()
@@ -132,7 +132,14 @@ public record StateJson
 public record OutputJson
 {
     public required string Port { get; init; } // Name of the port
-    public required ExpressionTreeJson Value { get; init; }
+    public required List<OutputValueEntries> Value { get; init; }
+}
+
+public record OutputValueEntries
+{
+    
+    public required string Key { get; init; }
+    public required ExpressionTreeJson Value { get; init; } 
 }
 
 public record TransitionJson
@@ -172,7 +179,7 @@ public record CouplingJson
     public required string SourcePort { get; init; } // Port name
     public required string TargetModel { get; init; } // 'this' or model name
     public required string TargetPort { get; init; } // Port name
-    public StatePropertyValueType Type { get; init; } // Type of the port value
+    public PortValueType Type { get; init; } // Type of the port value
 }
 
 public record ModelReferenceJson
@@ -213,9 +220,18 @@ public enum PortType
     OutPort
 }
 
+public enum PortValueType
+{
+    ObjectExpression,
+    BooleanExpression,
+    IntegerExpression,
+    StringExpression,
+    VoidExpression
+}
 
 public enum StatePropertyValueType
 {
+    ObjectExpression,
     BooleanExpression,
     IntegerExpression,
     StringExpression,
@@ -248,6 +264,13 @@ public enum Operator
     Assign          // =
 }
 
+public enum PortAccessor
+{
+    First,
+    Any,
+    Index
+}
+
 public record ExpressionTreeJson
 {
     
@@ -255,8 +278,13 @@ public record ExpressionTreeJson
     // Represented as object? so it can hold any of these.
     public object? Value { get; init; }
 
-    public StatePropertyValueType ValueType { get; init; }
+    public PortValueType ValueType { get; init; }
 
+    public string? PortObjectPropertyName { get; init; }
+    
+    public PortAccessor? PortAccessor { get; init; }
+    public int? PortAccessorIndex { get; init; }
+    
     public string? VariableName { get; init; }
 
     [JsonConverter(typeof(OperatorConverter))]

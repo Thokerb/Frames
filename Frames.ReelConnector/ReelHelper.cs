@@ -112,8 +112,7 @@ public static class ReelHelper
 
     public static void UpdateState(StateJson stateStateJson, string key, object? value)
     {
-        var state = stateStateJson;
-        var elem = state.Properties[key];
-        state.Properties[key] = elem with { Value = value };
+        var elem = stateStateJson.Properties[key];
+        stateStateJson.Properties[key] = elem with { Value = value };
     }
 }
