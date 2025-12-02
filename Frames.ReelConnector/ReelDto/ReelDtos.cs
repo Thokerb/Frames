@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Frames.Model.ValueTypes;
 using Frames.ReelConnector.Converter;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -36,7 +37,7 @@ public record StatePropertyJson
             return this.Type switch
             {
                 StatePropertyValueType.BooleanExpression => _value is bool b ? b : null,
-                StatePropertyValueType.IntegerExpression => Convert.ToDouble(_value),
+                StatePropertyValueType.IntegerExpression => _value is "Infinity" or TimeUnit ? _value : Convert.ToDouble(_value),
                 StatePropertyValueType.StringExpression => _value as string,
                 StatePropertyValueType.VoidExpression => null,
                 _ => throw new ArgumentOutOfRangeException()
@@ -98,7 +99,7 @@ public record StateJson
 
         return JsonSerializer.Serialize(root, new JsonSerializerOptions
         {
-            WriteIndented = true,
+            WriteIndented = false,
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         });
     }
@@ -108,7 +109,12 @@ public record StateJson
 
         if (index == parts.Length - 1)
         {
-            node[key] = value;
+            var castValue = (StatePropertyJson)value;
+            if (castValue is null)
+            {
+                return;
+            }
+            node[key] = castValue.Value;
             return;
         }
 
@@ -119,15 +125,14 @@ public record StateJson
 
         AddValue((Dictionary<string, object?>)node[key]!, parts, index + 1, value);
     }
+
+    public StateJson DeepClone()
+    {
+        var serialized = JsonConvert.SerializeObject(this);
+        return JsonConvert.DeserializeObject<StateJson>(serialized)!;
+    }
 }
 
-// public record ExpressionJson
-// {
-//     public required string Expression { get; init; }
-//     public bool? IsAssignment { get; init; } // Indicates if this expression is an assignment
-//     public required List<string> Variables { get; init; }
-//     public ExpressionValueType? ReturnType { get; init; } // The type of the expression, e.g., 'int', 'bool', 'string', etc.
-// }
 
 public record OutputJson
 {
@@ -212,6 +217,12 @@ public record AtomicModelJson
     public required List<StateConfigurationJson> States { get; init; }
     public required List<StatePropertyJson> StateDefinitions { get; init; } // Assuming state definitions are similar to states
     public string? InitialState { get; init; } // Optional initial state
+
+    public AtomicModelJson DeepClone()
+    {
+        var serialized = JsonConvert.SerializeObject(this);
+        return JsonConvert.DeserializeObject<AtomicModelJson>(serialized)!;
+    }
 }
 
 public enum PortType

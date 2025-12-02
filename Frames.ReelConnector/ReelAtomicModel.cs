@@ -12,7 +12,6 @@ public class ReelState : IState
     // Define properties and methods for the ReelState here
     public StateJson StateJson { get; set; }
     public required string CurrentState { get; set; }
-
     public int CompareTo(object? obj)
     {
         if (obj is ReelState otherState)
@@ -26,12 +25,14 @@ public class ReelState : IState
 
     public override string ToString()
     {
-        return $"| {CurrentState} | StateJson = {StateJson}";
+        return $"{{\"currentState\": \"{CurrentState}\", \"StateJson\": {StateJson}}}";
     }
 }
 
 public sealed class ReelAtomicModel : AtomicModel<ReelState>
 {
+    public string TransitionTaken { get; private set; } = string.Empty;
+    
     public ReelAtomicModel(AtomicModelJson jsonModel, StateJson state)
     {
         JsonModel = jsonModel;
@@ -88,21 +89,37 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 continue;
             }
 
-            var applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, bag);
+            bool applies = false;
+            try
+            {
+                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, bag);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
 
             if (applies)
             {
                 state.CurrentState = transition.TransitionNewStateTypeRef;
+                TransitionTaken = transition.Name ?? string.Empty;
                 foreach (var transitionTransitionStateModification in transition.TransitionStateModifications)
                 {
                     transitionTransitionStateModification.Evaluate(state.StateJson, bag);
                 }
 
-                break;
+                return state;
             }
         }
-
+        TransitionTaken = "No Transition";
         return state;
+    }
+
+    public new ReelState ConfluentTransition(ReelState state, Bag bag)
+    {
+        TransitionTaken = "ConfluentTransition";
+        return base.ConfluentTransition(state, bag);
     }
 
     public override ReelState InternalTransition(ReelState state)
@@ -110,7 +127,6 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
     {
         var currentState = JsonModel.States.First(x => x.StateTypeRef == State.CurrentState);
 
-        var interpreter = new Interpreter();
         foreach (var transition in currentState.Transitions)
         {
             if (transition.TransitionCondition.ContainsPort())
@@ -119,21 +135,33 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 continue;
             }
 
+            bool applies = false;
+            try
+            {
+                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson);
 
-            var applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
 
 
             if (applies)
             {
                 state.CurrentState = transition.TransitionNewStateTypeRef;
+                TransitionTaken = transition.Name ?? string.Empty;
                 foreach (var transitionTransitionStateModification in transition.TransitionStateModifications)
                 {
                     transitionTransitionStateModification.Evaluate(state.StateJson);
                 }
 
-                break;
+                return state;
             }
-        }
+        }        
+        TransitionTaken = "No Transition";
 
         return state;
     }

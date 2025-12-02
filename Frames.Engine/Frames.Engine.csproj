@@ -23,6 +23,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Frames.Model\Frames.Model.csproj" />
+      <ProjectReference Include="..\Frames.ReelConnector\Frames.ReelConnector.csproj" />
     </ItemGroup>
 
 </Project>

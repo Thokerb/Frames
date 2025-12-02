@@ -10,17 +10,23 @@ public class ArrayGetAstElement : BaseAstElement
     {
         var arrVal = Evaluate(tree.Left, stateJson, bag);
         var indexVal = Evaluate(tree.Right, stateJson, bag);
+        
+        int idx = indexVal switch
+        {
+            double d => (d % 1) == 0 ? (int)d : throw new InvalidOperationException("ArrayGet requires the right operand to be an integer index."),
+            int i => i,
+            _ => throw new InvalidOperationException("ArrayGet requires the right operand to be an integer index.")
+        };
 
-        if (arrVal is not List<object> arr)
-            throw new InvalidOperationException("ArrayGet requires the left operand to be a List<object>.");
-
-        if (indexVal is not int idx)
-            throw new InvalidOperationException("ArrayGet requires the right operand to be an integer index.");
-
-        if (idx < 0 || idx >= arr.Count)
-            throw new IndexOutOfRangeException($"ArrayGet index {idx} is out of bounds for array length {arr.Count}.");
-
-        return arr[idx];
+        object elem = arrVal switch
+        {
+            List<string> strList => strList[idx],
+            List<double> doubleList => doubleList[idx],
+            List<bool> boolList => boolList[idx],
+            _ => throw new InvalidOperationException("ArrayGet requires the left operand to be a List<object>.")
+        };
+        
+        return elem;
     }
 }
 

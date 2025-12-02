@@ -10,13 +10,26 @@ public class BooleanNodes
         protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
         {
             var left = Evaluate(tree.Left, stateJson, bag);
-            var right = Evaluate(tree.Right, stateJson, bag);
 
-            if (left is not bool || right is not bool)
+            if (left is not bool leftBool)
             {
                 throw new InvalidOperationException("AND operation requires boolean operands.");
             }
-            return (bool)left && (bool)right;
+
+            if (!leftBool)
+            {
+                return false; // Short-circuit evaluation
+            }
+
+
+            var right = Evaluate(tree.Right, stateJson, bag);
+
+            if (right is not bool rightBool)
+            {
+                throw new InvalidOperationException("AND operation requires boolean operands.");
+            }
+
+            return leftBool && rightBool;
         }
     }
 
@@ -25,13 +38,23 @@ public class BooleanNodes
         protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
         {
             var left = Evaluate(tree.Left, stateJson, bag);
-            var right = Evaluate(tree.Right, stateJson, bag);
-
-            if (left is not bool || right is not bool)
+            
+            if (left is not bool leftBool)
             {
                 throw new InvalidOperationException("AND operation requires boolean operands.");
             }
-            return (bool)left || (bool)right;
+
+            if (leftBool)
+            {
+                return true; // Short-circuit evaluation
+            }
+            
+            var right = Evaluate(tree.Right, stateJson, bag);
+            if (right is not bool rightBool)
+            {
+                throw new InvalidOperationException("AND operation requires boolean operands.");
+            }
+            return leftBool || rightBool;
         }
     }
 
@@ -45,8 +68,8 @@ public class BooleanNodes
             {
                 throw new InvalidOperationException("AND operation requires boolean operands.");
             }
+
             return !(bool)left;
         }
     }
-
 }

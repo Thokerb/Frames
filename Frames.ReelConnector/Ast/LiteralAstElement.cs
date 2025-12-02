@@ -26,7 +26,13 @@ public class LiteralAstElement : BaseAstElement
                 {
                     result = variableFromBag;
                 }
-                if (result is IList resultList)
+
+                if (result is null && tree.PortAccessor is PortAccessor.Any)
+                {
+                    result = false;
+                }
+                
+                if (result is IList resultList )
                 {
                     if(tree is { PortAccessor: PortAccessor.Index, PortAccessorIndex: null })
                     {
@@ -41,6 +47,7 @@ public class LiteralAstElement : BaseAstElement
                         null => resultList[0],
                         _ => throw new ArgumentOutOfRangeException()
                     };
+                    result = result is KeyValuePair<string, object> kv ? kv.Value : result;
                 }
                 
             }
@@ -97,6 +104,11 @@ public class LiteralAstElement : BaseAstElement
         if(result is "Infinity")
         {
             return TimeUnit.Infinity;
+        }
+
+        if (result is TimeUnit)
+        {
+            return result;
         }
         
         return tree.ValueType switch

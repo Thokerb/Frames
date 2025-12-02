@@ -36,8 +36,8 @@ public class ReelCoupledModel : CoupledModel
         {
             if (modelRef.IsAtomicModel)
             {
-                var jsonModel = reelJson.AtomicModels.First(x => x.Name == modelRef.ModelRef);
-                var jsonState = reelJson.States.First(x => x.Name == jsonModel.StateRef);
+                var jsonModel = reelJson.AtomicModels.First(x => x.Name == modelRef.ModelRef).DeepClone();
+                var jsonState = reelJson.States.First(x => x.Name == jsonModel.StateRef).DeepClone();
                 var model = new ReelAtomicModel(jsonModel, jsonState, modelRef.ModelOverrides, modelRef.InitialState)
                 {
                     Name = modelRef.Name,

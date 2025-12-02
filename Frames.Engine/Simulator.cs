@@ -12,6 +12,7 @@ using Frames.Engine.Persistence;
 using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.ReelConnector;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -370,7 +371,24 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         
         var msgId = Guid.NewGuid();
         
-        TracingStreamActor.Tell(new Messages.Tracing.MessageWithId($"[[{_baseState._atomicModel.Name}]]:\nPrevious State: {oldState}\nNew State: {_baseState._atomicModel.StateInternal}\n",msgId));
+        string transitionTaken = string.Empty;
+        if(_baseState._atomicModel is ReelAtomicModel reelAtomicModel)
+        {
+            transitionTaken = reelAtomicModel.TransitionTaken;
+            activity?.SetTag("ReelState", reelAtomicModel.State.CurrentState);
+            activity?.SetTag("Transition", reelAtomicModel.TransitionTaken);
+        }
+        
+        var json =
+            "{" +
+            (transitionTaken != string.Empty ? $"  \"TransitionTaken\": \"{transitionTaken}\"," : "") +
+            $"  \"Name\": \"{_baseState._atomicModel.Name}\"," +
+            $"  \"PreviousState\": {oldState}," +
+            $"  \"NewState\": {_baseState._atomicModel.StateInternal}" +
+            $"  \"Bag\": {obj.Input?.ToString() ?? "null"}" +
+            "}";
+        
+        TracingStreamActor.Tell(new Messages.Tracing.MessageWithId(json,msgId));
 
         PersistState();
         

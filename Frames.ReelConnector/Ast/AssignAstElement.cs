@@ -14,7 +14,7 @@ public class AssignAstElement : BaseAstElement
 
         if (tree.Left.IsPort.HasValue && tree.Left.IsPort.Value && bag.HasValue)
         {
-            bag.Value.Inputs[key] = value;
+            bag.Value.AddInput(key,value);
             return value;
         }
         

@@ -29,7 +29,7 @@ public static class ExpressionTreeJsonExtension
             return (T)(object)converted;
         }
 
-        return (T) result ;
+        return (T?) result ;
 
     }    
     

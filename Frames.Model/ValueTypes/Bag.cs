@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace Frames.Model.ValueTypes;
 
@@ -70,7 +71,10 @@ public record struct Bag
         sb.Append("Bag: [");
         foreach (var input in Inputs)
         {
-            sb.Append($"{input.Key}: {input.Value}, ");
+            sb.Append($"{input.Key}: {JsonSerializer.Serialize(input.Value, new JsonSerializerOptions
+            {
+                WriteIndented = false
+            })}, ");
         }
         sb.Append("]");
         return sb.ToString();
