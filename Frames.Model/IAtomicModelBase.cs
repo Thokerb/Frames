@@ -11,6 +11,8 @@ public interface IAtomicModelBase : IModel
     /// </summary>
     IState StateInternal { get; set; }
 
+    TimeUnit CurrentTime { get; set; }
+
     /// <summary>
     /// The time until the next event.
     /// </summary>

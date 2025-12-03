@@ -6,8 +6,14 @@ namespace Frames.ReelConnector.Ast;
 
 public class LiteralAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
+        if(tree.ValueType == PortValueType.IntegerExpression && tree.Value is "CurrentTime")
+        {
+            return currentTime;
+        }
+        
+        
         object? result = null;
         bool resultSet = false;
         if (tree.VariableName is not null)

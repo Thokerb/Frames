@@ -130,9 +130,8 @@
 					"value": []
 				},
 				{
-					"name": "current_time",
-					"type": "IntegerExpression",
-					"value": 0
+					"name": "time",
+					"type": "IntegerExpression"
 				}
 			],
 			"states": [
@@ -388,6 +387,14 @@
 						{
 							"name": "creation_time",
 							"valueType": "int"
+						},
+						{
+							"name": "time_in_queue",
+							"valueType": "int"
+						},
+						{
+							"name": "ct",
+							"valueType": "int"
 						}
 					]
 				},
@@ -540,7 +547,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
-										"variableName": "current_job_size"
+										"variableName": "processing_time"
 									}
 								},
 								{
@@ -550,6 +557,46 @@
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"variableName": "current_job_creation"
+									}
+								},
+								{
+									"key": "ct",
+									"value": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"value": "CurrentTime"
+									}
+								},
+								{
+									"key": "time_in_queue",
+									"value": {
+										"operator": "-",
+										"isLeaf": false,
+										"valueType": "VoidExpression",
+										"left": {
+											"operator": "-",
+											"isLeaf": false,
+											"valueType": "VoidExpression",
+											"left": {
+												"operator": "Literal",
+												"valueType": "IntegerExpression",
+												"isLeaf": true,
+												"value": "CurrentTime"
+											},
+											"right": {
+												"operator": "Literal",
+												"valueType": "IntegerExpression",
+												"isLeaf": true,
+												"variableName": "current_job_creation"
+											}
+										},
+										"right": {
+											"operator": "Literal",
+											"valueType": "IntegerExpression",
+											"isLeaf": true,
+											"variableName": "processing_time"
+										}
 									}
 								}
 							]
@@ -1663,6 +1710,14 @@
 						{
 							"name": "creation_time",
 							"valueType": "int"
+						},
+						{
+							"name": "time_in_queue",
+							"valueType": "int"
+						},
+						{
+							"name": "ct",
+							"valueType": "int"
 						}
 					]
 				}
@@ -1692,6 +1747,23 @@
 							"transitionNewStateTypeRef": "Collecting",
 							"transitionStateModifications": [
 								{
+									"operator": "=",
+									"isLeaf": false,
+									"valueType": "VoidExpression",
+									"left": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"variableName": "time"
+									},
+									"right": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"value": "CurrentTime"
+									}
+								},
+								{
 									"valueType": "VoidExpression",
 									"isLeaf": false,
 									"variableName": "arr_input",
@@ -1706,7 +1778,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
-										"portObjectPropertyName": "creation_time",
+										"portObjectPropertyName": "time_in_queue",
 										"portAccessor": "all",
 										"variableName": "in_event",
 										"isPort": true

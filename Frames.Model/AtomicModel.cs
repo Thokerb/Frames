@@ -18,7 +18,9 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     /// State of the model.
     /// </summary>
     public abstract TState State { get; set; }
-    
+
+    public TimeUnit CurrentTime { get; set; }
+
     /// <summary>
     /// Do not override this method. Override the TState version instead.
     /// </summary>

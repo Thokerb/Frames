@@ -50,6 +50,15 @@ public record struct TimeUnit : IComparable<TimeUnit>
     {
         return new TimeUnit(value);
     }
+    public static implicit operator TimeUnit(double value)
+    {
+        if (value % 1 == 0)
+        {
+            return new TimeUnit((int)value);
+        }
+
+        throw new Exception("Time unit must not have decimal");
+    }
     
     public static implicit operator int(TimeUnit timeUnit)
     {

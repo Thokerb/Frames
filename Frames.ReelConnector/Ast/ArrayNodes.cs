@@ -6,10 +6,10 @@ namespace Frames.ReelConnector.Ast;
 
 public class ArrayGetAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var arrVal = Evaluate(tree.Left, stateJson, bag);
-        var indexVal = Evaluate(tree.Right, stateJson, bag);
+        var arrVal = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var indexVal = Evaluate(tree.Right, stateJson,currentTime, bag);
         
         int idx = indexVal switch
         {
@@ -32,10 +32,10 @@ public class ArrayGetAstElement : BaseAstElement
 
 public class ArrayAppendAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var arrVal = Evaluate(tree.Left, stateJson, bag);
-        var value = Evaluate(tree.Right, stateJson, bag);
+        var arrVal = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var value = Evaluate(tree.Right, stateJson,currentTime, bag);
 
 
         // pattern match arr val List<string> or List<double> or List<bool>
@@ -95,10 +95,10 @@ public class ArrayAppendAstElement : BaseAstElement
 
 public class ArrayPrependAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var arrVal = Evaluate(tree.Left, stateJson, bag);
-        var value = Evaluate(tree.Right, stateJson, bag);
+        var arrVal = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var value = Evaluate(tree.Right, stateJson,currentTime, bag);
 
         if (arrVal is not IList arr)
             throw new InvalidOperationException("ArrayPrepend requires the left operand to be a List<object>.");
@@ -114,9 +114,9 @@ public class ArrayPrependAstElement : BaseAstElement
 
 public class ArrayLengthAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var arrVal = Evaluate(tree.Left, stateJson, bag);
+        var arrVal = Evaluate(tree.Left, stateJson,currentTime, bag);
 
         if (arrVal is not IList arr)
             throw new InvalidOperationException("ArrayLength requires the operand to be a List<object>.");
@@ -127,10 +127,10 @@ public class ArrayLengthAstElement : BaseAstElement
 
 public class ArrayRemoveAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var arrVal = Evaluate(tree.Left, stateJson, bag);
-        var value = Evaluate(tree.Right, stateJson, bag);
+        var arrVal = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var value = Evaluate(tree.Right, stateJson,currentTime, bag);
 
         if (arrVal is not IList arr)
             throw new InvalidOperationException("ArrayRemove requires the left operand to be a List<object>.");

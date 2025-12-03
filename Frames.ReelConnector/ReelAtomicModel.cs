@@ -60,7 +60,6 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
     }
 
     private AtomicModelJson JsonModel { get; init; }
-
     public override ReelState State { get; set; }
 
     public override TimeUnit TimeAdvance(ReelState state)
@@ -73,7 +72,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 $"State '{state.CurrentState}' not found in model '{JsonModel.Name}'. Available states: {string.Join(", ", JsonModel.States.Select(s => s.StateTypeRef))}");
         }
 
-        var timeAdvance = currentState.TimeAdvanceExpression.Evaluate<TimeUnit>(State.StateJson); // Validate expression
+        var timeAdvance = currentState.TimeAdvanceExpression.Evaluate<TimeUnit>(State.StateJson, CurrentTime); // Validate expression
 
         return new TimeUnit(timeAdvance);
     }
@@ -92,7 +91,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
             bool applies = false;
             try
             {
-                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, bag);
+                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, CurrentTime, bag);
             }
             catch (Exception e)
             {
@@ -106,7 +105,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 TransitionTaken = transition.Name ?? string.Empty;
                 foreach (var transitionTransitionStateModification in transition.TransitionStateModifications)
                 {
-                    transitionTransitionStateModification.Evaluate(state.StateJson, bag);
+                    transitionTransitionStateModification.Evaluate(state.StateJson, CurrentTime, bag);
                 }
 
                 return state;
@@ -123,7 +122,6 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
     }
 
     public override ReelState InternalTransition(ReelState state)
-
     {
         var currentState = JsonModel.States.First(x => x.StateTypeRef == State.CurrentState);
 
@@ -138,7 +136,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
             bool applies = false;
             try
             {
-                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson);
+                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, CurrentTime);
 
             }
             catch (Exception e)
@@ -155,7 +153,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 TransitionTaken = transition.Name ?? string.Empty;
                 foreach (var transitionTransitionStateModification in transition.TransitionStateModifications)
                 {
-                    transitionTransitionStateModification.Evaluate(state.StateJson);
+                    transitionTransitionStateModification.Evaluate(state.StateJson, CurrentTime);
                 }
 
                 return state;
@@ -178,7 +176,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
 
             List<KeyValuePair<string, object>> result = output.Value.Select(x => new KeyValuePair<string, object>(
                 x.Key,
-                x.Value.Evaluate<object>(state.StateJson, bag)
+                x.Value.Evaluate<object>(state.StateJson, CurrentTime, bag)
             )).ToList();
             bag.AddInput(output.Port, result);
         }

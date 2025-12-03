@@ -5,22 +5,22 @@ namespace Frames.ReelConnector.Ast;
 
 public class EqualAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
-        => Equals(Evaluate(tree.Left, stateJson, bag), Evaluate(tree.Right, stateJson, bag));
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
+        => Equals(Evaluate(tree.Left, stateJson,currentTime, bag), Evaluate(tree.Right, stateJson,currentTime, bag));
 }
 
 public class NotEqualAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
-        => !Equals(Evaluate(tree.Left, stateJson, bag), Evaluate(tree.Right, stateJson, bag));
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
+        => !Equals(Evaluate(tree.Left, stateJson,currentTime, bag), Evaluate(tree.Right, stateJson,currentTime, bag));
 }
 
 public class LessThanAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var left = Evaluate(tree.Left, stateJson, bag);
-        var right = Evaluate(tree.Right, stateJson, bag);
+        var left = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var right = Evaluate(tree.Right, stateJson,currentTime, bag);
         
         return left switch
         {
@@ -34,10 +34,10 @@ public class LessThanAstElement : BaseAstElement
 
 public class LessThanOrEqualAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var left = Evaluate(tree.Left, stateJson, bag);
-        var right = Evaluate(tree.Right, stateJson, bag);
+        var left = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var right = Evaluate(tree.Right, stateJson,currentTime, bag);
         
         return left switch
         {
@@ -51,10 +51,10 @@ public class LessThanOrEqualAstElement : BaseAstElement
 
 public class GreaterThanAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var left = Evaluate(tree.Left, stateJson, bag);
-        var right = Evaluate(tree.Right, stateJson, bag);
+        var left = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var right = Evaluate(tree.Right, stateJson,currentTime, bag);
         
         return left switch
         {
@@ -68,10 +68,10 @@ public class GreaterThanAstElement : BaseAstElement
 
 public class GreaterThanOrEqualAstElement : BaseAstElement
 {
-    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+    protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
-        var left = Evaluate(tree.Left, stateJson, bag);
-        var right = Evaluate(tree.Right, stateJson, bag);
+        var left = Evaluate(tree.Left, stateJson,currentTime, bag);
+        var right = Evaluate(tree.Right, stateJson,currentTime, bag);
         
         return left switch
         {

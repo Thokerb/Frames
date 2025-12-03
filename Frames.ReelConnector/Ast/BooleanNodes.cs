@@ -7,9 +7,9 @@ public class BooleanNodes
 {
     public class AndAstElement : BaseAstElement
     {
-        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
         {
-            var left = Evaluate(tree.Left, stateJson, bag);
+            var left = Evaluate(tree.Left, stateJson,currentTime, bag);
 
             if (left is not bool leftBool)
             {
@@ -22,7 +22,7 @@ public class BooleanNodes
             }
 
 
-            var right = Evaluate(tree.Right, stateJson, bag);
+            var right = Evaluate(tree.Right, stateJson,currentTime, bag);
 
             if (right is not bool rightBool)
             {
@@ -35,9 +35,9 @@ public class BooleanNodes
 
     public class OrAstElement : BaseAstElement
     {
-        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
         {
-            var left = Evaluate(tree.Left, stateJson, bag);
+            var left = Evaluate(tree.Left, stateJson,currentTime, bag);
             
             if (left is not bool leftBool)
             {
@@ -49,7 +49,7 @@ public class BooleanNodes
                 return true; // Short-circuit evaluation
             }
             
-            var right = Evaluate(tree.Right, stateJson, bag);
+            var right = Evaluate(tree.Right, stateJson,currentTime, bag);
             if (right is not bool rightBool)
             {
                 throw new InvalidOperationException("AND operation requires boolean operands.");
@@ -60,9 +60,9 @@ public class BooleanNodes
 
     public class NotAstElement : BaseAstElement
     {
-        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag)
+        protected override object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
         {
-            var left = Evaluate(tree.Left, stateJson, bag);
+            var left = Evaluate(tree.Left, stateJson,currentTime, bag);
 
             if (left is not bool)
             {

@@ -330,6 +330,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
 
     private void HandleExecuteTransition(ExecuteTransition.StartExecuteTransition obj)
     {
+        _baseState._atomicModel.CurrentTime = obj.CurrentTime;
         var parentContext = new ActivityContext(obj.TraceId, obj.SpanId, ActivityTraceFlags.Recorded);
 
         using var activity =
@@ -417,6 +418,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         activity?.SetTag("Model", _baseState._atomicModel.GetType().Name);
         activity?.SetTag("CurrentTime", obj.CurrentTime.ToString());
         activity?.WriteSharding(obj);
+        _baseState._atomicModel.CurrentTime = obj.CurrentTime;
 
         // Check if the current time is equal to the next time
         if (obj.CurrentTime == _state._timeNext)

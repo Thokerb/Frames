@@ -5,16 +5,16 @@ namespace Frames.ReelConnector.Ast;
 
 public interface IAstElement
 {
-    object? Evaluate(ExpressionTreeJson? tree, StateJson stateJson, Bag? bag);    
+    object? Evaluate(ExpressionTreeJson? tree, StateJson stateJson,TimeUnit currentTime, Bag? bag);    
 }
 
 
 public static class ExpressionTreeJsonExtension
 {
-    public static T? Evaluate<T>(this ExpressionTreeJson tree, StateJson stateJson, Bag? bag = null)
+    public static T? Evaluate<T>(this ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTimeUnit, Bag? bag = null)
     {
         var element = AstBuilder.Build(tree);
-        var result = element.Evaluate(tree, stateJson, bag);
+        var result = element.Evaluate(tree, stateJson,currentTimeUnit, bag);
 
         if (typeof(T) == typeof(TimeUnit))
         {
@@ -33,10 +33,10 @@ public static class ExpressionTreeJsonExtension
 
     }    
     
-    public static void Evaluate(this ExpressionTreeJson tree, StateJson stateJson, Bag? bag = null)
+    public static void Evaluate(this ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag = null)
     {
         var element = AstBuilder.Build(tree);
-        element.Evaluate(tree, stateJson, bag);
+        element.Evaluate(tree, stateJson,currentTime, bag);
     }
 
     public static bool ContainsPort(this ExpressionTreeJson tree)
@@ -57,15 +57,15 @@ public static class ExpressionTreeJsonExtension
 
 public abstract class BaseAstElement : IAstElement
 {
-    public object? Evaluate(ExpressionTreeJson? tree, StateJson stateJson, Bag? bag)
+    public object? Evaluate(ExpressionTreeJson? tree, StateJson stateJson,TimeUnit currentTime, Bag? bag)
     {
         if (tree == null)
             return null;
 
         var element = AstBuilder.Build(tree);
 
-        return element.EvaluateImpl(tree, stateJson, bag);
+        return element.EvaluateImpl(tree, stateJson,currentTime, bag);
     }
 
-    protected abstract object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson, Bag? bag);
+    protected abstract object? EvaluateImpl(ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag);
 }
