@@ -11,12 +11,12 @@
 				{
 					"name": "fixed_size",
 					"type": "IntegerExpression",
-					"value": 20
+					"value": 40
 				},
 				{
 					"name": "inter_arrival_time",
 					"type": "IntegerExpression",
-					"value": 30
+					"value": 20
 				},
 				{
 					"name": "current_time",
@@ -113,6 +113,32 @@
 				"EmitProc2"
 			],
 			"initialState": "CheckQueue"
+		},
+		{
+			"name": "CollectorState",
+			"properties": [
+				{
+					"name": "arr_input",
+					"type": "IntegerExpression",
+					"isArray": true,
+					"value": []
+				},
+				{
+					"name": "waiting_time",
+					"type": "IntegerExpression",
+					"isArray": true,
+					"value": []
+				},
+				{
+					"name": "current_time",
+					"type": "IntegerExpression",
+					"value": 0
+				}
+			],
+			"states": [
+				"Collecting"
+			],
+			"initialState": "Collecting"
 		}
 	],
 	"atomicModels": [
@@ -408,9 +434,10 @@
 									},
 									"right": {
 										"operator": "Literal",
-										"valueType": "ObjectExpression",
+										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"portObjectPropertyName": "size",
+										"portAccessor": "first",
 										"variableName": "in_proc",
 										"isPort": true
 									}
@@ -427,9 +454,10 @@
 									},
 									"right": {
 										"operator": "Literal",
-										"valueType": "ObjectExpression",
+										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"portObjectPropertyName": "creation_time",
+										"portAccessor": "first",
 										"variableName": "in_proc",
 										"isPort": true
 									}
@@ -445,31 +473,20 @@
 										"variableName": "processing_time"
 									},
 									"right": {
-										"operator": "+",
+										"operator": "/",
 										"isLeaf": false,
 										"valueType": "VoidExpression",
 										"left": {
 											"operator": "Literal",
 											"valueType": "IntegerExpression",
 											"isLeaf": true,
-											"value": 20
+											"variableName": "current_job_size"
 										},
 										"right": {
-											"operator": "/",
-											"isLeaf": false,
-											"valueType": "VoidExpression",
-											"left": {
-												"operator": "Literal",
-												"valueType": "IntegerExpression",
-												"isLeaf": true,
-												"variableName": "current_job_size"
-											},
-											"right": {
-												"operator": "Literal",
-												"valueType": "IntegerExpression",
-												"isLeaf": true,
-												"variableName": "speed"
-											}
+											"operator": "Literal",
+											"valueType": "IntegerExpression",
+											"isLeaf": true,
+											"variableName": "speed"
 										}
 									}
 								}
@@ -657,7 +674,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
-										"value": 1
+										"value": 0
 									}
 								},
 								{
@@ -673,9 +690,10 @@
 									},
 									"right": {
 										"operator": "Literal",
-										"valueType": "ObjectExpression",
+										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"portObjectPropertyName": "size",
+										"portAccessor": "all",
 										"variableName": "in_event",
 										"isPort": true
 									}
@@ -693,9 +711,10 @@
 									},
 									"right": {
 										"operator": "Literal",
-										"valueType": "ObjectExpression",
+										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"portObjectPropertyName": "creation_time",
+										"portAccessor": "all",
 										"variableName": "in_event",
 										"isPort": true
 									}
@@ -715,6 +734,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
+										"portAccessor": "all",
 										"variableName": "in_finish",
 										"isPort": true
 									}
@@ -747,7 +767,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
-										"value": 1
+										"value": 0
 									}
 								},
 								{
@@ -763,9 +783,10 @@
 									},
 									"right": {
 										"operator": "Literal",
-										"valueType": "ObjectExpression",
+										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"portObjectPropertyName": "size",
+										"portAccessor": "all",
 										"variableName": "in_event",
 										"isPort": true
 									}
@@ -783,9 +804,10 @@
 									},
 									"right": {
 										"operator": "Literal",
-										"valueType": "ObjectExpression",
+										"valueType": "IntegerExpression",
 										"isLeaf": true,
 										"portObjectPropertyName": "creation_time",
+										"portAccessor": "all",
 										"variableName": "in_event",
 										"isPort": true
 									}
@@ -818,7 +840,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
-										"value": 1
+										"value": 0
 									}
 								},
 								{
@@ -836,6 +858,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
+										"portAccessor": "all",
 										"variableName": "in_finish",
 										"isPort": true
 									}
@@ -1489,7 +1512,7 @@
 						"operator": "Literal",
 						"valueType": "IntegerExpression",
 						"isLeaf": true,
-						"value": 1
+						"value": 0
 					},
 					"transitions": [
 						{
@@ -1536,7 +1559,7 @@
 						"operator": "Literal",
 						"valueType": "IntegerExpression",
 						"isLeaf": true,
-						"value": 1
+						"value": 0
 					},
 					"transitions": [
 						{
@@ -1583,7 +1606,7 @@
 						"operator": "Literal",
 						"valueType": "IntegerExpression",
 						"isLeaf": true,
-						"value": 1
+						"value": 0
 					},
 					"transitions": [
 						{
@@ -1625,6 +1648,76 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Collector",
+			"ports": [
+				{
+					"name": "in_event",
+					"type": "InPort",
+					"valueType": [
+						{
+							"name": "size",
+							"valueType": "int"
+						},
+						{
+							"name": "creation_time",
+							"valueType": "int"
+						}
+					]
+				}
+			],
+			"stateRef": "CollectorState",
+			"stateDefinitions": [],
+			"states": [
+				{
+					"stateTypeRef": "Collecting",
+					"timeAdvanceExpression": {
+						"operator": "Literal",
+						"valueType": "IntegerExpression",
+						"isLeaf": true,
+						"value": "Infinity"
+					},
+					"transitions": [
+						{
+							"name": "collect",
+							"transitionCondition": {
+								"operator": "Literal",
+								"valueType": "BooleanExpression",
+								"isLeaf": true,
+								"portAccessor": "any",
+								"variableName": "in_event",
+								"isPort": true
+							},
+							"transitionNewStateTypeRef": "Collecting",
+							"transitionStateModifications": [
+								{
+									"valueType": "VoidExpression",
+									"isLeaf": false,
+									"variableName": "arr_input",
+									"operator": "ArrayAppend",
+									"left": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"variableName": "arr_input"
+									},
+									"right": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"portObjectPropertyName": "creation_time",
+										"portAccessor": "all",
+										"variableName": "in_event",
+										"isPort": true
+									}
+								}
+							]
+						}
+					],
+					"output": []
+				}
+			]
 		}
 	],
 	"coupledModels": [
@@ -1636,7 +1729,14 @@
 					"name": "gen",
 					"isAtomicModel": true,
 					"modelRef": "Generator",
-					"modelOverrides": []
+					"modelOverrides": [
+						{
+							"name": "fixed_size",
+							"type": "IntegerExpression",
+							"value": 400
+						}
+					],
+					"initialState": "Generating"
 				},
 				{
 					"name": "queue",
@@ -1698,6 +1798,12 @@
 						}
 					],
 					"initialState": "Idle"
+				},
+				{
+					"name": "col",
+					"isAtomicModel": true,
+					"modelRef": "Collector",
+					"modelOverrides": []
 				}
 			],
 			"couplings": [
@@ -1749,6 +1855,27 @@
 					"targetModel": "queue",
 					"targetPort": "in_finish",
 					"type": "IntegerExpression"
+				},
+				{
+					"sourceModel": "p0",
+					"sourcePort": "out_proc",
+					"targetModel": "col",
+					"targetPort": "in_event",
+					"type": "ObjectExpression"
+				},
+				{
+					"sourceModel": "p1",
+					"sourcePort": "out_proc",
+					"targetModel": "col",
+					"targetPort": "in_event",
+					"type": "ObjectExpression"
+				},
+				{
+					"sourceModel": "p2",
+					"sourcePort": "out_proc",
+					"targetModel": "col",
+					"targetPort": "in_event",
+					"type": "ObjectExpression"
 				}
 			]
 		}

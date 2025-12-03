@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 using System.Text.Json;
 
@@ -13,7 +14,15 @@ public record struct Bag
     {
         foreach (var input in inputs)
         {
-            Inputs.Add(input.key, input.value);
+            AddInput<object>(input.key, input.value);
+        }
+    }
+
+    public Bag(params (Port key, List<object?> value)[] inputs)
+    {
+        foreach (var input in inputs)
+        {
+            AddInput(input.key, input.value);
         }
     }
 
@@ -21,21 +30,47 @@ public record struct Bag
     {
         foreach (var input in inputs)
         {
-            Inputs.Add(input, null);
+            AddInput<object>(input, null);
         }
     }
 
     public bool IsEmpty => Inputs.Count == 0;
 
 
-    public Dictionary<Port, object?> Inputs { get; set; } = new();
+    public Dictionary<Port, List<object?>> Inputs { get; set; } = new();
 
-    public void AddInput(Port key, object? value)
+    public void AddInput<T>(Port key, T? value)  where T : class
     {
-        Inputs[key] = value;
+
+        // special check to prevent adding lists via this method, but allowing Reel "object" lists
+        if (value is IList and not List<KeyValuePair<string, object>>)
+        {
+            throw new InvalidOperationException("Use AddInput with List<object?> for adding lists");
+        }
+        
+        if (Inputs.ContainsKey(key))
+        {
+            Inputs[key].Add(value);
+        }
+        else
+        {
+            Inputs[key] = new List<object?> { value };
+        }
+    }
+    public void AddInput(Port key, List<object?> value)
+    {
+        if (Inputs.ContainsKey(key))
+        {
+            Inputs[key].AddRange(value);
+        }
+        else
+        {
+            Inputs[key] = new List<object?>();
+            Inputs[key].AddRange(value);
+        }
     }
 
-    public object? GetInput(Port key)
+    public List<object?>? GetInput(Port key)
     {
         Inputs.TryGetValue(key, out var value);
         return value;
@@ -47,23 +82,6 @@ public record struct Bag
     }
 
     public static Bag Empty => new();
-
-    public void AddBag(Bag objOutput)
-    {
-        foreach (var input in objOutput.Inputs)
-        {
-            if (Inputs.ContainsKey(input.Key))
-            {
-                // TODO: is this allowed to overwrite?
-                // verify or throw exception
-                Inputs[input.Key] = input.Value;
-            }
-            else
-            {
-                Inputs.Add(input.Key, input.Value);
-            }
-        }
-    }
 
     public override string ToString()
     {
@@ -89,7 +107,10 @@ public record struct Bag
     {
         return new Bag()
         {
-            Inputs = Inputs.ToDictionary()
+            Inputs = Inputs.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value.Select(x => x).ToList()
+            )
         };
     }
 }

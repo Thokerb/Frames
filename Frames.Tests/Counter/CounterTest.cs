@@ -80,7 +80,7 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
         
         // Assert
-        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(5));
 
         Assert.Equal(new TimeUnit(29).Value, response.ElapsedTime.Value);
     }

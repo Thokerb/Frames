@@ -279,7 +279,8 @@ public enum PortAccessor
 {
     First,
     Any,
-    Index
+    Index,
+    All
 }
 
 public record ExpressionTreeJson

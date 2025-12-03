@@ -40,27 +40,52 @@ public class ArrayAppendAstElement : BaseAstElement
 
         // pattern match arr val List<string> or List<double> or List<bool>
 
-        
-        
-        IList updated = arrVal switch
+        IList updated;
+        if (value is IList list)
         {
-            List<string> strList =>
-                value is string strValue
-                    ? (strList.Append(strValue).ToList()) // Use Append and ToList to return a new list/object
-                    : throw new InvalidOperationException("ArrayAppend requires a string list and a string value but received " + (value?.GetType().Name ?? "null") + "."),
+            updated = arrVal switch
+            {
+                List<string> strList =>
+                    value is List<string> strValue
+                        ? (strList.Concat(strValue).ToList()) // Use Concat and ToList to return a new list/object
+                        : throw new InvalidOperationException("ArrayAppend requires a string list and a string value but received " + (value?.GetType().Name ?? "null") + "."),
 
-            List<double> doubleList =>
-                value is double doubleValue
-                    ? (doubleList.Append(doubleValue).ToList())
-                    : throw new InvalidOperationException("ArrayAppend requires a double list and a double value but received " + (value?.GetType().Name ?? "null") + "."),
+                List<double> doubleList =>
+                    value is List<double> doubleValue
+                        ? (doubleList.Concat(doubleValue).ToList())
+                        : throw new InvalidOperationException("ArrayAppend requires a double list and a double value but received " + (value?.GetType().Name ?? "null") + "."),
+                List<bool> boolList =>
+                    value is List<bool> boolValue
+                        ? (boolList.Concat(boolValue).ToList())
+                        : throw new InvalidOperationException("ArrayAppend requires a boolean list and a boolean value but received " + (value?.GetType().Name ?? "null") + "."),
 
-            List<bool> boolList =>
-                value is bool boolValue
-                    ? (boolList.Append(boolValue).ToList())
-                    : throw new InvalidOperationException("ArrayAppend requires a boolean list and a boolean value but received " + (value?.GetType().Name ?? "null") + "."),
+                _ => throw new InvalidOperationException($"ArrayAppend requires a supported list type, but received {arrVal?.GetType().Name ?? "null"}."),
+            };
+        }
+        else
+        {
+            updated = arrVal switch
+            {
+                List<string> strList =>
+                    value is string strValue
+                        ? (strList.Append(strValue).ToList()) // Use Append and ToList to return a new list/object
+                        : throw new InvalidOperationException("ArrayAppend requires a string list and a string value but received " + (value?.GetType().Name ?? "null") + "."),
 
-            _ => throw new InvalidOperationException($"ArrayAppend requires a supported list type, but received {arrVal?.GetType().Name ?? "null"}."),
-        };
+                List<double> doubleList =>
+                    value is double doubleValue
+                        ? (doubleList.Append(doubleValue).ToList())
+                        : throw new InvalidOperationException("ArrayAppend requires a double list and a double value but received " + (value?.GetType().Name ?? "null") + "."),
+
+                List<bool> boolList =>
+                    value is bool boolValue
+                        ? (boolList.Append(boolValue).ToList())
+                        : throw new InvalidOperationException("ArrayAppend requires a boolean list and a boolean value but received " + (value?.GetType().Name ?? "null") + "."),
+
+                _ => throw new InvalidOperationException($"ArrayAppend requires a supported list type, but received {arrVal?.GetType().Name ?? "null"}."),
+            };
+        }
+        
+        
         
         stateJson.Properties[tree.Left.VariableName] = stateJson.Properties[tree.Left.VariableName] with { Value = updated };
         return updated;

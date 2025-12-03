@@ -737,11 +737,11 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             _stopwatch.Restart();
         }
 
-        if (_state._currentTime == _state._lastTime)
-        {
-            HaltExecution(CompletionType.StopAfterTime);
-            return;
-        }
+        // if (_state._currentTime == _state._lastTime)
+        // {
+        //     HaltExecution(CompletionType.StopAfterTime);
+        //     return;
+        // }
 
         _state._lastTime = _state._currentTime;
 
