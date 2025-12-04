@@ -50,11 +50,29 @@ public record struct TimeUnit : IComparable<TimeUnit>
     {
         return new TimeUnit(value);
     }
+    public static implicit operator TimeUnit(double value)
+    {
+        if (value % 1 == 0)
+        {
+            return new TimeUnit((int)value);
+        }
+
+        throw new Exception("Time unit must not have decimal");
+    }
     
     public static implicit operator int(TimeUnit timeUnit)
     {
         return timeUnit.Value;
     }
+    
+    public static explicit operator TimeUnit(long value)
+    {
+        if (value > int.MaxValue)
+        {
+            throw new OverflowException("Cannot convert long value greater than int.MaxValue to TimeUnit.");
+        }
+        return new TimeUnit((int)value);
+    }    
     
     public static TimeUnit operator +(TimeUnit a, TimeUnit b)
     {

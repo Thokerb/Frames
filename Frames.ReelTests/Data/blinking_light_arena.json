@@ -67,22 +67,30 @@
 				{
 					"stateTypeRef": "On",
 					"timeAdvanceExpression": {
-						"returnType": "IntegerExpression",
-						"variables": [],
-						"isAssignment": false,
-						"expression": "2"
+						"operator": "Literal",
+						"valueType": "IntegerExpression",
+						"isLeaf": true,
+						"value": 2
 					},
 					"transitions": [
 						{
 							"name": "toTransitionFinishedByItself",
 							"transitionCondition": {
-								"returnType": "BooleanExpression",
-								"variables": [
-									"CurrentCycle",
-									"MaxCycles"
-								],
-								"isAssignment": false,
-								"expression": "CurrentCycle >= MaxCycles"
+								"operator": ">=",
+								"isLeaf": false,
+								"valueType": "VoidExpression",
+								"left": {
+									"operator": "Literal",
+									"valueType": "IntegerExpression",
+									"isLeaf": true,
+									"variableName": "CurrentCycle"
+								},
+								"right": {
+									"operator": "Literal",
+									"valueType": "IntegerExpression",
+									"isLeaf": true,
+									"variableName": "MaxCycles"
+								}
 							},
 							"transitionNewStateTypeRef": "TransitionFinishedByItself",
 							"transitionStateModifications": []
@@ -90,33 +98,52 @@
 						{
 							"name": "toOff",
 							"transitionCondition": {
-								"expression": "",
-								"variables": [],
-								"returnType": "BooleanExpression",
-								"isAssignment": false
+								"operator": "Literal",
+								"valueType": "BooleanExpression",
+								"isLeaf": true,
+								"value": true
 							},
 							"transitionNewStateTypeRef": "Off",
 							"transitionStateModifications": [
 								{
-									"returnType": "IntegerExpression",
-									"variables": [
-										"CurrentCycle",
-										"CurrentCycle"
-									],
-									"isAssignment": true,
-									"expression": "CurrentCycle = CurrentCycle + 1"
+									"operator": "=",
+									"isLeaf": false,
+									"valueType": "VoidExpression",
+									"left": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"variableName": "CurrentCycle"
+									},
+									"right": {
+										"operator": "+",
+										"isLeaf": false,
+										"valueType": "VoidExpression",
+										"left": {
+											"operator": "Literal",
+											"valueType": "IntegerExpression",
+											"isLeaf": true,
+											"variableName": "CurrentCycle"
+										},
+										"right": {
+											"operator": "Literal",
+											"valueType": "IntegerExpression",
+											"isLeaf": true,
+											"value": 1
+										}
+									}
 								}
 							]
 						},
 						{
 							"name": "externalToOff",
 							"transitionCondition": {
-								"expression": "PortInFinishedByOther",
-								"variables": [
-									"PortInFinishedByOther"
-								],
-								"isAssignment": false,
-								"returnType": "IntegerExpression"
+								"operator": "Literal",
+								"valueType": "BooleanExpression",
+								"isLeaf": true,
+								"portAccessor": "any",
+								"variableName": "PortInFinishedByOther",
+								"isPort": true
 							},
 							"transitionNewStateTypeRef": "Off",
 							"transitionStateModifications": []
@@ -127,21 +154,19 @@
 				{
 					"stateTypeRef": "Off",
 					"timeAdvanceExpression": {
-						"expression": "WaitingTime",
-						"variables": [
-							"WaitingTime"
-						],
-						"isAssignment": false,
-						"returnType": "IntegerExpression"
+						"operator": "Literal",
+						"valueType": "IntegerExpression",
+						"isLeaf": true,
+						"variableName": "WaitingTime"
 					},
 					"transitions": [
 						{
 							"name": "toOn",
 							"transitionCondition": {
-								"expression": "",
-								"variables": [],
-								"returnType": "BooleanExpression",
-								"isAssignment": false
+								"operator": "Literal",
+								"valueType": "BooleanExpression",
+								"isLeaf": true,
+								"value": true
 							},
 							"transitionNewStateTypeRef": "On",
 							"transitionStateModifications": []
@@ -149,12 +174,12 @@
 						{
 							"name": "externalToOff",
 							"transitionCondition": {
-								"expression": "PortInFinishedByOther",
-								"variables": [
-									"PortInFinishedByOther"
-								],
-								"isAssignment": false,
-								"returnType": "IntegerExpression"
+								"operator": "Literal",
+								"valueType": "BooleanExpression",
+								"isLeaf": true,
+								"portAccessor": "any",
+								"variableName": "PortInFinishedByOther",
+								"isPort": true
 							},
 							"transitionNewStateTypeRef": "Off",
 							"transitionStateModifications": []
@@ -165,19 +190,19 @@
 				{
 					"stateTypeRef": "TransitionFinishedByItself",
 					"timeAdvanceExpression": {
-						"returnType": "IntegerExpression",
-						"variables": [],
-						"isAssignment": false,
-						"expression": "1"
+						"operator": "Literal",
+						"valueType": "IntegerExpression",
+						"isLeaf": true,
+						"value": 1
 					},
 					"transitions": [
 						{
 							"name": "toFinishedByItself",
 							"transitionCondition": {
-								"expression": "",
-								"variables": [],
-								"returnType": "BooleanExpression",
-								"isAssignment": false
+								"operator": "Literal",
+								"valueType": "BooleanExpression",
+								"isLeaf": true,
+								"value": true
 							},
 							"transitionNewStateTypeRef": "FinishedByItself",
 							"transitionStateModifications": []
@@ -188,33 +213,36 @@
 				{
 					"stateTypeRef": "FinishedByItself",
 					"timeAdvanceExpression": {
-						"returnType": "IntegerExpression",
-						"variables": [],
-						"isAssignment": false,
-						"expression": "Infinity"
+						"operator": "Literal",
+						"valueType": "IntegerExpression",
+						"isLeaf": true,
+						"value": "Infinity"
 					},
 					"transitions": [],
 					"output": [
 						{
 							"port": "PortOutFinished",
-							"value": {
-								"expression": "MaxCycles",
-								"variables": [
-									"MaxCycles"
-								],
-								"isAssignment": false,
-								"returnType": "IntegerExpression"
-							}
+							"value": [
+								{
+									"key": "",
+									"value": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"variableName": "MaxCycles"
+									}
+								}
+							]
 						}
 					]
 				},
 				{
 					"stateTypeRef": "FinishedByOther",
 					"timeAdvanceExpression": {
-						"returnType": "IntegerExpression",
-						"variables": [],
-						"isAssignment": false,
-						"expression": "Infinity"
+						"operator": "Literal",
+						"valueType": "IntegerExpression",
+						"isLeaf": true,
+						"value": "Infinity"
 					},
 					"transitions": [],
 					"output": []

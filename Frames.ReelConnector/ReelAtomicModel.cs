@@ -1,14 +1,16 @@
 ﻿using DynamicExpresso;
 using Frames.Model;
 using Frames.Model.ValueTypes;
+using Frames.ReelConnector.Ast;
 using Frames.ReelConnector.ReelDto;
+using Newtonsoft.Json;
 
 namespace Frames.ReelConnector;
 
 public class ReelState : IState
 {
     // Define properties and methods for the ReelState here
-    public StateJson StateJson { get; set; }
+    public required StateJson StateJson { get; set; }
     public required string CurrentState { get; set; }
     public int CompareTo(object? obj)
     {
@@ -17,141 +19,185 @@ public class ReelState : IState
             // Implement comparison logic here, e.g., based on some property
             return string.Compare(StateJson.Name, otherState.StateJson.Name, StringComparison.Ordinal);
         }
+
         return 1; // or throw an exception if comparison is not valid
     }
 
     public override string ToString()
     {
-        return $"| {CurrentState} | StateJson = {StateJson}";
+        return $"{{\"currentState\": \"{CurrentState}\", \"StateJson\": {StateJson}}}";
     }
 }
 
 public sealed class ReelAtomicModel : AtomicModel<ReelState>
 {
-    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson state)
+    [JsonProperty]
+    public string TransitionTaken { get; private set; } = string.Empty;
+
+    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson stateJson, List<StatePropertyJson>? modelRefModelOverrides = null,
+        string? modelRefInitialState= null,ReelState? state = null)
     {
         JsonModel = jsonModel;
-        Name = jsonModel.Name;
-        State = new ReelState()
+
+        if (state != null)
         {
-            StateJson = ReelHelper.OverwriteInitialStateValues(state, jsonModel.StateDefinitions),
-            CurrentState = jsonModel.InitialState ?? state.InitialState
-        };
+            // this is for deserializing by akka, dont do this manually
+            State = state;
+        }
+        else
+        {
+            State = new ReelState()
+            {
+                StateJson = ReelHelper.OverwriteInitialStateValues(
+                    ReelHelper.OverwriteInitialStateValues(stateJson, jsonModel.StateDefinitions), modelRefModelOverrides),
+                CurrentState =
+                    modelRefInitialState ??
+                    jsonModel.InitialState ?? stateJson.InitialState // TODO: document order of precedence
+            };
+        }
     }
 
-    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson state, List<StatePropertyJson>? modelRefModelOverrides, string? modelRefInitialState)
-    {
-        JsonModel = jsonModel;
-        State = new ReelState()
-        {
-            StateJson = ReelHelper.OverwriteInitialStateValues(ReelHelper.OverwriteInitialStateValues(state, jsonModel.StateDefinitions), modelRefModelOverrides),
-            CurrentState = modelRefInitialState ?? jsonModel.InitialState ?? state.InitialState // TODO: document order of precedence
-        };    
-    }
-
-    private AtomicModelJson JsonModel {get; init; }
+    [JsonProperty]
+    private AtomicModelJson JsonModel { get; init; }
     
+    [JsonProperty]
     public override ReelState State { get; set; }
+
     public override TimeUnit TimeAdvance(ReelState state)
     {
-        
-        
         var currentState = JsonModel.States.FirstOrDefault(x => x.StateTypeRef == state.CurrentState);
-        
+
         if (currentState == null)
         {
-            throw new InvalidOperationException($"State '{state.CurrentState}' not found in model '{JsonModel.Name}'. Available states: {string.Join(", ", JsonModel.States.Select(s => s.StateTypeRef))}");
+            throw new InvalidOperationException(
+                $"State '{state.CurrentState}' not found in model '{JsonModel.Name}'. Available states: {string.Join(", ", JsonModel.States.Select(s => s.StateTypeRef))}");
         }
 
-        if (currentState.TimeAdvanceExpression.Expression == "Infinity")
-        {
-            return TimeUnit.Infinity;
-        }
-        
-        var interpreter = new Interpreter();
-        var parameters = currentState.TimeAdvanceExpression.Variables.Distinct().Select(x => ReelHelper.CreateParameter(x,State.StateJson.Properties)).ToList();
-        
-        int result = interpreter.Eval<int>(currentState.TimeAdvanceExpression.Expression, parameters.ToArray());
-        
-        return new TimeUnit(result);
+        var timeAdvance = currentState.TimeAdvanceExpression.Evaluate<TimeUnit>(State.StateJson, CurrentTime); // Validate expression
+
+        return new TimeUnit(timeAdvance);
     }
 
     public override ReelState ExternalTransition(ReelState state, Bag bag)
     {
         var currentState = JsonModel.States.First(x => x.StateTypeRef == state.CurrentState);
 
-        var interpreter = new Interpreter();
         foreach (var transition in currentState.Transitions)
         {
-            if (string.IsNullOrWhiteSpace(transition.TransitionCondition.Expression))
+            if (!transition.TransitionCondition.ContainsPort())
             {
                 continue;
             }
-            
-            var applies = interpreter.Eval<bool>(transition.TransitionCondition.Expression.PrepareExpression(),
-                transition.TransitionCondition.Variables.Distinct()
-                    .Select(x => ReelHelper.CreateParameter(x, state.StateJson.Properties,JsonModel.Ports, bag)).ToArray());
+
+            bool applies = false;
+            try
+            {
+                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, CurrentTime, bag);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
 
             if (applies)
             {
                 state.CurrentState = transition.TransitionNewStateTypeRef;
-                state.StateJson = ReelHelper.UpdateState(state.StateJson, transition.TransitionStateModifications,JsonModel.Ports, bag);
-                
-                break;
+                TransitionTaken = transition.Name ?? string.Empty;
+                foreach (var transitionTransitionStateModification in transition.TransitionStateModifications)
+                {
+                    transitionTransitionStateModification.Evaluate(state.StateJson, CurrentTime, bag);
+                }
+
+                return state;
             }
         }
-        
+        TransitionTaken = "No Transition";
         return state;
+    }
+
+    public new ReelState ConfluentTransition(ReelState state, Bag bag)
+    {
+        TransitionTaken = "ConfluentTransition";
+        return base.ConfluentTransition(state, bag);
     }
 
     public override ReelState InternalTransition(ReelState state)
     {
         var currentState = JsonModel.States.First(x => x.StateTypeRef == State.CurrentState);
 
-        var interpreter = new Interpreter();
         foreach (var transition in currentState.Transitions)
         {
-
-            if(transition.TransitionCondition.Expression.Contains("PortIn") || transition.TransitionCondition.Expression.Contains("PortOut"))
+            if (transition.TransitionCondition.ContainsPort())
             {
                 // Internal transitions should not have PortIn or PortOut in the condition
                 continue;
             }
 
-            
-            // empty condition means always applies
-            var applies = string.IsNullOrWhiteSpace(transition.TransitionCondition.Expression) || interpreter.Eval<bool>(transition.TransitionCondition.Expression,
-                transition.TransitionCondition.Variables.Distinct()
-                    .Select(x => ReelHelper.CreateParameter(x, state.StateJson.Properties)).ToArray());
+            bool applies = false;
+            try
+            {
+                applies = transition.TransitionCondition.Evaluate<bool>(state.StateJson, CurrentTime);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+
 
             if (applies)
             {
                 state.CurrentState = transition.TransitionNewStateTypeRef;
-                state.StateJson = ReelHelper.UpdateState(state.StateJson, transition.TransitionStateModifications);
-                
-                break;
+                TransitionTaken = transition.Name ?? string.Empty;
+                foreach (var transitionTransitionStateModification in transition.TransitionStateModifications)
+                {
+                    transitionTransitionStateModification.Evaluate(state.StateJson, CurrentTime);
+                }
+
+                return state;
             }
-        }
-        
+        }        
+        TransitionTaken = "No Transition";
+
         return state;
-        
     }
 
     public override Bag Output(ReelState state)
     {
         var currentState = JsonModel.States.First(x => x.StateTypeRef == state.CurrentState);
         var bag = new Bag();
-        
-        var interpreter = new Interpreter();
+
         foreach (var output in currentState.Output)
         {
-            var value = interpreter.Eval(output.Value.Expression.PrepareExpression(),
-                output.Value.Variables.Distinct()
-                    .Select(x => ReelHelper.CreateParameter(x, state.StateJson.Properties)).ToArray());
-            
-            bag.Inputs.Add(output.Port, value);
+            // todo: make this a complete expression with assignment
+
+
+            ReelPortObject result = new ReelPortObject()
+            {
+                Properties = output.Value.Select(x => new ReelPortObjectProperty()
+                {
+                    Key = x.Key,
+                    Value = x.Value.Evaluate<object>(state.StateJson, CurrentTime, bag)
+                }).ToList()
+            };
+            bag.AddInput(output.Port, result);
         }
-        
+
         return bag;
     }
+}
+
+
+public record ReelPortObject
+{
+    public required List<ReelPortObjectProperty> Properties { get; init; } 
+}
+
+public record ReelPortObjectProperty
+{
+    public required string Key { get; init; }
+    public required object Value { get; init; }
 }

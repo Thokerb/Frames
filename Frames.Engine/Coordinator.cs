@@ -519,7 +519,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                 {
                     if (_baseState._coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
                     {
-                        outputMessageBagChildren.AddBag(message.Value);
+                        outputMessageBagChildren.AddInput(entry.Key,entry.Value);
                     }
                 }
             }
@@ -615,7 +615,8 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Dictionary<string, Bag> receivers = new Dictionary<string, Bag>();
         foreach (var bagChild in _state._outputMessageBagChildren.Inputs)
         {
-            var outModelAndPort = _baseState._coupledModel.GetReceivers(bagChild.Key);
+            // when multiple outModels and outPorts are coupled to the same child, we need to merge the bags
+            var outModelAndPort = _baseState._coupledModel.GetReceivers(bagChild.Key).DistinctBy(x => x.model+x.port);
             foreach (var outModelAndPortEntry in outModelAndPort)
             {
                 if (receivers.ContainsKey(outModelAndPortEntry.model))

@@ -9,6 +9,7 @@ public class ParseReel
     [InlineData("arena2.json")]
     [InlineData("blinking_light.json")]
     [InlineData("blinking_light_arena.json")]
+    [InlineData("queue.json")]
     public void ParseReelFile(string file)
     {
         // Arrange

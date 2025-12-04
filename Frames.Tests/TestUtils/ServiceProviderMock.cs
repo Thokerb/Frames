@@ -32,9 +32,11 @@ public static class ServiceProviderMock
         serviceProvider.GetService(typeof(IServiceProvider)).Returns(serviceProvider);
         
         var settings = new AkkaSettings() { UseClustering = false, ClusterOptions = new ClusterOptions()
-        {
-            
-        },PersistenceMode = PersistenceMode.InMemory };
+            {
+            },ShardOptions = new ShardOptions()
+            {
+                ShouldPassivateIdleEntities = false,
+            },PersistenceMode = PersistenceMode.InMemory };
         serviceProvider.GetService(typeof(AkkaSettings)).Returns(settings);
         
         // var simulatorProps = Props.Create(() => new Simulator(serviceProvider));

@@ -30,7 +30,11 @@ public class CounterAtomicModel : AtomicModel<CounterState>
     {
         if(bag.ContainsKey(InPort))
         {
-            var value = bag.GetInput(InPort);
+            if (bag.GetInput(InPort).Count != 1)
+            {
+                throw new ArgumentException("Expected exactly one input value on InPort");
+            }
+            var value = bag.GetInput(InPort)?.First();
             if (value is int intValue)
             {
                 state.Count += intValue;

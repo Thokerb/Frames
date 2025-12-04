@@ -35,7 +35,7 @@ public class Queue : AtomicModel<QueueState>
 
     public override QueueState ExternalTransition(QueueState state, Bag bag)
     {
-        state.Size = bag.Inputs[Queue.InPort] as int?;
+        state.Size = bag.Inputs[Queue.InPort].First() as int?;
         return state;
     }
 

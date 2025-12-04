@@ -1,0 +1,228 @@
+{
+  "states": [
+    {
+      "name": "ArrayTestState",
+      "properties": [
+        {
+          "name": "test",
+          "type": "IntegerExpression",
+          "isArray": true,
+          "value": []
+        },
+        {
+          "name": "test2",
+          "type": "IntegerExpression",
+          "isArray": true,
+          "value": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "test3",
+          "type": "StringExpression",
+          "isArray": true,
+          "value": [
+            "val1"
+          ]
+        }
+      ],
+      "states": [
+        "Idle",
+        "Busy"
+      ],
+      "initialState": "Idle"
+    }
+  ],
+  "atomicModels": [
+    {
+      "name": "ArrayTest",
+      "ports": [],
+      "stateRef": "ArrayTestState",
+      "stateDefinitions": [],
+      "initialState": "Idle",
+      "states": [
+        {
+          "stateTypeRef": "Idle",
+          "timeAdvanceExpression": {
+            "operator": "Literal",
+            "valueType": "IntegerExpression",
+            "isLeaf": true,
+            "value": "Infinity"
+          },
+          "transitions": [
+            {
+              "name": "proc2",
+              "transitionCondition": {
+                "operator": ">",
+                "isLeaf": false,
+                "valueType": "VoidExpression",
+                "left": {
+                  "valueType": "IntegerExpression",
+                  "isLeaf": true,
+                  "variableName": "test2",
+                  "operator": "ArrayLength",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "test2"
+                  }
+                },
+                "right": {
+                  "operator": "Literal",
+                  "valueType": "IntegerExpression",
+                  "isLeaf": true,
+                  "value": 4
+                }
+              },
+              "transitionNewStateTypeRef": "Idle",
+              "transitionStateModifications": [
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test",
+                  "operator": "ArrayRemove",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "test"
+                  },
+                  "right": {
+                    "operator": "-",
+                    "isLeaf": false,
+                    "valueType": "VoidExpression",
+                    "left": {
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "variableName": "test",
+                      "operator": "ArrayLength",
+                      "left": {
+                        "operator": "Literal",
+                        "valueType": "IntegerExpression",
+                        "isLeaf": true,
+                        "variableName": "test"
+                      }
+                    },
+                    "right": {
+                      "operator": "Literal",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "value": 1
+                    }
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test2",
+                  "operator": "ArrayPrepend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "test2"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 0
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test3",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "StringExpression",
+                    "isLeaf": true,
+                    "variableName": "test3"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "StringExpression",
+                    "isLeaf": true,
+                    "value": "\"val3\""
+                  }
+                }
+              ]
+            },
+            {
+              "name": "proc",
+              "transitionCondition": {
+                "operator": "Literal",
+                "valueType": "BooleanExpression",
+                "isLeaf": true,
+                "value": true
+              },
+              "transitionNewStateTypeRef": "Idle",
+              "transitionStateModifications": [
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "test"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 1
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test2",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "test2"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 4
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "test3",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "StringExpression",
+                    "isLeaf": true,
+                    "variableName": "test3"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "StringExpression",
+                    "isLeaf": true,
+                    "value": "\"val2\""
+                  }
+                }
+              ]
+            }
+          ],
+          "output": []
+        }
+      ]
+    }
+  ],
+  "coupledModels": []
+}

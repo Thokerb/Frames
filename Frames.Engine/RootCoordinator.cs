@@ -255,14 +255,17 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         DeleteMessages(LastSequenceNr);
         
         DeleteSnapshots(SnapshotSelectionCriteria.Latest);
-        _baseState._child.Tell(new Simulation.Cleanup()
+
+        // this is the total cleanup, which should not happen on manual pause or stop
+        if (completionType is CompletionType.StopAfterTime or CompletionType.StopAfterCondition)
         {
-            ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
-            EntityName = _baseState.ChildName,
-            RunId = _baseState.RunId,
-        });
-        
-        
+            _baseState._child.Tell(new Simulation.Cleanup()
+            {
+                ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
+                EntityName = _baseState.ChildName,
+                RunId = _baseState.RunId,
+            });
+        }
         
         var mediator = Context.System.Settings.HasCluster ? DistributedPubSub.Get(Context.System).Mediator : ActorRegistry.For(Context.System).Get<DistributedPubSubMediator>();
         if (mediator == null )
@@ -309,7 +312,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             _baseState = st;
         });
         
-        Sender.Tell(_baseState.RunId);
+        Sender.Tell(new CreationResponse(_baseState.RunId));
     }
 
 
@@ -734,11 +737,11 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             _stopwatch.Restart();
         }
 
-        if (_state._currentTime == _state._lastTime)
-        {
-            HaltExecution(CompletionType.StopAfterTime);
-            return;
-        }
+        // if (_state._currentTime == _state._lastTime)
+        // {
+        //     HaltExecution(CompletionType.StopAfterTime);
+        //     return;
+        // }
 
         _state._lastTime = _state._currentTime;
 
@@ -774,6 +777,8 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
 
     public ITimerScheduler Timers { get; set; }
 }
+
+public record CreationResponse(Guid BaseStateRunId);
 
 public record SimulationStatus
 {
