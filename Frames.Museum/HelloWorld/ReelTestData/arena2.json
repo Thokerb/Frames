@@ -1805,7 +1805,12 @@
 						{
 							"name": "fixed_size",
 							"type": "IntegerExpression",
-							"value": 400
+							"value": 1400
+						},
+						{
+							"name": "inter_arrival_time",
+							"type": "IntegerExpression",
+							"value": 40
 						}
 					],
 					"initialState": "Generating"
@@ -1830,7 +1835,7 @@
 						{
 							"name": "speed",
 							"type": "IntegerExpression",
-							"value": 2
+							"value": 5
 						}
 					],
 					"initialState": "Idle"
@@ -1848,7 +1853,7 @@
 						{
 							"name": "speed",
 							"type": "IntegerExpression",
-							"value": 4
+							"value": 10
 						}
 					],
 					"initialState": "Idle"
@@ -1866,7 +1871,7 @@
 						{
 							"name": "speed",
 							"type": "IntegerExpression",
-							"value": 5
+							"value": 20
 						}
 					],
 					"initialState": "Idle"
