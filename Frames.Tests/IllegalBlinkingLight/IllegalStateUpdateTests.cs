@@ -47,7 +47,7 @@ public class IllegalStateUpdateTests : BaseTestKit,  IClassFixture<OpenTelemetry
         {
             Name = "blinking-light",
         };
-        var runId = await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
+        await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,$"simulator-blinking-light", uniqueId)
         {
         });
         
