@@ -62,10 +62,6 @@ public class OperatorConverter : JsonConverter<Operator>
         { "assign", Operator.Assign }
     };
 
-    // 2. Reverse map for Writing (C# -> JSON)
-    // We derive this automatically from the map above.
-    private Dictionary<Operator, string>? _operatorToCanonicalToken;
-
     static OperatorConverter()
     {
 
@@ -74,7 +70,7 @@ public class OperatorConverter : JsonConverter<Operator>
     public override void WriteJson(JsonWriter writer, Operator value, JsonSerializer serializer)
     {
         
-        _operatorToCanonicalToken = new Dictionary<Operator, string>();
+        var _operatorToCanonicalToken = new Dictionary<Operator, string>();
 
         // Iterate through the definitions. Since we want a single string for writing,
         // we take the first token encountered for each Operator.

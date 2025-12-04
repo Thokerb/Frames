@@ -48,15 +48,18 @@
 			"stateDefinitions": [
 				{
 					"name": "MaxCycles",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 0
 				},
 				{
 					"name": "CurrentCycle",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 0
 				},
 				{
 					"name": "WaitingTime",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 2
 				}
 			],
 			"initialState": "On",
@@ -136,8 +139,9 @@
 							"name": "externalToOff",
 							"transitionCondition": {
 								"operator": "Literal",
-								"valueType": "IntegerExpression",
+								"valueType": "BooleanExpression",
 								"isLeaf": true,
+								"portAccessor": "any",
 								"variableName": "PortInFinishedByOther",
 								"isPort": true
 							},
@@ -171,8 +175,9 @@
 							"name": "externalToOff",
 							"transitionCondition": {
 								"operator": "Literal",
-								"valueType": "IntegerExpression",
+								"valueType": "BooleanExpression",
 								"isLeaf": true,
+								"portAccessor": "any",
 								"variableName": "PortInFinishedByOther",
 								"isPort": true
 							},
@@ -217,12 +222,17 @@
 					"output": [
 						{
 							"port": "PortOutFinished",
-							"value": {
-								"operator": "Literal",
-								"valueType": "IntegerExpression",
-								"isLeaf": true,
-								"variableName": "MaxCycles"
-							}
+							"value": [
+								{
+									"key": "",
+									"value": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"variableName": "MaxCycles"
+									}
+								}
+							]
 						}
 					]
 				},

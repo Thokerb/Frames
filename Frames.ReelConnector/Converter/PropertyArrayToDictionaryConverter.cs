@@ -50,6 +50,6 @@ public class PropertyArrayToDictionaryConverter : JsonConverter
     {
         var dict = (Dictionary<string, StatePropertyJson>)value;
         // Write the dictionary values out as an array
-        serializer.Serialize(writer, dict.Values);
+        serializer.Serialize(writer, dict.Values.ToArray());
     }
 }

@@ -18,6 +18,7 @@ using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
 using Frames.Museum.Actors;
 using Frames.Museum.ClusterOverview;
+using Frames.ReelConnector.Converter;
 using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -27,10 +28,6 @@ using LogLevel = Akka.Event.LogLevel;
 
 
 namespace Frames.Museum;
-
-public struct FramesRegion
-{
-}
 
 public static class AkkaConfiguration
 {
@@ -51,6 +48,8 @@ public static class AkkaConfiguration
             {
                 settings.TypeNameHandling = TypeNameHandling.Objects;
                 settings.Formatting = Formatting.None;
+                settings.Converters.Add(new PropertyArrayToDictionaryConverter());
+                settings.Converters.Add(new OperatorConverter());
             });
             
 

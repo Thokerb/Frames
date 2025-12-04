@@ -312,7 +312,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             _baseState = st;
         });
         
-        Sender.Tell(_baseState.RunId);
+        Sender.Tell(new CreationResponse(_baseState.RunId));
     }
 
 
@@ -777,6 +777,8 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
 
     public ITimerScheduler Timers { get; set; }
 }
+
+public record CreationResponse(Guid BaseStateRunId);
 
 public record SimulationStatus
 {

@@ -10,7 +10,7 @@ namespace Frames.ReelConnector;
 public class ReelState : IState
 {
     // Define properties and methods for the ReelState here
-    public StateJson StateJson { get; set; }
+    public required StateJson StateJson { get; set; }
     public required string CurrentState { get; set; }
     public int CompareTo(object? obj)
     {
@@ -31,35 +31,36 @@ public class ReelState : IState
 
 public sealed class ReelAtomicModel : AtomicModel<ReelState>
 {
+    [JsonProperty]
     public string TransitionTaken { get; private set; } = string.Empty;
-    
-    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson state)
+
+    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson stateJson, List<StatePropertyJson>? modelRefModelOverrides = null,
+        string? modelRefInitialState= null,ReelState? state = null)
     {
         JsonModel = jsonModel;
-        Name = jsonModel.Name;
-        State = new ReelState()
+
+        if (state != null)
         {
-            StateJson = ReelHelper.OverwriteInitialStateValues(state, jsonModel.StateDefinitions),
-            CurrentState = jsonModel.InitialState ?? state.InitialState
-        };
+            // this is for deserializing by akka, dont do this manually
+            State = state;
+        }
+        else
+        {
+            State = new ReelState()
+            {
+                StateJson = ReelHelper.OverwriteInitialStateValues(
+                    ReelHelper.OverwriteInitialStateValues(stateJson, jsonModel.StateDefinitions), modelRefModelOverrides),
+                CurrentState =
+                    modelRefInitialState ??
+                    jsonModel.InitialState ?? stateJson.InitialState // TODO: document order of precedence
+            };
+        }
     }
 
-    [JsonConstructor]
-    public ReelAtomicModel(AtomicModelJson jsonModel, StateJson state, List<StatePropertyJson>? modelRefModelOverrides,
-        string? modelRefInitialState)
-    {
-        JsonModel = jsonModel;
-        State = new ReelState()
-        {
-            StateJson = ReelHelper.OverwriteInitialStateValues(
-                ReelHelper.OverwriteInitialStateValues(state, jsonModel.StateDefinitions), modelRefModelOverrides),
-            CurrentState =
-                modelRefInitialState ??
-                jsonModel.InitialState ?? state.InitialState // TODO: document order of precedence
-        };
-    }
-
+    [JsonProperty]
     private AtomicModelJson JsonModel { get; init; }
+    
+    [JsonProperty]
     public override ReelState State { get; set; }
 
     public override TimeUnit TimeAdvance(ReelState state)
@@ -174,13 +175,29 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
             // todo: make this a complete expression with assignment
 
 
-            List<KeyValuePair<string, object>> result = output.Value.Select(x => new KeyValuePair<string, object>(
-                x.Key,
-                x.Value.Evaluate<object>(state.StateJson, CurrentTime, bag)
-            )).ToList();
+            ReelPortObject result = new ReelPortObject()
+            {
+                Properties = output.Value.Select(x => new ReelPortObjectProperty()
+                {
+                    Key = x.Key,
+                    Value = x.Value.Evaluate<object>(state.StateJson, CurrentTime, bag)
+                }).ToList()
+            };
             bag.AddInput(output.Port, result);
         }
 
         return bag;
     }
+}
+
+
+public record ReelPortObject
+{
+    public required List<ReelPortObjectProperty> Properties { get; init; } 
+}
+
+public record ReelPortObjectProperty
+{
+    public required string Key { get; init; }
+    public required object Value { get; init; }
 }

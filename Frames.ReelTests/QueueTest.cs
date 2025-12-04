@@ -23,8 +23,8 @@ public class QueueTest
         
         Assert.NotNull(reelCoupledModel);
         
-        // 3 proc, 1 gen, 1 queue
-        Assert.Equal(5, reelCoupledModel.GetChildren().Count);
+        // 3 proc, 1 gen, 1 queue, 1 collector
+        Assert.Equal(6, reelCoupledModel.GetChildren().Count);
 
     }
     

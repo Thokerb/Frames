@@ -1,11 +1,13 @@
 ﻿using Frames.Model.ValueTypes;
 using Frames.ReelConnector;
+using Frames.ReelConnector.Converter;
 using Frames.ReelConnector.ReelDto;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Frames.Test2;
 
-public class ReelAtomicModelTest
+public class ReelAtomicModelTestSerialized
 {
     
     
@@ -14,15 +16,8 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightModel2", new [] {"on"})]
     public void ReelAtomicModelTimeAdvanceTest(string atomicModelName, string[] states)
     {
-        var reelJson = GetReelJson();
-
-        var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
-        var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
+        var reelAtomicModel = GetReelJson(atomicModelName);
         
-        var reelAtomicModel = new ReelAtomicModel(atomicModel,atomicModelState)
-        {
-            Name = atomicModel.Name,
-        };
 
         Assert.NotNull(reelAtomicModel);
 
@@ -31,7 +26,7 @@ public class ReelAtomicModelTest
             var result = reelAtomicModel.TimeAdvance(new ReelState()
             {
                 CurrentState = state,
-                StateJson = atomicModelState
+                StateJson = reelAtomicModel.State.StateJson
             });
             var expectedTimeAdvance = StateToTimeAdvanceValue(state, atomicModelName);
             Assert.True(expectedTimeAdvance.Value == result.Value, 
@@ -44,15 +39,7 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightAtomicModelBR","On")]
     public void ReelAtomicModelInternalTransitionTest(string atomicModelName, string state)
     {
-        var reelJson = GetReelJson();
-
-        var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
-        var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
-        
-        var reelAtomicModel = new ReelAtomicModel(atomicModel,atomicModelState)
-        {
-            Name = atomicModel.Name,
-        };
+        var reelAtomicModel = GetReelJson(atomicModelName);
 
         Assert.NotNull(reelAtomicModel);
 
@@ -79,15 +66,8 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightModel2","on")]
     public void ReelAtomicModelExternalTransitionTest(string atomicModelName, string state)
     {
-        var reelJson = GetReelJson();
+        var reelAtomicModel = GetReelJson(atomicModelName);
 
-        var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
-        var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
-        
-        var reelAtomicModel = new ReelAtomicModel(atomicModel,atomicModelState)
-        {
-            Name = atomicModel.Name,
-        };
 
         Assert.NotNull(reelAtomicModel);
 
@@ -111,15 +91,8 @@ public class ReelAtomicModelTest
     [InlineData("BlinkingLightAtomicModelBR" ,"FinishedByItself")]
     public void ReelAtomicModelOutputTest(string atomicModelName, string state)
     {
-        var reelJson = GetReelJson();
+        var reelAtomicModel = GetReelJson(atomicModelName);
 
-        var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
-        var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
-        
-        var reelAtomicModel = new ReelAtomicModel(atomicModel,atomicModelState)
-        {
-            Name = atomicModel.Name,
-        };
 
         Assert.NotNull(reelAtomicModel);
 
@@ -134,12 +107,29 @@ public class ReelAtomicModelTest
             StateJson = reelAtomicModel.State.StateJson
         });
         
-        Assert.True(result.ContainsKey("PortOutFinished"));
-        Assert.Equal(cycles, ((ReelPortObject)result.Inputs["PortOutFinished"].First()).Properties.Find(x => x.Key == "").Value);
+        var serialize = JsonConvert.SerializeObject(result, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Objects,
+            Converters = new List<JsonConverter>(new List<JsonConverter>()
+            {
+                new OperatorConverter(), new PropertyArrayToDictionaryConverter()
+            })
+        });
+        var bagDeserializeObject = JsonConvert.DeserializeObject<Bag>(serialize, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Objects,
+            Converters = new List<JsonConverter>(new List<JsonConverter>()
+            {
+                new OperatorConverter(), new PropertyArrayToDictionaryConverter()
+            })
+        });
+        
+        Assert.True(bagDeserializeObject.ContainsKey("PortOutFinished"));
+        Assert.Equal(cycles, ((ReelPortObject)bagDeserializeObject.Inputs["PortOutFinished"].First()).Properties.Find(x => x.Key == "").Value);
         
     }
 
-    private static ReelJson? GetReelJson()
+    private static ReelAtomicModel GetReelJson(string atomicModelName)
     {
         var file = "arena2.json";
         var filePath = Path.Combine(AppContext.BaseDirectory, "Data", file);
@@ -154,7 +144,32 @@ public class ReelAtomicModelTest
         // Act
         // We use Newtonsoft.Json here because akka.net uses Newtonsoft.Json for serialization
         ReelJson? reelJson = Newtonsoft.Json.JsonConvert.DeserializeObject<ReelJson>(reelContent);
-        return reelJson;
+        
+        var atomicModel = reelJson.AtomicModels.First(x => x.Name == atomicModelName);
+        var atomicModelState = reelJson.States.First(x => x.Name == atomicModel.StateRef);
+                
+        var reelAtomicModel = new ReelAtomicModel(atomicModel,atomicModelState)
+        {
+            Name = atomicModel.Name,
+        };
+        var serialize = JsonConvert.SerializeObject(reelAtomicModel, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Objects,
+            Converters = new List<JsonConverter>(new List<JsonConverter>()
+            {
+                new OperatorConverter(), new PropertyArrayToDictionaryConverter()
+            })
+        });
+        var modelDeserialized = JsonConvert.DeserializeObject<ReelAtomicModel>(serialize, new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.Objects,
+            Converters = new List<JsonConverter>(new List<JsonConverter>()
+            {
+                new OperatorConverter(), new PropertyArrayToDictionaryConverter()
+            })
+        });
+        return modelDeserialized;
+
     }
 
 

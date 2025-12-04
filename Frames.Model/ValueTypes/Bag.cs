@@ -43,7 +43,7 @@ public record struct Bag
     {
 
         // special check to prevent adding lists via this method, but allowing Reel "object" lists
-        if (value is IList and not List<KeyValuePair<string, object>>)
+        if (value is IList )
         {
             throw new InvalidOperationException("Use AddInput with List<object?> for adding lists");
         }

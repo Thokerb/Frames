@@ -55,7 +55,7 @@ public static class HelloWorldLogic
 
         var coupledModel = new ReelCoupledModel(reelJson, coupledModelRef, null);
         
-        await rootCoordinatorActor.Ask<Guid>(new Simulation.CreateModel(coupledModel,$"coordinator-{coupledModelRef}",uniqueId));
+        await rootCoordinatorActor.Ask<CreationResponse>(new Simulation.CreateModel(coupledModel,$"coordinator-{coupledModelRef}",uniqueId));
       
         
         // Act

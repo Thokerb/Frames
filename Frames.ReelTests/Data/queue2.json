@@ -11,12 +11,12 @@
         {
           "name": "fixed_size",
           "type": "IntegerExpression",
-          "value": 20
+          "value": 40
         },
         {
           "name": "inter_arrival_time",
           "type": "IntegerExpression",
-          "value": 30
+          "value": 20
         },
         {
           "name": "current_time",
@@ -50,6 +50,11 @@
         },
         {
           "name": "processing_time",
+          "type": "IntegerExpression",
+          "value": 0
+        },
+        {
+          "name": "speed",
           "type": "IntegerExpression",
           "value": 0
         }
@@ -94,6 +99,11 @@
           "name": "temp_time",
           "type": "IntegerExpression",
           "value": 0
+        },
+        {
+          "name": "waiting_time",
+          "type": "IntegerExpression",
+          "value": "Infinity"
         }
       ],
       "states": [
@@ -103,6 +113,31 @@
         "EmitProc2"
       ],
       "initialState": "CheckQueue"
+    },
+    {
+      "name": "CollectorState",
+      "properties": [
+        {
+          "name": "arr_input",
+          "type": "IntegerExpression",
+          "isArray": true,
+          "value": []
+        },
+        {
+          "name": "waiting_time",
+          "type": "IntegerExpression",
+          "isArray": true,
+          "value": []
+        },
+        {
+          "name": "time",
+          "type": "IntegerExpression"
+        }
+      ],
+      "states": [
+        "Collecting"
+      ],
+      "initialState": "Collecting"
     }
   ],
   "atomicModels": [
@@ -277,7 +312,37 @@
           "output": [
             {
               "port": "out_event",
-              "value": {}
+              "value": [
+                {
+                  "key": "size",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "fixed_size"
+                  }
+                },
+                {
+                  "key": "creation_time",
+                  "value": {
+                    "operator": "+",
+                    "isLeaf": false,
+                    "valueType": "VoidExpression",
+                    "left": {
+                      "operator": "Literal",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "variableName": "current_time"
+                    },
+                    "right": {
+                      "operator": "Literal",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "variableName": "inter_arrival_time"
+                    }
+                  }
+                }
+              ]
             }
           ]
         },
@@ -322,6 +387,14 @@
             {
               "name": "creation_time",
               "valueType": "int"
+            },
+            {
+              "name": "time_in_queue",
+              "valueType": "int"
+            },
+            {
+              "name": "ct",
+              "valueType": "int"
             }
           ]
         },
@@ -348,8 +421,9 @@
               "name": "startJob",
               "transitionCondition": {
                 "operator": "Literal",
-                "valueType": "ObjectExpression",
+                "valueType": "BooleanExpression",
                 "isLeaf": true,
+                "portAccessor": "any",
                 "variableName": "in_proc",
                 "isPort": true
               },
@@ -367,8 +441,10 @@
                   },
                   "right": {
                     "operator": "Literal",
-                    "valueType": "ObjectExpression",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
+                    "portObjectPropertyName": "size",
+                    "portAccessor": "first",
                     "variableName": "in_proc",
                     "isPort": true
                   }
@@ -385,8 +461,10 @@
                   },
                   "right": {
                     "operator": "Literal",
-                    "valueType": "ObjectExpression",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
+                    "portObjectPropertyName": "creation_time",
+                    "portAccessor": "first",
                     "variableName": "in_proc",
                     "isPort": true
                   }
@@ -402,31 +480,20 @@
                     "variableName": "processing_time"
                   },
                   "right": {
-                    "operator": "+",
+                    "operator": "/",
                     "isLeaf": false,
                     "valueType": "VoidExpression",
                     "left": {
                       "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
-                      "value": 20
+                      "variableName": "current_job_size"
                     },
                     "right": {
-                      "operator": "*",
-                      "isLeaf": false,
-                      "valueType": "VoidExpression",
-                      "left": {
-                        "operator": "Literal",
-                        "valueType": "IntegerExpression",
-                        "isLeaf": true,
-                        "variableName": "current_job_size"
-                      },
-                      "right": {
-                        "operator": "Literal",
-                        "valueType": "IntegerExpression",
-                        "isLeaf": true,
-                        "value": 2
-                      }
+                      "operator": "Literal",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "variableName": "speed"
                     }
                   }
                 }
@@ -459,16 +526,80 @@
           "output": [
             {
               "port": "out_finished",
-              "value": {
-                "operator": "Literal",
-                "valueType": "IntegerExpression",
-                "isLeaf": true,
-                "variableName": "proc_id"
-              }
+              "value": [
+                {
+                  "key": "",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "proc_id"
+                  }
+                }
+              ]
             },
             {
               "port": "out_proc",
-              "value": {}
+              "value": [
+                {
+                  "key": "size",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "processing_time"
+                  }
+                },
+                {
+                  "key": "creation_time",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "current_job_creation"
+                  }
+                },
+                {
+                  "key": "ct",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": "CurrentTime"
+                  }
+                },
+                {
+                  "key": "time_in_queue",
+                  "value": {
+                    "operator": "-",
+                    "isLeaf": false,
+                    "valueType": "VoidExpression",
+                    "left": {
+                      "operator": "-",
+                      "isLeaf": false,
+                      "valueType": "VoidExpression",
+                      "left": {
+                        "operator": "Literal",
+                        "valueType": "IntegerExpression",
+                        "isLeaf": true,
+                        "value": "CurrentTime"
+                      },
+                      "right": {
+                        "operator": "Literal",
+                        "valueType": "IntegerExpression",
+                        "isLeaf": true,
+                        "variableName": "current_job_creation"
+                      }
+                    },
+                    "right": {
+                      "operator": "Literal",
+                      "valueType": "IntegerExpression",
+                      "isLeaf": true,
+                      "variableName": "processing_time"
+                    }
+                  }
+                }
+              ]
             }
           ]
         }
@@ -548,20 +679,51 @@
             "operator": "Literal",
             "valueType": "IntegerExpression",
             "isLeaf": true,
-            "value": "Infinity"
+            "variableName": "waiting_time"
           },
           "transitions": [
             {
-              "name": "jobArrives",
+              "name": "jobArrivesAndProcFinish",
               "transitionCondition": {
-                "operator": "Literal",
-                "valueType": "ObjectExpression",
-                "isLeaf": true,
-                "variableName": "in_event",
-                "isPort": true
+                "operator": "and",
+                "isLeaf": false,
+                "valueType": "VoidExpression",
+                "left": {
+                  "operator": "Literal",
+                  "valueType": "BooleanExpression",
+                  "isLeaf": true,
+                  "portAccessor": "any",
+                  "variableName": "in_event",
+                  "isPort": true
+                },
+                "right": {
+                  "operator": "Literal",
+                  "valueType": "BooleanExpression",
+                  "isLeaf": true,
+                  "portAccessor": "any",
+                  "variableName": "in_finish",
+                  "isPort": true
+                }
               },
               "transitionNewStateTypeRef": "CheckQueue",
               "transitionStateModifications": [
+                {
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "waiting_time"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 0
+                  }
+                },
                 {
                   "valueType": "VoidExpression",
                   "isLeaf": false,
@@ -575,8 +737,10 @@
                   },
                   "right": {
                     "operator": "Literal",
-                    "valueType": "ObjectExpression",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
+                    "portObjectPropertyName": "size",
+                    "portAccessor": "all",
                     "variableName": "in_event",
                     "isPort": true
                   }
@@ -594,25 +758,14 @@
                   },
                   "right": {
                     "operator": "Literal",
-                    "valueType": "ObjectExpression",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
+                    "portObjectPropertyName": "creation_time",
+                    "portAccessor": "all",
                     "variableName": "in_event",
                     "isPort": true
                   }
-                }
-              ]
-            },
-            {
-              "name": "procFree",
-              "transitionCondition": {
-                "operator": "Literal",
-                "valueType": "IntegerExpression",
-                "isLeaf": true,
-                "variableName": "in_finish",
-                "isPort": true
-              },
-              "transitionNewStateTypeRef": "CheckQueue",
-              "transitionStateModifications": [
+                },
                 {
                   "valueType": "VoidExpression",
                   "isLeaf": false,
@@ -628,6 +781,131 @@
                     "operator": "Literal",
                     "valueType": "IntegerExpression",
                     "isLeaf": true,
+                    "portAccessor": "all",
+                    "variableName": "in_finish",
+                    "isPort": true
+                  }
+                }
+              ]
+            },
+            {
+              "name": "jobArrives",
+              "transitionCondition": {
+                "operator": "Literal",
+                "valueType": "BooleanExpression",
+                "isLeaf": true,
+                "portAccessor": "any",
+                "variableName": "in_event",
+                "isPort": true
+              },
+              "transitionNewStateTypeRef": "CheckQueue",
+              "transitionStateModifications": [
+                {
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "waiting_time"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 0
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "q_sizes",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "q_sizes"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "portObjectPropertyName": "size",
+                    "portAccessor": "all",
+                    "variableName": "in_event",
+                    "isPort": true
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "q_times",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "q_times"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "portObjectPropertyName": "creation_time",
+                    "portAccessor": "all",
+                    "variableName": "in_event",
+                    "isPort": true
+                  }
+                }
+              ]
+            },
+            {
+              "name": "procFree",
+              "transitionCondition": {
+                "operator": "Literal",
+                "valueType": "BooleanExpression",
+                "isLeaf": true,
+                "portAccessor": "any",
+                "variableName": "in_finish",
+                "isPort": true
+              },
+              "transitionNewStateTypeRef": "CheckQueue",
+              "transitionStateModifications": [
+                {
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "waiting_time"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": 0
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "idle_procs",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "idle_procs"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "portAccessor": "all",
                     "variableName": "in_finish",
                     "isPort": true
                   }
@@ -701,6 +979,7 @@
                     "variableName": "idle_procs",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "idle_procs"
@@ -738,6 +1017,7 @@
                     "variableName": "q_sizes",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "q_sizes"
@@ -766,6 +1046,7 @@
                     "variableName": "q_times",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "q_times"
@@ -901,6 +1182,7 @@
                     "variableName": "idle_procs",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "idle_procs"
@@ -938,6 +1220,7 @@
                     "variableName": "q_sizes",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "q_sizes"
@@ -966,6 +1249,7 @@
                     "variableName": "q_times",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "q_times"
@@ -1101,6 +1385,7 @@
                     "variableName": "idle_procs",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "idle_procs"
@@ -1138,6 +1423,7 @@
                     "variableName": "q_sizes",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "q_sizes"
@@ -1166,6 +1452,7 @@
                     "variableName": "q_times",
                     "operator": "ArrayGet",
                     "left": {
+                      "operator": "Literal",
                       "valueType": "IntegerExpression",
                       "isLeaf": true,
                       "variableName": "q_times"
@@ -1233,6 +1520,35 @@
                   }
                 }
               ]
+            },
+            {
+              "name": "noJobsOrnoProvs",
+              "transitionCondition": {
+                "operator": "Literal",
+                "valueType": "BooleanExpression",
+                "isLeaf": true,
+                "value": true
+              },
+              "transitionNewStateTypeRef": "CheckQueue",
+              "transitionStateModifications": [
+                {
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "waiting_time"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": "Infinity"
+                  }
+                }
+              ]
             }
           ],
           "output": []
@@ -1261,7 +1577,26 @@
           "output": [
             {
               "port": "proc_0",
-              "value": {}
+              "value": [
+                {
+                  "key": "size",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "temp_size"
+                  }
+                },
+                {
+                  "key": "creation_time",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "temp_time"
+                  }
+                }
+              ]
             }
           ]
         },
@@ -1289,7 +1624,26 @@
           "output": [
             {
               "port": "proc_1",
-              "value": {}
+              "value": [
+                {
+                  "key": "size",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "temp_size"
+                  }
+                },
+                {
+                  "key": "creation_time",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "temp_time"
+                  }
+                }
+              ]
             }
           ]
         },
@@ -1317,9 +1671,123 @@
           "output": [
             {
               "port": "proc_2",
-              "value": {}
+              "value": [
+                {
+                  "key": "size",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "temp_size"
+                  }
+                },
+                {
+                  "key": "creation_time",
+                  "value": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "temp_time"
+                  }
+                }
+              ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Collector",
+      "ports": [
+        {
+          "name": "in_event",
+          "type": "InPort",
+          "valueType": [
+            {
+              "name": "size",
+              "valueType": "int"
+            },
+            {
+              "name": "creation_time",
+              "valueType": "int"
+            },
+            {
+              "name": "time_in_queue",
+              "valueType": "int"
+            },
+            {
+              "name": "ct",
+              "valueType": "int"
+            }
+          ]
+        }
+      ],
+      "stateRef": "CollectorState",
+      "stateDefinitions": [],
+      "states": [
+        {
+          "stateTypeRef": "Collecting",
+          "timeAdvanceExpression": {
+            "operator": "Literal",
+            "valueType": "IntegerExpression",
+            "isLeaf": true,
+            "value": "Infinity"
+          },
+          "transitions": [
+            {
+              "name": "collect",
+              "transitionCondition": {
+                "operator": "Literal",
+                "valueType": "BooleanExpression",
+                "isLeaf": true,
+                "portAccessor": "any",
+                "variableName": "in_event",
+                "isPort": true
+              },
+              "transitionNewStateTypeRef": "Collecting",
+              "transitionStateModifications": [
+                {
+                  "operator": "=",
+                  "isLeaf": false,
+                  "valueType": "VoidExpression",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "time"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "value": "CurrentTime"
+                  }
+                },
+                {
+                  "valueType": "VoidExpression",
+                  "isLeaf": false,
+                  "variableName": "arr_input",
+                  "operator": "ArrayAppend",
+                  "left": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "variableName": "arr_input"
+                  },
+                  "right": {
+                    "operator": "Literal",
+                    "valueType": "IntegerExpression",
+                    "isLeaf": true,
+                    "portObjectPropertyName": "time_in_queue",
+                    "portAccessor": "all",
+                    "variableName": "in_event",
+                    "isPort": true
+                  }
+                }
+              ]
+            }
+          ],
+          "output": []
         }
       ]
     }
@@ -1333,7 +1801,14 @@
           "name": "gen",
           "isAtomicModel": true,
           "modelRef": "Generator",
-          "modelOverrides": []
+          "modelOverrides": [
+            {
+              "name": "fixed_size",
+              "type": "IntegerExpression",
+              "value": 400
+            }
+          ],
+          "initialState": "Generating"
         },
         {
           "name": "queue",
@@ -1349,7 +1824,13 @@
           "modelOverrides": [
             {
               "name": "proc_id",
-              "type": "IntegerExpression"
+              "type": "IntegerExpression",
+              "value": 0
+            },
+            {
+              "name": "speed",
+              "type": "IntegerExpression",
+              "value": 2
             }
           ],
           "initialState": "Idle"
@@ -1361,7 +1842,13 @@
           "modelOverrides": [
             {
               "name": "proc_id",
-              "type": "IntegerExpression"
+              "type": "IntegerExpression",
+              "value": 1
+            },
+            {
+              "name": "speed",
+              "type": "IntegerExpression",
+              "value": 4
             }
           ],
           "initialState": "Idle"
@@ -1373,10 +1860,22 @@
           "modelOverrides": [
             {
               "name": "proc_id",
-              "type": "IntegerExpression"
+              "type": "IntegerExpression",
+              "value": 2
+            },
+            {
+              "name": "speed",
+              "type": "IntegerExpression",
+              "value": 5
             }
           ],
           "initialState": "Idle"
+        },
+        {
+          "name": "col",
+          "isAtomicModel": true,
+          "modelRef": "Collector",
+          "modelOverrides": []
         }
       ],
       "couplings": [
@@ -1428,6 +1927,27 @@
           "targetModel": "queue",
           "targetPort": "in_finish",
           "type": "IntegerExpression"
+        },
+        {
+          "sourceModel": "p0",
+          "sourcePort": "out_proc",
+          "targetModel": "col",
+          "targetPort": "in_event",
+          "type": "ObjectExpression"
+        },
+        {
+          "sourceModel": "p1",
+          "sourcePort": "out_proc",
+          "targetModel": "col",
+          "targetPort": "in_event",
+          "type": "ObjectExpression"
+        },
+        {
+          "sourceModel": "p2",
+          "sourcePort": "out_proc",
+          "targetModel": "col",
+          "targetPort": "in_event",
+          "type": "ObjectExpression"
         }
       ]
     }

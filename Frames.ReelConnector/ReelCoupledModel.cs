@@ -1,33 +1,42 @@
 ﻿using Frames.Model;
 using Frames.ReelConnector.ReelDto;
+using Newtonsoft.Json;
 
 namespace Frames.ReelConnector;
 
 public class ReelCoupledModel : CoupledModel
 {
+    [JsonProperty]
     private CoupledModelJson CoupledModelJson { get; }
 
-    public ReelCoupledModel(ReelJson reelJson, string coupledModelRef, string? name) : base(name ?? coupledModelRef)
+    public ReelCoupledModel(ReelJson reelJson, string coupledModelRef, string? name, CoupledModelJson? coupledModelJson = null) : base(name ?? coupledModelRef)
     {
-        
-        if (!reelJson.CoupledModels.Exists(m => m.Name == coupledModelRef))
-        {
-            var available = string.Join(", ",
-                reelJson.CoupledModels.Select(m => m.Name));
 
-            throw new KeyNotFoundException(
-                $"Coupled model '{coupledModelRef}' was not found. " +
-                $"Available models: {available}");
+        if (coupledModelJson != null)
+        {
+            // this is from newtonsoft akka deserializing, dont do this manually; also parameter must be same name as property!
+            CoupledModelJson = coupledModelJson;
         }
-        CoupledModelJson = reelJson.CoupledModels.First(x => x.Name == coupledModelRef);
+        else
+        {
+            if (!reelJson.CoupledModels.Exists(m => m.Name == coupledModelRef))
+            {
+                var available = string.Join(", ",
+                    reelJson.CoupledModels.Select(m => m.Name));
+
+                throw new KeyNotFoundException(
+                    $"Coupled model '{coupledModelRef}' was not found. " +
+                    $"Available models: {available}");
+            }
+            CoupledModelJson = reelJson.CoupledModels.First(x => x.Name == coupledModelRef);
         
         
-        AddModels(reelJson);
+            AddModels(reelJson);
         
-        AddReelPorts();
+            AddReelPorts();
         
-        AddReelCoupling();
-        
+            AddReelCoupling();
+        }
     }
 
     private void AddModels(ReelJson reelJson)

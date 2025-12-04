@@ -65,6 +65,7 @@
                   "operator": "ArrayLength",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
                     "variableName": "test2"
                   }
@@ -85,6 +86,7 @@
                   "operator": "ArrayRemove",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
                     "variableName": "test"
                   },
@@ -99,6 +101,7 @@
                       "operator": "ArrayLength",
                       "left": {
                         "operator": "Literal",
+                        "valueType": "IntegerExpression",
                         "isLeaf": true,
                         "variableName": "test"
                       }
@@ -118,6 +121,7 @@
                   "operator": "ArrayPrepend",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
                     "variableName": "test2"
                   },
@@ -135,6 +139,7 @@
                   "operator": "ArrayAppend",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "StringExpression",
                     "isLeaf": true,
                     "variableName": "test3"
                   },
@@ -164,6 +169,7 @@
                   "operator": "ArrayAppend",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
                     "variableName": "test"
                   },
@@ -181,6 +187,7 @@
                   "operator": "ArrayAppend",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "IntegerExpression",
                     "isLeaf": true,
                     "variableName": "test2"
                   },
@@ -198,6 +205,7 @@
                   "operator": "ArrayAppend",
                   "left": {
                     "operator": "Literal",
+                    "valueType": "StringExpression",
                     "isLeaf": true,
                     "variableName": "test3"
                   },

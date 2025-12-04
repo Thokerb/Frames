@@ -6,7 +6,7 @@
 				{
 					"name": "MaxCycles",
 					"type": "IntegerExpression",
-					"value": 5
+					"value": 0
 				},
 				{
 					"name": "CurrentCycle",
@@ -16,7 +16,7 @@
 				{
 					"name": "WaitingTime",
 					"type": "IntegerExpression",
-					"value": 3
+					"value": 2
 				}
 			],
 			"states": [
@@ -99,15 +99,18 @@
 			"stateDefinitions": [
 				{
 					"name": "MaxCycles",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 5
 				},
 				{
 					"name": "CurrentCycle",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 0
 				},
 				{
 					"name": "WaitingTime",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 3
 				}
 			],
 			"initialState": "On",
@@ -187,8 +190,9 @@
 							"name": "externalToOff",
 							"transitionCondition": {
 								"operator": "Literal",
-								"valueType": "IntegerExpression",
+								"valueType": "BooleanExpression",
 								"isLeaf": true,
+								"portAccessor": "any",
 								"variableName": "PortInFinishedByOther",
 								"isPort": true
 							},
@@ -222,8 +226,9 @@
 							"name": "externalToOff",
 							"transitionCondition": {
 								"operator": "Literal",
-								"valueType": "IntegerExpression",
+								"valueType": "BooleanExpression",
 								"isLeaf": true,
+								"portAccessor": "any",
 								"variableName": "PortInFinishedByOther",
 								"isPort": true
 							},
@@ -268,12 +273,17 @@
 					"output": [
 						{
 							"port": "PortOutFinished",
-							"value": {
-								"operator": "Literal",
-								"valueType": "IntegerExpression",
-								"isLeaf": true,
-								"variableName": "MaxCycles"
-							}
+							"value": [
+								{
+									"key": "",
+									"value": {
+										"operator": "Literal",
+										"valueType": "IntegerExpression",
+										"isLeaf": true,
+										"variableName": "MaxCycles"
+									}
+								}
+							]
 						}
 					]
 				},
@@ -337,19 +347,23 @@
 			"stateDefinitions": [
 				{
 					"name": "age",
-					"type": "BooleanExpression"
+					"type": "BooleanExpression",
+					"value": true
 				},
 				{
 					"name": "engine.company",
-					"type": "StringExpression"
+					"type": "StringExpression",
+					"value": "wwwwwwwwwwwwwwww"
 				},
 				{
 					"name": "engine.owner.age",
-					"type": "IntegerExpression"
+					"type": "IntegerExpression",
+					"value": 1
 				},
 				{
 					"name": "engine.owner.fullName",
-					"type": "StringExpression"
+					"type": "StringExpression",
+					"value": "2"
 				}
 			],
 			"initialState": "off",
@@ -392,6 +406,7 @@
 											"operator": "Literal",
 											"valueType": "IntegerExpression",
 											"isLeaf": true,
+											"portAccessor": "first",
 											"variableName": "awasd",
 											"isPort": true
 										},
@@ -410,6 +425,7 @@
 											"operator": "Literal",
 											"valueType": "IntegerExpression",
 											"isLeaf": true,
+											"portAccessor": "first",
 											"variableName": "awasd",
 											"isPort": true
 										},
@@ -455,6 +471,7 @@
 										"operator": "Literal",
 										"valueType": "IntegerExpression",
 										"isLeaf": true,
+										"portAccessor": "first",
 										"variableName": "awasd",
 										"isPort": true
 									}
@@ -476,12 +493,17 @@
 					"output": [
 						{
 							"port": "x",
-							"value": {
-								"operator": "Literal",
-								"valueType": "StringExpression",
-								"isLeaf": true,
-								"value": "\"2\""
-							}
+							"value": [
+								{
+									"key": "",
+									"value": {
+										"operator": "Literal",
+										"valueType": "StringExpression",
+										"isLeaf": true,
+										"value": "\"2\""
+									}
+								}
+							]
 						}
 					]
 				}
@@ -524,7 +546,8 @@
 					"modelOverrides": [
 						{
 							"name": "isOn",
-							"type": "BooleanExpression"
+							"type": "BooleanExpression",
+							"value": true
 						}
 					],
 					"initialState": "kabumm"
@@ -576,11 +599,13 @@
 					"modelOverrides": [
 						{
 							"name": "MaxCycles",
-							"type": "IntegerExpression"
+							"type": "IntegerExpression",
+							"value": 5
 						},
 						{
 							"name": "WaitingTime",
-							"type": "IntegerExpression"
+							"type": "IntegerExpression",
+							"value": 3
 						}
 					],
 					"initialState": "On"
@@ -592,11 +617,13 @@
 					"modelOverrides": [
 						{
 							"name": "MaxCycles",
-							"type": "IntegerExpression"
+							"type": "IntegerExpression",
+							"value": 20
 						},
 						{
 							"name": "WaitingTime",
-							"type": "IntegerExpression"
+							"type": "IntegerExpression",
+							"value": 5
 						}
 					],
 					"initialState": "On"

@@ -1,6 +1,7 @@
 using System.Collections;
 using Frames.Model.ValueTypes;
 using Frames.ReelConnector.ReelDto;
+using Newtonsoft.Json.Linq;
 
 namespace Frames.ReelConnector.Ast;
 
@@ -54,7 +55,7 @@ public class LiteralAstElement : BaseAstElement
                     {
                         if (result is List<object> kvResultList)
                         {
-                            result = ListObjectToListList(kvResultList).Select(kv => kv.First(kv => kv.Key == tree.PortObjectPropertyName).Value).ToList();
+                            result = ListObjectToListList(kvResultList).Select(kvList => kvList.Properties.First(kv => kv.Key == tree.PortObjectPropertyName).Value).ToList();
 
                         }
                         else
@@ -65,7 +66,7 @@ public class LiteralAstElement : BaseAstElement
                     }
                     else
                     {
-                        result = ObjectToList(result).FirstOrDefault(kv => kv.Key == tree.PortObjectPropertyName).Value;
+                        result = ObjectToList(result).Properties.FirstOrDefault(kv => kv.Key == tree.PortObjectPropertyName).Value;
                     }
                     
                 }
@@ -77,12 +78,12 @@ public class LiteralAstElement : BaseAstElement
                             if (result is List<object> kvResultList)
                             {
                                 var toList = ListObjectToListList(kvResultList);
-                                if(toList.Any(x => x.Count != 1))
+                                if(toList.Any(x => x.Properties.Count != 1))
                                 {
                                     throw new InvalidOperationException("Result objects must have exactly one property when PortAccessor is All and PortObjectPropertyName is not set");
                                 }
 
-                                result = ListObjectToListList(kvResultList).Select(kv => kv.First().Value).ToList();
+                                result = ListObjectToListList(kvResultList).Select(kv => kv.Properties.First().Value).ToList();
                             }
                             else
                             {
@@ -182,12 +183,12 @@ public class LiteralAstElement : BaseAstElement
 
     }
 
-    private List<KeyValuePair<string, object>> ObjectToList(object result)
+    private ReelPortObject ObjectToList(object result)
     {
-        return result as List<KeyValuePair<string, object>>;
+        return result as ReelPortObject;
     }
-    private List<List<KeyValuePair<string, object>>> ListObjectToListList(List<object> result)
+    private List<ReelPortObject> ListObjectToListList(List<object> result)
     {
-        return result.Select(x => x as List<KeyValuePair<string, object>>).ToList();
+        return result.Select(ObjectToList).ToList();
     }
 }

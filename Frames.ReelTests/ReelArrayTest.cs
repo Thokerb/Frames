@@ -49,8 +49,8 @@ public class ReelArrayTest
         });
         
         Assert.NotNull(result);
-        Assert.Equal(1, ((List<long>)result.StateJson.Properties["test"].Value).Count);
-        Assert.Equal(4, ((List<long>)result.StateJson.Properties["test2"].Value).Count);
+        Assert.Equal(1, ((List<double>)result.StateJson.Properties["test"].Value).Count);
+        Assert.Equal(4, ((List<double>)result.StateJson.Properties["test2"].Value).Count);
         Assert.Equal(2, ((List<string>)result.StateJson.Properties["test3"].Value).Count);
         
       
@@ -61,8 +61,8 @@ public class ReelArrayTest
         });
         
         Assert.NotNull(result2);
-        Assert.Equal(2, ((List<long>)result2.StateJson.Properties["test"].Value).Count);
-        Assert.Equal(5, ((List<long>)result2.StateJson.Properties["test2"].Value).Count);
+        Assert.Equal(2, ((List<double>)result2.StateJson.Properties["test"].Value).Count);
+        Assert.Equal(5, ((List<double>)result2.StateJson.Properties["test2"].Value).Count);
         Assert.Equal(3, ((List<string>)result2.StateJson.Properties["test3"].Value).Count);
               
         var result3 = reelAtomicModel.InternalTransition(new ReelState()
@@ -72,8 +72,8 @@ public class ReelArrayTest
         });
         
         Assert.NotNull(result2);
-        Assert.Equal(1, ((List<long>)result3.StateJson.Properties["test"].Value).Count);
-        Assert.Equal(6, ((List<long>)result3.StateJson.Properties["test2"].Value).Count);
+        Assert.Equal(1, ((List<double>)result3.StateJson.Properties["test"].Value).Count);
+        Assert.Equal(6, ((List<double>)result3.StateJson.Properties["test2"].Value).Count);
         Assert.Equal(4, ((List<string>)result3.StateJson.Properties["test3"].Value).Count);
         
               
