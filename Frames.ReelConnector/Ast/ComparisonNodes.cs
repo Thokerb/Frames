@@ -21,7 +21,15 @@ public class LessThanAstElement : BaseAstElement
     {
         var left = Evaluate(tree.Left, stateJson,currentTime, bag);
         var right = Evaluate(tree.Right, stateJson,currentTime, bag);
-        
+        if (left is TimeUnit tu)
+        {
+            left = Convert.ToDouble(tu.Value);
+        }
+
+        if (right is TimeUnit tu2)
+        {
+            right = Convert.ToDouble(tu2.Value);
+        }
         return left switch
         {
             double l when right is double r => l < r,
@@ -38,7 +46,15 @@ public class LessThanOrEqualAstElement : BaseAstElement
     {
         var left = Evaluate(tree.Left, stateJson,currentTime, bag);
         var right = Evaluate(tree.Right, stateJson,currentTime, bag);
-        
+        if (left is TimeUnit tu)
+        {
+            left = Convert.ToDouble(tu.Value);
+        }
+
+        if (right is TimeUnit tu2)
+        {
+            right = Convert.ToDouble(tu2.Value);
+        }
         return left switch
         {
             double l when right is double r => l <= r,
@@ -55,7 +71,15 @@ public class GreaterThanAstElement : BaseAstElement
     {
         var left = Evaluate(tree.Left, stateJson,currentTime, bag);
         var right = Evaluate(tree.Right, stateJson,currentTime, bag);
-        
+        if (left is TimeUnit tu)
+        {
+            left = Convert.ToDouble(tu.Value);
+        }
+
+        if (right is TimeUnit tu2)
+        {
+            right = Convert.ToDouble(tu2.Value);
+        }
         return left switch
         {
             double l when right is double r => l > r,
@@ -72,7 +96,15 @@ public class GreaterThanOrEqualAstElement : BaseAstElement
     {
         var left = Evaluate(tree.Left, stateJson,currentTime, bag);
         var right = Evaluate(tree.Right, stateJson,currentTime, bag);
-        
+        if (left is TimeUnit tu)
+        {
+            left = Convert.ToDouble(tu.Value);
+        }
+
+        if (right is TimeUnit tu2)
+        {
+            right = Convert.ToDouble(tu2.Value);
+        }
         return left switch
         {
             double l when right is double r => l >= r,

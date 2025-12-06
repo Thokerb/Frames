@@ -24,9 +24,10 @@ public record struct TimeUnit : IComparable<TimeUnit>
         Value = value;
         IsInfinity = isInfinity;
         
-        if(value == int.MaxValue && !isInfinity)
+        if(value == int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(value), "Time unit cannot be int.MaxValue. Please use TimeUnit.Infinity instead.");
+            IsInfinity = true;
+            Value = int.MaxValue;
         }
         
         if (value < 0)
@@ -50,12 +51,26 @@ public record struct TimeUnit : IComparable<TimeUnit>
     {
         return new TimeUnit(value);
     }
+
+    public static implicit operator double(TimeUnit timeUnit)
+    {
+        
+        return (double)timeUnit.Value;
+    }
     public static implicit operator TimeUnit(double value)
     {
+        
+        if(double.IsPositiveInfinity(value))
+        {
+            return Infinity;
+        }
+        
         if (value % 1 == 0)
         {
             return new TimeUnit((int)value);
         }
+
+        return new TimeUnit((int)Math.Ceiling(value));
 
         throw new Exception("Time unit must not have decimal");
     }

@@ -99,7 +99,7 @@ public static class ComputeOutput
     /// <param name="Output">y</param>
     /// <param name="CurrentTime">t</param>
     /// </summary>
-    public sealed record ComputedOutput(Bag Output, TimeUnit CurrentTime) : IShardSeperation
+    public sealed record ComputedOutput(InternalBag Output, TimeUnit CurrentTime) : IShardSeperation
     {
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
@@ -117,7 +117,7 @@ public static class ExecuteTransition
         /// <summary>
         /// Written as (x,*) in Theory of M S
         /// </summary>
-        public StartExecuteTransition(Bag? Input, TimeUnit CurrentTime,Activity? activity) : base(activity)
+        public StartExecuteTransition(InternalBag? Input, TimeUnit CurrentTime,Activity? activity) : base(activity)
         {
             this.Input = Input;
             this.CurrentTime = CurrentTime;
@@ -125,7 +125,7 @@ public static class ExecuteTransition
 
         public required string ShardId { get; set; }
         public required string EntityName { get; set; }
-        public Bag? Input { get; init; }
+        public InternalBag? Input { get; init; }
         public TimeUnit CurrentTime { get; init; }
         public required Guid RunId { get; set; }
 

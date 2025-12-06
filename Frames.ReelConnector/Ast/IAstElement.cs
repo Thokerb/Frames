@@ -21,7 +21,7 @@ public static class ExpressionTreeJsonExtension
             
             var converted = result switch
             {
-                double d => (d % 1) == 0 ? (TimeUnit)(double)d : throw new InvalidCastException($"Cannot convert non-integer double {d} to TimeUnit"),
+                double d => DoubleToTimeUnit(d),
                 int i => (TimeUnit)(double)i,
                 TimeUnit tu => tu,
                 _ => throw new InvalidCastException($"Cannot convert {result.GetType()} to TimeUnit")
@@ -31,8 +31,29 @@ public static class ExpressionTreeJsonExtension
 
         return (T?) result ;
 
-    }    
-    
+    }
+
+    private static TimeUnit DoubleToTimeUnit(double d)
+    {
+        try
+        {
+            if(d is double.PositiveInfinity)
+            {
+                return TimeUnit.Infinity;
+            }
+
+            return (TimeUnit)d;
+            
+            return (d is double.PositiveInfinity || (d % 1) == 0) ? (TimeUnit)d : throw new InvalidCastException($"Cannot convert non-integer double {d} to TimeUnit");
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     public static void Evaluate(this ExpressionTreeJson tree, StateJson stateJson,TimeUnit currentTime, Bag? bag = null)
     {
         var element = AstBuilder.Build(tree);

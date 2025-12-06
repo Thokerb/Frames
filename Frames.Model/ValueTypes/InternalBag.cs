@@ -5,13 +5,23 @@ using System.Text.Json.Serialization;
 
 namespace Frames.Model.ValueTypes;
 
-public record struct Bag
+public record InternalBagKey
 {
-    public Bag()
+    public required Port SenderPort { get; init; }
+    public required string SenderModelId { get; init; }
+}
+
+/// <summary>
+/// Bag is used by AtomicModels and InternalBag is used internally by Coordinator. It carries more information (sender receiver)
+/// </summary>
+public record struct InternalBag
+{
+    public InternalBag()
     {
     }
+    public static InternalBag Empty => new();
 
-    public Bag(params (Port key, object? value)[] inputs)
+    public InternalBag(params (InternalBagKey key, object? value)[] inputs)
     {
         foreach (var input in inputs)
         {
@@ -19,7 +29,7 @@ public record struct Bag
         }
     }
 
-    public Bag(params (Port key, List<object?> value)[] inputs)
+    public InternalBag(params (InternalBagKey key, List<object?> value)[] inputs)
     {
         foreach (var input in inputs)
         {
@@ -27,7 +37,7 @@ public record struct Bag
         }
     }
 
-    public Bag(params Port[] inputs)
+    public InternalBag(params InternalBagKey[] inputs)
     {
         foreach (var input in inputs)
         {
@@ -38,9 +48,9 @@ public record struct Bag
     public bool IsEmpty => Inputs.Count == 0;
 
 
-    public Dictionary<Port, List<object?>> Inputs { get; set; } = new();
+    public Dictionary<InternalBagKey, List<object?>> Inputs { get; set; } = new();
 
-    public void AddInput<T>(Port key, T? value)  where T : class
+    public void AddInput<T>(InternalBagKey key, T? value)  where T : class
     {
 
         // special check to prevent adding lists via this method, but allowing Reel "object" lists
@@ -58,7 +68,7 @@ public record struct Bag
             Inputs[key] = new List<object?> { value };
         }
     }
-    public void AddInput(Port key, List<object?> value)
+    public void AddInput(InternalBagKey key, List<object?> value)
     {
         if (Inputs.ContainsKey(key))
         {
@@ -71,23 +81,21 @@ public record struct Bag
         }
     }
 
-    public List<object?>? GetInput(Port key)
+    public List<object?>? GetInput(InternalBagKey key)
     {
         Inputs.TryGetValue(key, out var value);
         return value;
     }
 
-    public bool ContainsKey(Port key)
+    public bool ContainsKey(InternalBagKey key)
     {
         return Inputs.ContainsKey(key);
     }
-
-    public static Bag Empty => new();
-
+    
     public override string ToString()
     {
         var sb = new StringBuilder();
-        sb.Append("Bag: [");
+        sb.Append("InternalBag: [");
         foreach (var input in Inputs)
         {
             sb.Append($"{input.Key}: {JsonSerializer.Serialize(input.Value, new JsonSerializerOptions
@@ -105,9 +113,9 @@ public record struct Bag
         Inputs.Clear();
     }
 
-    public Bag DeepCopy()
+    public InternalBag DeepCopy()
     {
-        return new Bag()
+        return new InternalBag()
         {
             Inputs = Inputs.ToDictionary(
                 entry => entry.Key,
@@ -116,18 +124,14 @@ public record struct Bag
         };
     }
 
-    public InternalBag toInternalBag(string baseStateName)
+    public Bag ToBag()
     {
-        var internalBag = new InternalBag();
+        var bag = new Bag();
         foreach (var input in Inputs)
         {
-            var internalBagKey = new InternalBagKey()
-            {
-                SenderModelId = baseStateName,
-                SenderPort =  input.Key
-            };
-            internalBag.AddInput(internalBagKey, input.Value);
+            bag.AddInput(input.Key.SenderPort, input.Value);
         }
-        return internalBag;
+
+        return bag;
     }
 }

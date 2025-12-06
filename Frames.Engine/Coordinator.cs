@@ -65,17 +65,17 @@ public class CoordinatorState
 
     /// <summary>
     /// string - sender of the message
-    /// Bag - message
+    /// InternalBag - message
     /// </summary>
-    public Dictionary<string, Bag> _outputMailBag = new();
+    public Dictionary<string, InternalBag> _outputMailBag = new();
 
-    public Bag _outputMessageBagParent = new();
+    public InternalBag _outputMessageBagParent = new();
 
     /// <summary>
     /// Key - name of the child
     /// Can be mapped to address with the _children dictionary
     /// </summary>
-    public Bag _outputMessageBagChildren = new();
+    public InternalBag _outputMessageBagChildren = new();
 
     public bool _initializationCompleted;
     public int ChildrenLoadCheckpointCount { get; set; }
@@ -455,19 +455,23 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         }
 
         Serilog.Log.Debug("All children have reported");
-        _state._outputMessageBagParent = new Bag();
+        _state._outputMessageBagParent = new InternalBag();
 
-        // prepare output bag for parent
-        // all ports in bag that are not coupled to children are added to the output message bag
+        // prepare output InternalBag for parent
+        // all ports in InternalBag that are not coupled to children are added to the output message InternalBag
         foreach (var entry in _state._outputMailBag)
         {
             foreach (var input in entry.Value.Inputs)
             {
-                if (_baseState._coupledModel.HasCouplingOut(input.Key, out var outPort))
+                if (_baseState._coupledModel.HasCouplingOut(input.Key.SenderPort, out var outPort))
                 {
                     if (outPort != null)
                     {
-                        _state._outputMessageBagParent.AddInput(outPort, input.Value);
+                        _state._outputMessageBagParent.AddInput(new InternalBagKey()
+                        {
+                            SenderModelId = this._baseState._coupledModel.Name, // coupled model name, since it is sending to parent
+                            SenderPort = outPort
+                        }, input.Value);
 
                     }
                 }
@@ -475,7 +479,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         }
 
         // send y-message (yparent , t) to parent
-        Serilog.Log.Debug("Sending output to parent {Parent}, Bag {Bag}", _parent.Path.Name, _state._outputMessageBagParent);
+        Serilog.Log.Debug("Sending output to parent {Parent}, InternalBag {Bag}", _parent.Path.Name, _state._outputMessageBagParent);
         _parent.Tell(new ComputeOutput.ComputedOutput(_state._outputMessageBagParent, obj.CurrentTime)
         {
             ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.ParentName),
@@ -484,9 +488,9 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         });
 
 
-        // according to M S, here we should create bag yr, which contains all messages that can be sent to the children and execute their transition
+        // according to M S, here we should create InternalBag yr, which contains all messages that can be sent to the children and execute their transition
         // this does not seem to be correct, since we don't know yet if the parent is sending anything to us
-        // therefore we just create the bag for the children and that is it
+        // therefore we just create the InternalBag for the children and that is it
         // parent coordinator will trigger either executeTransition or give us additional messages
 
 
@@ -500,9 +504,9 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
     }
 
 
-    private Bag CreateOutputMessageBagChildrenFromMail(Dictionary<string, Bag> mail)
+    private InternalBag CreateOutputMessageBagChildrenFromMail(Dictionary<string, InternalBag> mail)
     {
-        Bag outputMessageBagChildren = new Bag();
+        var outputMessageBagChildren = new InternalBag();
 
         // naming r_child, is so that it matches the book with single letter variable names
         foreach (var r_child in _baseState._children)
@@ -517,9 +521,16 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
 
                 foreach (var entry in message.Value.Inputs)
                 {
-                    if (_baseState._coupledModel.ChildrenAreCoupled(message.Key, entry.Key, r_child.Key))
+                    if (_baseState._coupledModel.ChildrenAreCoupled(message.Key, entry.Key.SenderPort, r_child.Key))
                     {
-                        outputMessageBagChildren.AddInput(entry.Key,entry.Value);
+                        var source = message.Key;
+                        outputMessageBagChildren.AddInput(
+                            new InternalBagKey()
+                            {
+                                SenderModelId = source,
+                                SenderPort = entry.Key.SenderPort
+                            },
+                            entry.Value);
                     }
                 }
             }
@@ -595,14 +606,18 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                 "error: bad synchronization consult external input coupling to get children influenced by the input");
         }
 
-        // execute transition by using bagged messages in _outputMessageBagChildren
-        // merge sent messages with the bagged messages
+        // execute transition by using InternalBagged messages in _outputMessageBagChildren
+        // merge sent messages with the InternalBagged messages
 
         if (obj.Input is { IsEmpty: false })
         {
             foreach (var entry in obj.Input.Value.Inputs)
             {
-                _state._outputMessageBagChildren.AddInput(entry.Key, entry.Value);
+                _state._outputMessageBagChildren.AddInput(new InternalBagKey()
+                {
+                    SenderPort = entry.Key.SenderPort,
+                    SenderModelId = entry.Key.SenderModelId
+                }, entry.Value);
             }
         }
 
@@ -612,26 +627,34 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         // each outPort can have a receiver
 
         // 2. send message to all children coupled to the input
-        Dictionary<string, Bag> receivers = new Dictionary<string, Bag>();
+        Dictionary<string, InternalBag> receivers = new Dictionary<string, InternalBag>();
         foreach (var bagChild in _state._outputMessageBagChildren.Inputs)
         {
-            // when multiple outModels and outPorts are coupled to the same child, we need to merge the bags
-            var outModelAndPort = _baseState._coupledModel.GetReceivers(bagChild.Key).DistinctBy(x => x.model+x.port);
+            // when multiple outModels and outPorts are coupled to the same child, we need to merge the InternalBags
+            var outModelAndPort = _baseState._coupledModel.GetReceivers(bagChild.Key.SenderModelId, bagChild.Key.SenderPort).DistinctBy(x => x.model+x.port);
             foreach (var outModelAndPortEntry in outModelAndPort)
             {
                 if (receivers.ContainsKey(outModelAndPortEntry.model))
                 {
-                    receivers[outModelAndPortEntry.model].AddInput(outModelAndPortEntry.port, bagChild.Value);
+                    receivers[outModelAndPortEntry.model].AddInput(new InternalBagKey()
+                    {
+                        SenderModelId = outModelAndPortEntry.model,
+                        SenderPort = outModelAndPortEntry.port
+                    }, bagChild.Value);
                 }
                 else
                 {
-                    receivers.Add(outModelAndPortEntry.model, new Bag((outModelAndPortEntry.port, bagChild.Value)));
+                    receivers.Add(outModelAndPortEntry.model, new InternalBag((new InternalBagKey()
+                    {
+                        SenderModelId = outModelAndPortEntry.model,
+                        SenderPort = outModelAndPortEntry.port
+                    }, bagChild.Value)));
                 }
             }
         }
 
 
-        // 3. send all imminent that are not receivers also a x-message with empty bag
+        // 3. send all imminent that are not receivers also a x-message with empty InternalBag
         // list of children that are in the imminent list but not in the coupled list
         var imminentButNoReceiver = _state._imminentChildren
             .Where(x => receivers.All(r => r.Key != x.Key))
@@ -659,7 +682,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         foreach (var uncoupledChild in imminentButNoReceiver)
         {
             var actor = _baseState._children[uncoupledChild.Key];
-            actor.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, obj.CurrentTime, activity)
+            actor.Tell(new ExecuteTransition.StartExecuteTransition(InternalBag.Empty, obj.CurrentTime, activity)
             {
                 ShardId = ActorHelper.GetShardId(_baseState.Name,  uncoupledChild.Key),
                 EntityName = uncoupledChild.Key,

@@ -64,6 +64,10 @@ public class ArrayAppendAstElement : BaseAstElement
         }
         else
         {
+            if (value is TimeUnit tu2)
+            {
+                value = Convert.ToDouble(tu2.Value);
+            }
             updated = arrVal switch
             {
                 List<string> strList =>

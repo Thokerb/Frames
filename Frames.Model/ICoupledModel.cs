@@ -29,7 +29,7 @@ public interface ICoupledModel : IModel
     public List<string> GetInfluencer(string inputModel);
     bool ChildrenAreCoupled(string source, Port entryKey, string target);
     Port GetCouplingOutPort(string source, Port sourcePort, string target);
-    List<(string model, Port port)> GetReceivers(Port inPort);
+    List<(string model, Port port)> GetReceivers(string source, Port inPort);
 
     void AddCouplingOut(string source, Port inPort, Port outPort);
     bool HasCouplingOut(Port inPort,out Port? outPort);

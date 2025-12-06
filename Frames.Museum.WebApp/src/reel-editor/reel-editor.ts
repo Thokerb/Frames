@@ -8,7 +8,9 @@ import { Diagnostic } from 'vscode-languageserver/browser.js';
 import {ButtonModule} from 'primeng/button';
 import {SelectModule} from 'primeng/select';
 import {SignalStoreService} from '../app/services/signal-store.service';
-import {ApiService, AddModelRequest} from '../app/services/api.service';
+import {ApiService, AddModelRequest, AddModelRequestWithDuration} from '../app/services/api.service';
+import {Textarea} from 'primeng/textarea';
+import {InputNumber} from 'primeng/inputnumber';
 
 type DocumentChange = { uri: string, content: string, diagnostics: Diagnostic[] };
 
@@ -19,6 +21,8 @@ type DocumentChange = { uri: string, content: string, diagnostics: Diagnostic[] 
     CommonModule,
     ButtonModule,
     SelectModule,
+    Textarea,
+    InputNumber,
   ],
   templateUrl: './reel-editor.html',
   styleUrl: './reel-editor.css'
@@ -49,6 +53,16 @@ export class ReelEditor implements OnInit {
     this.Wrapper = await executeClassic(document.getElementById('monaco-editor-root') as HTMLElement);
     this.Client = this.Wrapper!.getLanguageClient();
 
+  }
+
+  onClicKParse(){
+    const content = this.editorContent!;
+    this.generatedCode.set(content);
+    this.signalStore.setGeneratedCode(content);
+    this.extractModels(content);
+
+    let coupled = this.allModels().find(x => x.type === 'coupled');
+    this.selectedModel.set(coupled!.value)
   }
 
   onClicK(){
@@ -139,8 +153,9 @@ export class ReelEditor implements OnInit {
     if (code && selectedEntry) {
       try {
         const reelJson = JSON.parse(code);
-        const request: AddModelRequest = {
+        const request: AddModelRequestWithDuration = {
           reelJson: reelJson,
+          timeUnits: this.editorTime
         };
 
         if (selectedEntry.type === 'atomic') {
@@ -149,7 +164,7 @@ export class ReelEditor implements OnInit {
           request.coupledModelName = selectedEntry.value;
         }
 
-        this.apiService.addModel(request).subscribe({
+        this.apiService.addAndStartModel(request).subscribe({
           next: (response) => {
             console.log('Model added successfully:', response);
             this.signalStore.setRunId(response.modelId);
@@ -172,6 +187,8 @@ export class ReelEditor implements OnInit {
   }
 
   // Drag and drop methods
+  editorContent?: string;
+  editorTime = 500;
   onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();

@@ -17,7 +17,13 @@
     <p class="text-sm text-muted">or use the editor above to generate code</p>
   </div>
 </div>
+<textarea rows="5" cols="30" pTextarea [(ngModel)]="editorContent"></textarea>
+<div class="flex-auto">
+  <label for="integeronly">Integer Only</label>
+  <p-inputnumber inputId="integeronly" [(ngModel)]="editorTime" />
+</div>
 <div class="button-group">
+  <p-button (onClick)="onClicKParse()" label="Parse TextArea" icon="pi pi-cog"></p-button>
   <p-button (onClick)="onClicK()" label="GENERATE" icon="pi pi-cog"></p-button>
   <p-button (onClick)="setSampleCode()" label="Load Sample" icon="pi pi-file"></p-button>
   <div class="send-request-group">

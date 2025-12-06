@@ -85,7 +85,7 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     /// <param name="state"></param>
     /// <param name="bag"></param>
     /// <returns></returns>
-    public TState ConfluentTransition(TState state, Bag bag)
+    public virtual TState ConfluentTransition(TState state, Bag bag)
     {
         // return ExternalTransition(InternalTransition(state), bag);
         return InternalTransition(ExternalTransition(state, bag));

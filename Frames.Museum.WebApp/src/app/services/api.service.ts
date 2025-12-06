@@ -11,8 +11,8 @@ export interface AddModelRequest {
 
 export interface AddModelRequestWithDuration {
   reelJson: any;
-  coupledModelName: string;
-  atomicModelName: string;
+  coupledModelName?: string;
+  atomicModelName?: string;
   timeUnits: number;
 }
 

@@ -178,10 +178,10 @@ public class CoupledModel : ICoupledModel
         return coupling.outPort;
     }
 
-    public List<(string model, Port port)> GetReceivers(Port inPort)
+    public List<(string model, Port port)> GetReceivers(string sourceModel, Port sourcePort)
     {
         var receivers = Pipes
-            .Where(x => x.inPort.Equals(inPort))
+            .Where(x => x.inPort.Equals(sourcePort) && x.inModel.Equals(sourceModel))
             .Select(x => (x.outModel, x.outPort))
             .ToList();
 

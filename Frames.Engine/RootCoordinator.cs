@@ -632,7 +632,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         PersistState();
         ExecuteTransitionActivity = ActivitySource.StartActivity("ExecuteTransition", ActivityKind.Client,
             parentContext: SimulationStep?.Context ?? new ActivityContext());
-        _baseState._child.Tell(new ExecuteTransition.StartExecuteTransition(Bag.Empty, _state._timeNext, ExecuteTransitionActivity)
+        _baseState._child.Tell(new ExecuteTransition.StartExecuteTransition(InternalBag.Empty, _state._timeNext, ExecuteTransitionActivity)
         {
             ShardId = ActorHelper.GetShardId(ActorHelper.RootCoordinatorName(_baseState.RunId), _baseState.ChildName),
             EntityName = _baseState.ChildName,

@@ -1,4 +1,5 @@
-﻿using DynamicExpresso;
+﻿using System.Text;
+using DynamicExpresso;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.ReelConnector.Ast;
@@ -112,14 +113,25 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 return state;
             }
         }
-        TransitionTaken = "No Transition";
+        TransitionTaken = "No External Transition";
         return state;
     }
 
-    public new ReelState ConfluentTransition(ReelState state, Bag bag)
+    public override ReelState ConfluentTransition(ReelState state, Bag bag)
     {
-        TransitionTaken = "ConfluentTransition";
-        return base.ConfluentTransition(state, bag);
+        StringBuilder sb = new StringBuilder();
+        sb.Append("ConfluentTransition: ");
+        var internalTr = InternalTransition(state);
+        sb.Append("Internal: ");
+        sb.Append(TransitionTaken);
+        sb.Append("> ");
+        var external = ExternalTransition(internalTr, bag);
+        sb.Append("External: ");
+        sb.Append(TransitionTaken);
+        
+        TransitionTaken = sb.ToString();
+        
+        return external;
     }
 
     public override ReelState InternalTransition(ReelState state)
@@ -160,7 +172,7 @@ public sealed class ReelAtomicModel : AtomicModel<ReelState>
                 return state;
             }
         }        
-        TransitionTaken = "No Transition";
+        TransitionTaken = "No Internal Transition";
 
         return state;
     }

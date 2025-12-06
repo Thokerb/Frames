@@ -59,7 +59,10 @@ public class OperatorConverter : JsonConverter<Operator>
         { "not", Operator.Not },
 
         { "=", Operator.Assign },
-        { "assign", Operator.Assign }
+        { "assign", Operator.Assign },
+        
+        { "?", Operator.Conditional },
+        { ":", Operator.ConditionalOptions }
     };
 
     static OperatorConverter()

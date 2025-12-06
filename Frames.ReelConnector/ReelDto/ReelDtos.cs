@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using Frames.Model.ValueTypes;
 using Frames.ReelConnector.Converter;
 using Newtonsoft.Json;
@@ -14,7 +15,7 @@ public record StatePropertyJson
     
     public required bool IsArray { get; init; }
 
-    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     private object? _value;
     
     public required object? Value
@@ -85,7 +86,7 @@ public record StateJson
     public required List<string> States { get; init; }
     public required string InitialState { get; init; }
     
-    [JsonConverter(typeof(PropertyArrayToDictionaryConverter))]
+    [Newtonsoft.Json.JsonConverter(typeof(PropertyArrayToDictionaryConverter))]
     public required Dictionary<string, StatePropertyJson> Properties { get; init; }
 
     public override string ToString()
@@ -100,6 +101,7 @@ public record StateJson
         return JsonSerializer.Serialize(root, new JsonSerializerOptions
         {
             WriteIndented = false,
+            NumberHandling = JsonNumberHandling.WriteAsString,
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         });
     }
@@ -272,7 +274,9 @@ public enum Operator
     And,            // and
     Or,             // or
     Not,            // !
-    Assign          // =
+    Assign,          // =
+    Conditional,          // ?
+    ConditionalOptions          // :
 }
 
 public enum PortAccessor
@@ -299,7 +303,7 @@ public record ExpressionTreeJson
     
     public string? VariableName { get; init; }
 
-    [JsonConverter(typeof(OperatorConverter))]
+    [Newtonsoft.Json.JsonConverter(typeof(OperatorConverter))]
     public Operator? Operator { get; init; }
 
     public bool? IsPort { get; init; }

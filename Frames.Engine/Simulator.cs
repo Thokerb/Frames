@@ -354,14 +354,14 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         {
             activity?.SetTag("Transition", "Confluent");
             // Confluent transition
-            RunConfluentState(_baseState._atomicModel.StateInternal, obj.Input ?? Bag.Empty);
+            RunConfluentState(_baseState._atomicModel.StateInternal, obj.Input?.ToBag() ?? Bag.Empty);
         }
         else if (!bagIsEmpty && (_state._timeLast <= obj.CurrentTime && obj.CurrentTime <= _state._timeNext))
         {
             activity?.SetTag("Transition", "External");
             // External transition
             _state._timeElapsed = obj.CurrentTime - _state._timeLast;
-            RunExternalState(_baseState._atomicModel.StateInternal, obj.Input ?? Bag.Empty);
+            RunExternalState(_baseState._atomicModel.StateInternal, obj.Input?.ToBag() ?? Bag.Empty);
         }
 
         activity?.SetTag("NewState", _baseState._atomicModel.StateInternal.ToString());
@@ -396,7 +396,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         _coordinator.Tell(new ExecuteTransition.FinishedExecuteTransition(_state._timeNext)
         {
             StopConditionReached = _baseState._atomicModel.StopConditionCheck(_baseState._atomicModel.StateInternal,
-                obj.Input ?? Bag.Empty),
+                obj.Input?.ToBag() ?? Bag.Empty),
             ToStringState = [msgId],
             ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.CoordinatorName),
             EntityName = _baseState.CoordinatorName,
@@ -429,7 +429,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
             activity?.SetTag("Output",outputBag.ToString());
 
             // Send the output message to the coordinator
-            _coordinator.Tell(new ComputeOutput.ComputedOutput(outputBag, obj.CurrentTime)
+            _coordinator.Tell(new ComputeOutput.ComputedOutput(outputBag.toInternalBag(this._baseState.Name), obj.CurrentTime)
             {
                  ShardId = ActorHelper.GetShardId(_baseState.Name, _baseState.CoordinatorName),
                  EntityName = _baseState.CoordinatorName,

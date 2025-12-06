@@ -66,11 +66,20 @@ public class LiteralAstElement : BaseAstElement
                     }
                     else
                     {
-                        result = ObjectToList(result).Properties.FirstOrDefault(kv => kv.Key == tree.PortObjectPropertyName).Value;
+                        try
+                        {
+                            result = ObjectToList(result).Properties.FirstOrDefault(kv => kv.Key == tree.PortObjectPropertyName).Value;
+
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                            throw;
+                        }
                     }
                     
                 }
-                else
+                else                    // TODO: merge with if above
                 {
                     if (tree.PortAccessor is PortAccessor.All)
                     {
@@ -92,6 +101,14 @@ public class LiteralAstElement : BaseAstElement
                             }
                         
                     }
+                    else
+                    {
+                        if (tree.PortAccessor is not PortAccessor.Any)
+                        {
+                            result = ObjectToList(result).Properties.FirstOrDefault(kv => kv.Key == string.Empty).Value;
+                        }
+                    }
+                    
                 }
             }
             else
@@ -170,16 +187,25 @@ public class LiteralAstElement : BaseAstElement
             }
             throw new InvalidOperationException("result must be a list when PortAccessor is All");
         }
-        
-        return tree.ValueType switch
+
+        try
         {
-            PortValueType.BooleanExpression => result is bool b ? b : Convert.ToBoolean(result),
-            PortValueType.IntegerExpression => Convert.ToDouble(result), // using double to cover both int and double
-            PortValueType.StringExpression => result.ToString(),
-            PortValueType.VoidExpression => null,
-            PortValueType.ObjectExpression => result,
-            _ => throw new ArgumentOutOfRangeException()
-        };
+            return tree.ValueType switch
+            {
+                PortValueType.BooleanExpression => result is bool b ? b : Convert.ToBoolean(result),
+                PortValueType.IntegerExpression => Convert.ToDouble(result), // using double to cover both int and double
+                PortValueType.StringExpression => result.ToString(),
+                PortValueType.VoidExpression => null,
+                PortValueType.ObjectExpression => result,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
 
     }
 

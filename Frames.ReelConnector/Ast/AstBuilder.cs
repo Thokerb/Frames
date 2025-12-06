@@ -34,6 +34,8 @@ public static class AstBuilder
             Operator.Not => new BooleanNodes.NotAstElement(),
 
             Operator.Assign => new AssignAstElement(),
+            
+            Operator.Conditional => new ConditionalAstElement(),
 
             null => throw new InvalidOperationException("Operator cannot be null"),
             _ => throw new ArgumentOutOfRangeException()
