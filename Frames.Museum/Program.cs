@@ -22,6 +22,19 @@ builder.Configuration
     .AddJsonFile($"appsettings.{environment}.json", optional: true)
     .AddEnvironmentVariables();
 
+if(builder.Environment.IsDevelopment())
+{
+    if (builder.Configuration.GetValue<int>("AkkaSettings:AkkaManagementOptions:RequiredContactPointsNr") == 1)
+    {
+        var roles = builder.Configuration.GetSection("AkkaSettings:ClusterOptions:Roles").Get<List<string>>();
+        
+        if (!roles?.Contains("listener") ?? false)
+        {
+            builder.Configuration[$"AkkaSettings:ClusterOptions:Roles:{roles.Count}"] = "listener";
+        }
+    }
+}
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
