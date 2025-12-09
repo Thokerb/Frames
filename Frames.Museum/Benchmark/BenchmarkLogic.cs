@@ -26,7 +26,7 @@ public static class BenchmarkLogic
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
         var uniqueId = Guid.NewGuid();
 
-        var model = new CoupledBenchmarkModel("root2", numberInactiveNodes, numberActiveNodes, true);
+        var model = new CoupledBenchmarkModel("root2", numberInactiveNodes, numberActiveNodes, request.CoupleGrouping, true);
         
         var resp = await rootCoordinatorActor.Ask(
             new Simulation.CreateModel(model, "coordinator-topLevel", uniqueId));
@@ -51,4 +51,5 @@ public record BenchmarkRequest
     public int NumberNodes { get; set; }
     public double PercentageActive { get; set; }
     public int TimeUnits { get; set; }
+    public int CoupleGrouping { get; set; }
 }

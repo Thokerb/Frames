@@ -1,5 +1,5 @@
 ﻿using Frames.Model;
-using Frames.Model.ValueTypes;
+using Newtonsoft.Json;
 
 namespace Frames.DevStoneAdapter.Model;
 
@@ -8,11 +8,17 @@ namespace Frames.DevStoneAdapter.Model;
 /// </summary>
 public abstract class DEVStoneWrapperCoupled : CoupledModel
 {
+    [JsonProperty]
     protected int Depth { get; }
+    [JsonProperty]
     protected int Width { get; }
+    [JsonProperty]
     protected int IntDelay { get; }
+    [JsonProperty]
     protected int ExtDelay { get; }
+    [JsonProperty]
     protected bool AddAtomicOutPorts { get; }
+    [JsonProperty]
     protected int PrepTime { get; }
 
     public DEVStoneWrapperCoupled(string name, int depth, int width, int intDelay, int extDelay, bool addAtomicOutPorts, int prepTime) : base(name)
@@ -27,6 +33,10 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
         AddInPort(PortConstants.InPort);
         AddOutPort(PortConstants.OutPort);
 
+        if (depth == 0)
+        {
+            throw new Exception("should not be possible -> serialize error?");
+        }
 
         if (depth == 1)
         {

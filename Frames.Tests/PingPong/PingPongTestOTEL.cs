@@ -60,7 +60,7 @@ public class PingPongTestOTEL : BaseTestKit,  IClassFixture<OpenTelemetryFixture
         // Assert
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
-        Assert.InRange<int>(response.ElapsedTime, TimeUnit.Zero + TimeUnit.Delta, new TimeUnit(31));
+        Assert.InRange<double>(response.ElapsedTime, TimeUnit.Zero + TimeUnit.Delta, new TimeUnit(31));
     }
     
     [Fact]

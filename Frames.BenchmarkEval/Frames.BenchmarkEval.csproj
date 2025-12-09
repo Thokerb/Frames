@@ -11,9 +11,5 @@
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.10" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
-      <ProjectReference Include="..\Frames.Museum\Frames.Museum.csproj" />
-    </ItemGroup>
 
 </Project>

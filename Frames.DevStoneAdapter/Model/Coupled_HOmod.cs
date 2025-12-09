@@ -1,14 +1,21 @@
 ﻿using Frames.Model;
+using Newtonsoft.Json;
 
 namespace Frames.DevStoneAdapter.Model;
 
 public class Coupled_HOmod : CoupledModel
 {
+    [JsonProperty]
     private int Depth { get; }
+    [JsonProperty]
     private int Width { get; }
+    [JsonProperty]
     private int IntDelay { get; }
+    [JsonProperty]
     private int ExtDelay { get; }
+    [JsonProperty]
     private bool AddAtomicOutPorts { get; }
+    [JsonProperty]
     private int PrepTime { get; }
 
     public Coupled_HOmod(string name, int depth, int width, int intDelay, int extDelay, bool addAtomicOutPorts,

@@ -120,8 +120,9 @@ public class SerializationTest
     {
         int numberInactive = 20;
         int numberActive = 20;
-        var model = new CoupledBenchmarkModel("root2", numberInactive, numberActive, true);
-        Assert.Equal((numberActive + numberInactive) / CoupledBenchmarkModel.StepSize, model.GetChildren().Count());
+        var stepSize = 10;
+        var model = new CoupledBenchmarkModel("root2", numberInactive, numberActive,stepSize, true);
+        Assert.Equal((numberActive + numberInactive) / stepSize, model.GetChildren().Count());
         
         // serialize and deserialize
         var serialize = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
@@ -132,13 +133,13 @@ public class SerializationTest
         {
             TypeNameHandling = TypeNameHandling.Auto
         });
-        Assert.Equal((numberActive + numberInactive) / CoupledBenchmarkModel.StepSize, modelDeserialized.GetChildren().Count());
+        Assert.Equal((numberActive + numberInactive) / stepSize, modelDeserialized.GetChildren().Count());
     }
     
     [Fact]
     public void TestSerialization6()
     {
-        var model = new CoupledBenchmarkModel("root2", 20, 20, true);
+        var model = new CoupledBenchmarkModel("root2", 20, 20,10, true);
 
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
@@ -166,7 +167,7 @@ public class SerializationTest
          */
 
         
-        var model = new CoupledBenchmarkModel("root2", 1000, 1000, true);
+        var model = new CoupledBenchmarkModel("root2", 1000, 1000, 10,true);
 
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         

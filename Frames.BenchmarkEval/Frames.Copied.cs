@@ -1,16 +1,39 @@
-﻿using Newtonsoft.Json;
+﻿namespace Frames.BenchmarkEval;
 
-namespace Frames.Model.ValueTypes;
+// so that we don't have to add a dependency to Frames.Model just for this
+public class Simulation
+{
+    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id, long TimeInMilliseconds);
+    
+    public enum CompletionType
+    {
+        NotCompleted,
+        StopAfterTime,
+        StopAfterCondition,
+        ManualStop,
+        ManualPause,
+        Error,
+        Timeout
+    }
+
+}
+
+public record BenchmarkRequest
+{
+    public int NumberNodes { get; set; }
+    public double PercentageActive { get; set; }
+    public int TimeUnits { get; set; }
+    public int CoupleGrouping { get; set; }
+}
+
 
 /// <summary>
 /// Value type for time units
 /// </summary>
 public record struct TimeUnit : IComparable<TimeUnit>
 {
-    [JsonProperty]
     public double Value { get; init; }
     
-    [JsonProperty]
     public bool IsInfinity { get; init; }
 
     public TimeUnit(TimeUnit timeUnit)
@@ -126,4 +149,22 @@ public record struct TimeUnit : IComparable<TimeUnit>
         }
         return Value.CompareTo(other.Value);
     }
+}
+
+public record DevstoneRequest(
+    DevstoneModelType ModelType,
+    int Depth,
+    int Width,
+    int IntCycles,
+    int ExtCycles,
+    bool AddAtomicOutPorts,
+    int PrepTime
+);
+
+public enum DevstoneModelType
+{
+    LI,
+    HI,
+    HO,
+    HOmod
 }

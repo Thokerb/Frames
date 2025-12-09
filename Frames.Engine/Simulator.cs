@@ -384,9 +384,9 @@ public class Simulator : ReceivePersistentActor, ILogReceive
             "{" +
             (transitionTaken != string.Empty ? $"  \"TransitionTaken\": \"{transitionTaken}\"," : "") +
             $"  \"Name\": \"{_baseState._atomicModel.Name}\"," +
-            $"  \"PreviousState\": {oldState}," +
-            $"  \"NewState\": {_baseState._atomicModel.StateInternal}" +
-            $"  \"Bag\": {obj.Input?.ToString() ?? "null"}" +
+            $"  \n\"PreviousState\": {oldState}," +
+            $"  \n\"NewState\": {_baseState._atomicModel.StateInternal}" +
+            $"  \n\"Bag\": {obj.Input?.ToString() ?? "null"}" +
             "}";
         
         TracingStreamActor.Tell(new Messages.Tracing.MessageWithId(json,msgId));
