@@ -7,5 +7,6 @@ public static class DevstoneEndpoints
         var group = app.MapGroup("/devstone");
 
         group.MapPost("/run", DevstoneLogic.Run);
+        group.MapPost("/testDevstone", DevstoneLogic.TestDevstone);
     }
 }

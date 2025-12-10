@@ -36,6 +36,9 @@
         <None Update="dhryLinux\Makefile">
           <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <None Update="dhryLinux\dhrystone.so">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup>
