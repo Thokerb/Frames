@@ -18,13 +18,8 @@ public static class DevstoneLogic
     public static async Task<Results<Ok, BadRequest>> TestDevstone(int number)
     {
         // check if windows 
-        if (OperatingSystem.IsWindows())
-        {
-            var result =  DevStoneAdapter.CSharpStone.RunDhrystoneOnWindowsV1(number);
-            return TypedResults.Ok();
-        }
-        
-        var resultLinux = DevStoneAdapter.CSharpStone.RunDhrystoneOnLinux1(number);
+
+        var result = DevStoneAdapter.CSharpStone.RunDhrystone(number);
         return TypedResults.Ok();
     }
     

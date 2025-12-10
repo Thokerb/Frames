@@ -53,7 +53,7 @@ public class DelayedAtomic : AtomicModel<DelayedAtomicState>
     {
         if (ExtDelay > 0)
         {
-            CSharpStone.RunDhrystoneOnWindowsV1(ExtDelay);
+            CSharpStone.RunDhrystone(ExtDelay);
         }
 
         return new DelayedAtomicState()
@@ -68,7 +68,7 @@ public class DelayedAtomic : AtomicModel<DelayedAtomicState>
     {
         if (IntDelay > 0)
         {
-            CSharpStone.RunDhrystoneOnWindowsV1(IntDelay);
+            CSharpStone.RunDhrystone(IntDelay);
         }
 
         return new DelayedAtomicState()

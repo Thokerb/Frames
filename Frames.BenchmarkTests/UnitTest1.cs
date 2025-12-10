@@ -11,7 +11,7 @@ public class UnitTest1
     public void Test1()
     {
 
-        var result = CSharpStone.RunDhrystoneOnWindowsV1(100_000_000);
+        var result = CSharpStone.RunDhrystone(100_000_000);
         
         Assert.True(result==0, "Dhrystone V1 should return a positive result");
     }   
@@ -21,7 +21,7 @@ public class UnitTest1
     {
         Parallel.ForAsync(0,100_000, async (i, ct) =>
         {
-            var result = CSharpStone.RunDhrystoneOnWindowsV1(100_000);
+            var result = CSharpStone.RunDhrystone(100_000);
         });
 
         
