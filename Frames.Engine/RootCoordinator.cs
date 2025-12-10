@@ -282,7 +282,6 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         _baseState.RunId = arg.Id;
         switch (arg.Model)
         {
-            // TODO: DI
             case IAtomicModelBase atomicModel:
                 actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
                 await actor.Ask(

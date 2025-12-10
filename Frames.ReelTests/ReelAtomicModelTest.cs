@@ -100,7 +100,20 @@ public class ReelAtomicModelTest
         {
             CurrentState = state,
             StateJson = reelAtomicModel.State.StateJson
-        }, new Bag(("awasd", 5)));
+        }, new Bag(("awasd", new List<object?>()
+        {
+            new ReelPortObject()
+            {
+                Properties = new List<ReelPortObjectProperty>()
+                {
+                    new ReelPortObjectProperty()
+                    {
+                        Key = "",
+                        Value = 5
+                    }
+                }
+            }
+        })));
         
         Assert.NotNull(result);
         Assert.Equal((double)5, result.StateJson.Properties["engineSEPpower"].Value);

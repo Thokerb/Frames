@@ -2,10 +2,11 @@ using System.Collections;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Frames.Model.ValueTypes.util;
 
 namespace Frames.Model.ValueTypes;
 
-public record InternalBagKey
+public class InternalBagKey
 {
     public required Port SenderPort { get; init; }
     public required string SenderModelId { get; init; }
@@ -20,7 +21,7 @@ public record struct InternalBag
     {
     }
     public static InternalBag Empty => new();
-
+    
     public InternalBag(params (InternalBagKey key, object? value)[] inputs)
     {
         foreach (var input in inputs)
@@ -46,8 +47,8 @@ public record struct InternalBag
     }
 
     public bool IsEmpty => Inputs.Count == 0;
-
-
+    
+    [Newtonsoft.Json.JsonConverter(typeof(InternalBagKeyDictionaryConvert))]
     public Dictionary<InternalBagKey, List<object?>> Inputs { get; set; } = new();
 
     public void AddInput<T>(InternalBagKey key, T? value)  where T : class

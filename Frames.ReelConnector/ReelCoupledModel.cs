@@ -6,19 +6,21 @@ namespace Frames.ReelConnector;
 
 public class ReelCoupledModel : CoupledModel
 {
-    [JsonProperty]
     private CoupledModelJson CoupledModelJson { get; }
+    
+    // We store the complete ReelJson. This is not very memory efficient, but allows us to recreate nested models easily. Also we dont want to store children generally but dynamically create them from the ReelJson when needed.
+    [JsonProperty]
+    private ReelJson ReelJson { get; }
 
-    public ReelCoupledModel(ReelJson reelJson, string coupledModelRef, string? name, CoupledModelJson? coupledModelJson = null) : base(name ?? coupledModelRef)
+    [JsonProperty]
+    private string CoupledModelRef { get; }
+
+    public ReelCoupledModel(ReelJson reelJson, string coupledModelRef, string? name) : base(name ?? coupledModelRef)
     {
 
-        if (coupledModelJson != null)
-        {
-            // this is from newtonsoft akka deserializing, dont do this manually; also parameter must be same name as property!
-            CoupledModelJson = coupledModelJson;
-        }
-        else
-        {
+        ReelJson = reelJson;
+        CoupledModelRef = coupledModelRef;
+        
             if (!reelJson.CoupledModels.Exists(m => m.Name == coupledModelRef))
             {
                 var available = string.Join(", ",
@@ -29,14 +31,19 @@ public class ReelCoupledModel : CoupledModel
                     $"Available models: {available}");
             }
             CoupledModelJson = reelJson.CoupledModels.First(x => x.Name == coupledModelRef);
-        
+            
         
             AddModels(reelJson);
         
             AddReelPorts();
         
             AddReelCoupling();
-        }
+        
+    }
+
+    private ReelJson TrimReelJson(ReelJson reelJson)
+    {
+        throw new NotImplementedException();
     }
 
     private void AddModels(ReelJson reelJson)

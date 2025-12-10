@@ -155,11 +155,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             IActorRef actor;
             switch (child.Item2)
             {
-                // TODO: DI
                 case IAtomicModelBase atomicModel:
-                    // props = Props.Create(() => 
-                    //     new Simulator(ServiceProvider)); //TODO Self, atomicModel,
-                    
                     actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
                     await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, name){
                         ShardId = name,  // Simulator should be in the same shard as the coordinator

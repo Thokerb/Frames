@@ -18,7 +18,7 @@ public class TestCoupling
         model.AddCoupling("source", "sourcePort", "target", "targetPort");
         
         // Act
-        var receiver = model.GetReceivers("source","sourcePort");
+        var receiver = model.GetReceivers("simulator-source","sourcePort");
         
         // Assert
         Assert.Single(receiver);

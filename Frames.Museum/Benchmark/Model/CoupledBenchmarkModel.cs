@@ -1,11 +1,26 @@
 ﻿using Frames.Model;
+using Newtonsoft.Json;
 
 namespace Frames.Museum.Benchmark.Model;
 
 public class CoupledBenchmarkModel : CoupledModel
 {
+    [JsonProperty]
+    private int NumberInactiveNodes { get; }
+    [JsonProperty]
+    private int NumberActiveNodes { get; }
+    [JsonProperty]
+    private int CoupleGrouping { get; }
+    [JsonProperty]
+    private bool IsRoot { get; }
+
     public CoupledBenchmarkModel(string name, int numberInactiveNodes, int numberActiveNodes,int coupleGrouping = 0 , bool isRoot = false) : base(name)
     {
+        Name = name;
+        NumberInactiveNodes = numberInactiveNodes;
+        NumberActiveNodes = numberActiveNodes;
+        CoupleGrouping = coupleGrouping;
+        IsRoot = isRoot;
         var stepSize = coupleGrouping;
         if (isRoot)
         {

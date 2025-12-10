@@ -19,7 +19,7 @@ public class UnitTest1
     [Fact]
     public void TestSerializationHI()
     {
-        var model = new Coupled_HI("name", 1500, 1500, 20, 20, true, 20);
+        var model = new Coupled_HI("name", 500, 500, 20, 20, true, 20);
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         

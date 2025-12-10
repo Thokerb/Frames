@@ -127,11 +127,11 @@ public class SerializationTest
         // serialize and deserialize
         var serialize = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
         {
-            TypeNameHandling = TypeNameHandling.Auto
+            TypeNameHandling = TypeNameHandling.Objects
         });
         var modelDeserialized = JsonConvert.DeserializeObject<CoupledBenchmarkModel>(serialize, new JsonSerializerSettings()
         {
-            TypeNameHandling = TypeNameHandling.Auto
+            TypeNameHandling = TypeNameHandling.Objects
         });
         Assert.Equal((numberActive + numberInactive) / stepSize, modelDeserialized.GetChildren().Count());
     }
@@ -174,11 +174,11 @@ public class SerializationTest
         // serialize and deserialize
         var serialize = JsonConvert.SerializeObject(msg, new JsonSerializerSettings()
         {
-            TypeNameHandling = TypeNameHandling.Auto,
+            TypeNameHandling = TypeNameHandling.Objects,
         });
-        var modelDeserialized = JsonConvert.DeserializeObject<WithShardId>(serialize, new JsonSerializerSettings()
+        var modelDeserialized = JsonConvert.DeserializeObject<IShardSeperation>(serialize, new JsonSerializerSettings()
         {
-            TypeNameHandling = TypeNameHandling.Auto
+            TypeNameHandling = TypeNameHandling.Objects
         });
         
 

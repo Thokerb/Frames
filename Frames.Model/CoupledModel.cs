@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Frames.Model;
 
-public class CoupledModel : ICoupledModel
+public abstract class CoupledModel : ICoupledModel
 {
     public CoupledModel(string name)
     {
@@ -16,14 +16,14 @@ public class CoupledModel : ICoupledModel
     [JsonProperty]
     public bool HasStopCondition { get; set; } = false;
     
-    [JsonProperty]
+    [JsonIgnore]
     private Dictionary<string, IModel> Children { get; } = new();
 
-    [JsonProperty]
+    [JsonIgnore]
     private List<(Port inPort, Port outPort, string inModel, string outModel)> Pipes { get; } = new();
     
     // TODO: this seems inconsistent, we dont care about models and only about ports here but in Pipes we care about models.
-    [JsonProperty]
+    [JsonIgnore]
     private List<(Port inPort, Port outPort)> OutsidePorts { get; } = new();
 
     public T AddModel<T>(string id) where T : IModel
