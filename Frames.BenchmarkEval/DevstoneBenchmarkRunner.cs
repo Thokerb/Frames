@@ -53,6 +53,7 @@ public class DevstoneBenchmarkRunner
             Console.WriteLine(completion);
 
             WriteCsvRow(width, depth, request, completion);
+            Thread.Sleep(1000);
         }
 
         Console.WriteLine($"✅ Devstone finished: {Path.GetFullPath(_config.CsvPath)}");

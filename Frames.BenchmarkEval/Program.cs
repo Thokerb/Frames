@@ -35,9 +35,9 @@ public class Program
         
         // --- Devstone benchmarks (run AFTER normal ones) ---
         await new DevstoneBenchmarkRunner(TestConf.ConfigLI).RunAsync();
-        // await new DevstoneBenchmarkRunner(TestConf.ConfigHI).RunAsync();
-        // await new DevstoneBenchmarkRunner(TestConf.ConfigHO).RunAsync();
-        // await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod).RunAsync();
+        await new DevstoneBenchmarkRunner(TestConf.ConfigHI).RunAsync();
+        await new DevstoneBenchmarkRunner(TestConf.ConfigHO).RunAsync();
+        await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod).RunAsync();
 
         Console.WriteLine("✅ ALL BENCHMARKS COMPLETED");
     }

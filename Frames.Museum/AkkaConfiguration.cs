@@ -50,6 +50,7 @@ public static class AkkaConfiguration
                 settings.Formatting = Formatting.None;
                 settings.Converters.Add(new PropertyArrayToDictionaryConverter());
                 settings.Converters.Add(new OperatorConverter());
+                settings.MaxDepth = 3000;
             });
             
 

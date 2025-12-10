@@ -10,7 +10,7 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
         return StopCondition((TState)state, bag);
     }
 
-    public required string Name { get; set; }
+    public  string Name { get; set; }
 
     public virtual bool HasStopCondition { get; set; } = false;
 
