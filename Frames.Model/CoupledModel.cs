@@ -112,7 +112,7 @@ public abstract class CoupledModel : ICoupledModel
             // Internally all models are prefixed with "simulator-" or "coordinator-"
             if (!(internalSourceId.StartsWith("simulator-") || internalSourceId.StartsWith("coordinator-")))
             {
-                internalSourceId = Children.Keys.Any(x => x.Equals("simulator-" + sourceId))
+                internalSourceId = Children.ContainsKey("simulator-" + sourceId)
                     ? "simulator-" + sourceId
                     : "coordinator-" + sourceId;
             }
@@ -121,7 +121,7 @@ public abstract class CoupledModel : ICoupledModel
         if (!internalTargetId.StartsWith("simulator-") && !internalTargetId.StartsWith("coordinator-"))
         {
             // Internally all models are prefixed with "simulator-" or "coordinator-"}
-            internalTargetId = Children.Keys.Any(x => x.Equals("simulator-" + targetId))
+            internalTargetId = Children.ContainsKey("simulator-" + targetId)
                 ? "simulator-" + targetId
                 : "coordinator-" + targetId;
         }
@@ -199,7 +199,7 @@ public abstract class CoupledModel : ICoupledModel
     public void AddCouplingFromOutIn(Port sourcePort, string targetModel, Port targetPort)
     {
         // TODO: dont use default
-        targetModel = Children.Keys.Any(x => x.Equals("simulator-" + targetModel))
+        targetModel = Children.ContainsKey("simulator-" + targetModel)
             ? targetModel = "simulator-" + targetModel
             : targetModel = "coordinator-" + targetModel;
 
