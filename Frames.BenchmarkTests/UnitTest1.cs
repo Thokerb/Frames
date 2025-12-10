@@ -79,6 +79,21 @@ public class UnitTest1
     [Fact]
     public void TestSerializationHO()
     {
+        // const int stackSize = 1024 * 1024 * 16; // 16 MB stack size
+        // var tcs = new TaskCompletionSource<Coupled_HO>();
+        // new Thread(() =>
+        //     {
+        //         tcs.SetResult(new Coupled_HO("name", 1500, 1500, 20, 20, true, 20));
+        //         
+        //     },stackSize)
+        //     .Start();
+        //
+        // tcs.Task.Wait();
+        // var model = tcs.Task.Result;
+        
+        // set env variable DOTNET_DefaultStackSize=180000
+        
+        // this sucks because we run out of stack size for deep recursions
         var model = new Coupled_HO("name", 1500, 1500, 20, 20, true, 20);
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
