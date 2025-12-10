@@ -11,9 +11,35 @@ public class UnitTest1
     public void Test1()
     {
 
-        var result = CSharpStone.RunDhrystoneV1(100_000_000);
+        var result = CSharpStone.RunDhrystoneOnWindowsV1(100_000_000);
         
         Assert.True(result==0, "Dhrystone V1 should return a positive result");
+    }   
+    
+    [Fact]
+    public void TestCSharpstoneLoad()
+    {
+        Parallel.ForAsync(0,100_000, async (i, ct) =>
+        {
+            var result = CSharpStone.RunDhrystoneOnWindowsV1(100_000);
+        });
+
+        
+        Assert.True(true);
+    }    
+    [Fact]
+    public void TestCSharpstoneLoadFromModel()
+    {
+        var model = new DelayedAtomic(100_000_000, 20, false, 20);
+        model.InternalTransition(new DelayedAtomicState()
+        {
+            CurrentState = "active",
+            ExtCount = 1,
+            IntCount = 1
+        });
+
+        
+        Assert.True(true);
     }
     
     [Fact]

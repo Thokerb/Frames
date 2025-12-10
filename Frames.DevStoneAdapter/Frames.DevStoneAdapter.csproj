@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <None Include="dhry\dhry_1.cpp" />
+        <None Include="dhryLinux\**.*" />
         <None Include="dhry\dhry_2.cpp" />
         <None Update="dhry\dhrystone.dll">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -22,6 +23,18 @@
         </None>
         <None Update="dhry\dhrystone.lib">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="dhryLinux\dhry_1.c">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="dhryLinux\dhry_2.c">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="dhryLinux\dhry.h">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="dhryLinux\Makefile">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 
