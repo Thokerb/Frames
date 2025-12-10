@@ -1,16 +1,20 @@
-CC=clang
-CXX=clang++
+CXX = clang++
 
-CFLAGS= -c -O0 -fPIC
-LDFLAGS+= -L/usr/local/lib
+CXXFLAGS = -c -O0 -fPIC -fdeclspec
+LDFLAGS = -shared -o dhrystone.so
 
-DHRYSTONE=dhry_1.c dhry_2.c
+# Source files
+DHRYSTONE = dhry_1.cpp
+DHRYSTONE_OBJECTS = $(DHRYSTONE:.cpp=.o)
 
-DHRYSTONE_OBJECTS=$(DHRYSTONE:.c=.o)
+all: dhrystone.so
 
-all: dhrystone
+dhrystone.so: $(DHRYSTONE_OBJECTS)
+	$(CXX) $(DHRYSTONE_OBJECTS) $(LDFLAGS)
 
-dhrystone: $(DHRYSTONE_OBJECTS)
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:
-	rm *.o
+	rm -f *.o
+	rm -f dhrystone.so
