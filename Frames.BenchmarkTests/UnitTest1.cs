@@ -45,6 +45,12 @@ public class UnitTest1
     [Fact]
     public void TestSerializationHI()
     {
+        var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
+        
+        Assert.NotNull(stackSize);
+        // check if stack size is at least 180000
+        Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
+        
         var model = new Coupled_HI("name", 1500, 1500, 20, 20, true, 20);
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
@@ -79,6 +85,11 @@ public class UnitTest1
     [Fact]
     public void TestSerializationHO()
     {
+        var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
+        
+        Assert.NotNull(stackSize);
+        // check if stack size is at least 180000
+        Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
         // const int stackSize = 1024 * 1024 * 16; // 16 MB stack size
         // var tcs = new TaskCompletionSource<Coupled_HO>();
         // new Thread(() =>
@@ -121,6 +132,11 @@ public class UnitTest1
     [Fact]
     public void TestSerializationLI()
     {
+        var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
+        
+        Assert.NotNull(stackSize);
+        // check if stack size is at least 180000
+        Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
         var model = new Coupled_LI("name", 1500, 1500, 20, 20, true, 20);
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
@@ -148,7 +164,13 @@ public class UnitTest1
     [Fact]
     public void TestSerializationHOmod()
     {
-        var model = new Coupled_HOmod("name", 1500, 1500, 20, 20, true, 20);
+        var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
+        
+        Assert.NotNull(stackSize);
+        // check if stack size is at least 180000
+        Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
+        
+        var model = new Coupled_HOmod("name", 10, 10, 20, 20, true, 20);
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
