@@ -48,7 +48,7 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
         {
             // Add atomic model
             
-            AddModel(new DelayedAtomic(IntDelay,ExtDelay, AddAtomicOutPorts, PrepTime)
+            AddModel(new DelayedAtomic(IntDelay,ExtDelay, true, PrepTime)
             {
                 Name = "atomic_0_0",
             });

@@ -1,5 +1,6 @@
 ﻿using Frames.Model;
 using Frames.Model.ValueTypes;
+using Newtonsoft.Json;
 
 namespace Frames.DevStoneAdapter.Model;
 
@@ -18,13 +19,22 @@ public class DelayedAtomicState : IState
 
         return string.Compare(CurrentState, other.CurrentState, StringComparison.Ordinal);
     }
+
+    public override string ToString()
+    {
+        return $"State: {CurrentState}, IntCount: {IntCount}, ExtCount: {ExtCount}";
+    }
 }
 
 public class DelayedAtomic : AtomicModel<DelayedAtomicState>
 {
+    [JsonProperty]
     private int IntDelay { get; }
+    [JsonProperty]
     private int ExtDelay { get; }
+    [JsonProperty]
     private bool AddOutPort { get; }
+    [JsonProperty]
     private int PrepTime { get; }
 
     public DelayedAtomic(int intDelay, int extDelay, bool addOutPort, int prepTime)

@@ -1,4 +1,5 @@
 ﻿using Frames.Model.ValueTypes;
+using Newtonsoft.Json;
 
 namespace Frames.Model;
 
@@ -9,7 +10,7 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     {
         return StopCondition((TState)state, bag);
     }
-
+    [JsonProperty]
     public  string Name { get; set; }
 
     public virtual bool HasStopCondition { get; set; } = false;
@@ -17,8 +18,10 @@ public abstract class AtomicModel<TState> : IAtomicModel<TState>
     /// <summary>
     /// State of the model.
     /// </summary>
+    [JsonProperty]
     public abstract TState State { get; set; }
-
+    
+    [JsonProperty]
     public TimeUnit CurrentTime { get; set; }
 
     /// <summary>

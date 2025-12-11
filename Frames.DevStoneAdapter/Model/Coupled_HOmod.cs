@@ -35,7 +35,7 @@ public class Coupled_HOmod : CoupledModel
 
         if (Depth == 1)
         {
-            var atomic = new DelayedAtomic(IntDelay, ExtDelay, AddAtomicOutPorts, PrepTime)
+            var atomic = new DelayedAtomic(IntDelay, ExtDelay, true, PrepTime)
             {
                 Name = "Atomic_0_0"
             };
