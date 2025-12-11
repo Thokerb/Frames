@@ -93,6 +93,7 @@
     &lt;TestAncestor&gt;&#xD;
       &lt;TestId&gt;xUnit::E30C999E-F7C1-46E2-9853-D164D043F8BE::net9.0::Frames.Tests.CoupledModelTest.TestCoupling&lt;/TestId&gt;&#xD;
     &lt;/TestAncestor&gt;&#xD;
+    &lt;Project Location="D:\Dev\Frames\Frames.Tests" Presentation="&amp;lt;Frames.Tests&amp;gt;" /&gt;&#xD;
   &lt;/Or&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=89adf2f1_002D122b_002D408f_002D9777_002D07fd28a7bd5c/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="TestCSharpstoneLoad #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;

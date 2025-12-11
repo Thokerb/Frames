@@ -17,6 +17,8 @@ public class Coupled_HO : DEVStoneWrapperCoupled
     protected override void Initialize()
     {
         BaseInitialize();
+        AddInPort(PortConstants.InPort2);
+        AddOutPort(PortConstants.OutPort2);
         var children = GetChildren();
 
         if (!(children.Count > 0))

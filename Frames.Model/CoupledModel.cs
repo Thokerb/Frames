@@ -157,9 +157,10 @@ public abstract class CoupledModel : ICoupledModel
         {
             throw new ArgumentException($"Target model with id {targetId} does not exist.");
         }
-
+        
         Pipes.Add((sourcePort, targetPort, internalSourceId, internalTargetId));
     }
+
 
     protected void AddCouplingOut(string source, Port sourcePort, Port targetPort)
     {
@@ -172,13 +173,18 @@ public abstract class CoupledModel : ICoupledModel
     protected void AddCouplingFromOutIn(Port sourcePort, string targetModel, Port targetPort)
     {
         // TODO: dont use default
-        targetModel = Children.ContainsKey("simulator-" + targetModel)
-            ? targetModel = "simulator-" + targetModel
-            : targetModel = "coordinator-" + targetModel;
-
+        
+        if(!targetModel.StartsWith("simulator-") && !targetModel.StartsWith("coordinator-"))
+        {
+            targetModel = Children.ContainsKey("simulator-" + targetModel)
+                ? targetModel = "simulator-" + targetModel
+                : targetModel = "coordinator-" + targetModel;
+        }
+            
+        var name = this.Name;
 
         // TODO: is inModel relevant
-        Pipes.Add((sourcePort, targetPort, "NONE", targetModel));
+        Pipes.Add((sourcePort, targetPort, $"coordinator-{name}", targetModel));
     }
     
     public List<(Port inPort, Port outPort, string inModel, string outModel)> GetCouplings()

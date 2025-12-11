@@ -24,46 +24,14 @@ public static class DevstoneLogic
     }
     
     public static async Task<Results<Ok<ModelResponse>, BadRequest<string>>> Run(
-        IRequiredActor<RootCoordinator> rootCoordinatorActorRef, DevstoneRequest request)
+        IRequiredActor<RootCoordinator> rootCoordinatorActorRef, RequestDataTypes.DevstoneRequest request)
     {
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
         var uniqueId = Guid.NewGuid();
 
-        var name = $"coordinator-{request.ModelType}-{uniqueId}";
+        var name = $"coordinator-environment-{request.ModelType}-{uniqueId}";
 
-        CoupledModel model;
-
-        switch (request.ModelType)
-        {
-            case DevstoneModelType.LI:
-                model = new Coupled_LI(name, request.Depth, request.Width, request.IntCycles,
-                    request.ExtCycles, request.AddAtomicOutPorts, request.PrepTime);
-                break;
-            case DevstoneModelType.HI:
-            {
-                model = new Coupled_HI(name, request.Depth, request.Width, request.IntCycles,
-                    request.ExtCycles, request.AddAtomicOutPorts, request.PrepTime);
-                break;
-            }
-            case DevstoneModelType.HO:
-            {
-                model = new Coupled_HO(name, request.Depth, request.Width, request.IntCycles,
-                    request.ExtCycles, request.AddAtomicOutPorts, request.PrepTime);
-                break;
-            }
-            case DevstoneModelType.HOmod:
-            {
-                model = new Coupled_HOmod(name, request.Depth, request.Width, request.IntCycles,
-                    request.ExtCycles, request.AddAtomicOutPorts, request.PrepTime);
-                
-                break;
-            }
-            default:
-            {
-                return TypedResults.BadRequest(
-                    $"Unknown model type: {request.ModelType}. Supported types are: LI, HI, HO, HOmod.");
-            }
-        }
+        var model = new DevstoneEnvironment(name, request);
 
         await rootCoordinatorActor.Ask(
             new Simulation.CreateModel(model, name, uniqueId));
@@ -80,21 +48,3 @@ public static class DevstoneLogic
     }
 }
 
-public record DevstoneRequest(
-    DevstoneModelType ModelType,
-    int Depth,
-    int Width,
-    int IntCycles,
-    int ExtCycles,
-    bool AddAtomicOutPorts,
-    int PrepTime
-);
-
-[SuppressMessage("ReSharper", "InconsistentNaming")]
-public enum DevstoneModelType
-{
-    LI,
-    HI,
-    HO,
-    HOmod
-}

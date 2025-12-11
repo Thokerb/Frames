@@ -29,9 +29,6 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
         ExtDelay = extDelay;
         AddAtomicOutPorts = addAtomicOutPorts;
         PrepTime = prepTime;
-
-        
-        
     }
 
     protected void BaseInitialize()
@@ -66,7 +63,7 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
             AddCouplingFromOutIn(PortConstants.InPort, coupled.Name, PortConstants.InPort);
             AddCouplingOut(coupled.Name,PortConstants.OutPort,PortConstants.OutPort);
             
-            for (int i = 0; i < Width; i++)
+            for (int i = 0; i < (Width - 1); i++)
             {
                 var atomic = new DelayedAtomic(IntDelay, ExtDelay, AddAtomicOutPorts, PrepTime)
                 {

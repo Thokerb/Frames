@@ -67,7 +67,7 @@ public class CArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         // var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(3));
 
         
-        Assert.Equivalent( TimeUnit.Infinity, msg.ElapsedTime);
+        Assert.Equivalent( (double)26, msg.ElapsedTime.Value);
     }
     
  

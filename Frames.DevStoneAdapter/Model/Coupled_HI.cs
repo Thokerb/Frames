@@ -37,5 +37,6 @@ public class Coupled_HI : DEVStoneWrapperCoupled
             AssertIsAtomic(nextChild.Item2);
             AddCoupling(child.Item1, PortConstants.OutPort, nextChild.Item1, PortConstants.InPort);
             AddCouplingFromOutIn(PortConstants.InPort, child.Item1, PortConstants.InPort);
-        }    }
+        }    
+    }
 }

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Atomic Parser</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; height: 300px; }
+        table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+        th, td { border: 1px solid #aaa; padding: 6px; text-align: left; }
+    </style>
+</head>
+<body>
+
+<h2>Atomic Log Parser</h2>
+<p>Paste your raw log text below (any length). Then click "Parse".</p>
+
+<textarea id="input"></textarea><br><br>
+<button onclick="parseLog()">Parse</button>
+
+<h3>Final Results</h3>
+<div id="output"></div>
+
+<script>
+    function parseLog() {
+        const inputText = document.getElementById("input").value;
+
+        // Split blocks on the separators
+        const blocks = inputText.split(/=+/);
+
+        // Map to store the last known state for each "Name"
+        const stateMap = {};
+
+        for (const block of blocks) {
+            // Extract each {...} record inside the block
+            const matches = block.match(/\{[\s\S]*?\}/g);
+            if (!matches) continue;
+
+            for (const record of matches) {
+                // Extract Name
+                const nameMatch = record.match(/"Name"\s*:\s*"([^"]+)"/);
+                if (!nameMatch) continue;
+                const name = nameMatch[1];
+
+                // Extract NewState IntCount and ExtCount
+                const intMatch = record.match(/NewState[^}]*?IntCount\s*:\s*(\d+)/);
+                const extMatch = record.match(/NewState[^}]*?ExtCount\s*:\s*(\d+)/);
+
+                if (intMatch && extMatch) {
+                    const intCount = parseInt(intMatch[1], 10);
+                    const extCount = parseInt(extMatch[1], 10);
+                    // Store last seen value
+                    stateMap[name] = { IntCount: intCount, ExtCount: extCount };
+                }
+            }
+        }
+
+        // Build output table
+        let html = "<table><tr><th>Name</th><th>Final IntCount</th><th>Final ExtCount</th></tr>";
+
+        let totalInt = 0;
+        let totalExt = 0;
+
+        for (const [name, counts] of Object.entries(stateMap)) {
+            html += `<tr><td>${name}</td><td>${counts.IntCount}</td><td>${counts.ExtCount}</td></tr>`;
+            totalInt += counts.IntCount;
+            totalExt += counts.ExtCount;
+        }
+
+        html += `</table><br>
+    <h4>Totals</h4>
+    <p><b>Total IntCount:</b> ${totalInt}</p>
+    <p><b>Total ExtCount:</b> ${totalExt}</p>`;
+
+        document.getElementById("output").innerHTML = html;
+    }
+</script>
+
+</body>
+</html>

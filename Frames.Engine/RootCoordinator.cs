@@ -682,7 +682,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             return;
         }
 
-        if (_state._timeUntilShutdown != TimeUnit.Undefined && _state._currentTime >= _state._timeUntilShutdown || _state._currentTime == TimeUnit.Infinity)
+        if (_state._timeUntilShutdown != TimeUnit.Undefined && _state._currentTime >= _state._timeUntilShutdown || _state._timeNext == TimeUnit.Infinity)
         {
             HaltExecution(CompletionType.StopAfterTime);
             return;

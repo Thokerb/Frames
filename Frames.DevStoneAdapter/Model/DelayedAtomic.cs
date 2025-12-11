@@ -33,7 +33,7 @@ public class DelayedAtomic : AtomicModel<DelayedAtomicState>
     [JsonProperty]
     private int ExtDelay { get; }
     [JsonProperty]
-    private bool AddOutPort { get; }
+    private bool AddOutPortElem { get; }
     [JsonProperty]
     private int PrepTime { get; }
 
@@ -41,7 +41,7 @@ public class DelayedAtomic : AtomicModel<DelayedAtomicState>
     {
         IntDelay = intDelay;
         ExtDelay = extDelay;
-        AddOutPort = addOutPort;
+        AddOutPortElem = addOutPort;
         PrepTime = prepTime;
         State = new DelayedAtomicState()
         {
@@ -74,6 +74,14 @@ public class DelayedAtomic : AtomicModel<DelayedAtomicState>
         };    
     }
 
+    public override DelayedAtomicState ConfluentTransition(DelayedAtomicState state, Bag bag)
+    {
+        // first internal then external, because then the model can go from active to passive and then back to active
+        var afterInternal = InternalTransition(state);
+        var afterExternal = ExternalTransition(afterInternal, bag);
+        return afterExternal;
+    }
+
     public override DelayedAtomicState InternalTransition(DelayedAtomicState state)
     {
         if (IntDelay > 0)
@@ -91,7 +99,7 @@ public class DelayedAtomic : AtomicModel<DelayedAtomicState>
 
     public override Bag Output(DelayedAtomicState state)
     {
-        if (AddOutPort)
+        if (AddOutPortElem)
         {
             return new Bag((PortConstants.OutPort, 0));
         }

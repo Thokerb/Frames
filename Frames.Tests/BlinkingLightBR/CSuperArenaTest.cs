@@ -61,7 +61,7 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
 
         
-        Assert.Equivalent( TimeUnit.Infinity,response.ElapsedTime);
+        Assert.Equivalent( 26,response.ElapsedTime.Value);
     }    
     
     
@@ -92,7 +92,7 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
 
         
-        Assert.Equivalent( TimeUnit.Infinity,response.ElapsedTime);
+        Assert.Equivalent( 13,response.ElapsedTime.Value);
     }
 
 

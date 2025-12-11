@@ -1,6 +1,7 @@
 ﻿using Frames.DevStoneAdapter;
 using Frames.DevStoneAdapter.Model;
 using Frames.Engine.Messages;
+using Frames.Model;
 using Newtonsoft.Json;
 
 namespace Frames.BenchmarkTests;
@@ -130,6 +131,46 @@ public class UnitTest1
         model2.Hydrate();
         Assert.NotNull(model2);
         Assert.Equal(model2.GetChildren().Count, model.GetChildren().Count);
+    }
+    
+    [Fact]
+    public void TestSerializationHO2()
+    {
+        var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
+        
+        Assert.NotNull(stackSize);
+        // check if stack size is at least 180000
+        Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
+        // const int stackSize = 1024 * 1024 * 16; // 16 MB stack size
+        // var tcs = new TaskCompletionSource<Coupled_HO>();
+        // new Thread(() =>
+        //     {
+        //         tcs.SetResult(new Coupled_HO("name", 1500, 1500, 20, 20, true, 20));
+        //         
+        //     },stackSize)
+        //     .Start();
+        //
+        // tcs.Task.Wait();
+        // var model = tcs.Task.Result;
+        
+        // set env variable DOTNET_DefaultStackSize=180000
+        
+        // this sucks because we run out of stack size for deep recursions
+        CoupledModel model = new Coupled_HO("name", 10, 10, 20, 20, true, 20);
+
+        int depth = 0;
+        int numberModels = 0;
+        while (model.GetChildren().Count > 1)
+        {
+            depth++;
+            numberModels += model.GetChildren().Count;
+            model = (CoupledModel)model.GetChildren().First().Item2;
+            
+        }
+
+        Assert.NotNull(model);
+        Assert.Equal(9, depth);
+        Assert.Equal(depth * 10, numberModels); // omit +1 because last one is atomic
     }
     
     
