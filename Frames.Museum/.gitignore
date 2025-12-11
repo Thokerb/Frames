@@ -2,3 +2,4 @@
 log
 mssql-data
 secrets
+/seq-data/
