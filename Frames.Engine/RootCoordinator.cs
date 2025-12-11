@@ -278,6 +278,8 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
 
     private async Task ReceiveCreateModelAsync(Simulation.CreateModel arg)
     {
+        // we start at creation time, because setup can take a long time
+        _benchmarkStopwatch.Restart();
         IActorRef actor;
         _baseState.RunId = arg.Id;
         switch (arg.Model)
@@ -503,7 +505,6 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
     private async Task ReceiveSimulationStartAsync(Simulation.StartSimulation obj)
     {
         Serilog.Log.Information("[ROOT] Starting simulation");
-        _benchmarkStopwatch.Restart();
 
         _state._isCompleted = false;
 
@@ -681,7 +682,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             return;
         }
 
-        if (_state._timeUntilShutdown != TimeUnit.Undefined && _state._currentTime > _state._timeUntilShutdown || _state._currentTime == TimeUnit.Infinity)
+        if (_state._timeUntilShutdown != TimeUnit.Undefined && _state._currentTime >= _state._timeUntilShutdown || _state._currentTime == TimeUnit.Infinity)
         {
             HaltExecution(CompletionType.StopAfterTime);
             return;

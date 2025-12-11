@@ -9,10 +9,23 @@ using Frames.Museum.SimulationControl;
 using Frames.Museum.Tracing;
 using Frames.Museum.Util;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
+var seqUrl = Environment.GetEnvironmentVariable("SEQ") ?? "http://localhost:5341";
+
+Serilog.Log.Logger = new Serilog.LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.Seq(seqUrl)
+    .Enrich.WithProperty("Host", Environment.MachineName)
+    .CreateLogger();
+
+Log.Logger.Information("Starting Frames.Museum in {Environment} environment", environment);
+// write SEQ url to log
+Log.Logger.Information("Using SEQ server at {SeqUrl}", seqUrl);
 
 /*
  * CONFIGURATION SOURCES

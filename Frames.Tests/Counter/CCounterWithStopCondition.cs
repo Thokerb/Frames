@@ -9,6 +9,11 @@ public class CCounterWithStopCondition : CoupledModel
 {
     public CCounterWithStopCondition() : base("CCounterWithStopCondition")
     {
+
+    }
+
+    protected override void Initialize()
+    {
         AddModel<CounterAtomicModelWithStopCondition, CounterState>("counter", new CounterState()
         {
             Count = 0
@@ -16,8 +21,7 @@ public class CCounterWithStopCondition : CoupledModel
 
         AddModel<BlinkingLightAtomicModel>("blinkingLight");
 
-        AddCoupling("blinkingLight", BlinkingLightAtomicModel.OutPort, "counter", CounterAtomicModel.InPort);
-    }
+        AddCoupling("blinkingLight", BlinkingLightAtomicModel.OutPort, "counter", CounterAtomicModel.InPort);    }
 }
 
 public class CounterAtomicModelWithStopCondition : CounterAtomicModel, IAtomicModel<CounterState>

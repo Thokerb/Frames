@@ -146,10 +146,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
             _baseState.Name = msg.Name;
             _baseState.RunId = msg.RunId;
             _baseState._atomicModel = msg.AtomicModel;
-            Persist(_baseState, st =>
-            {
-                _baseState = st;
-            });
+            PersistState();
             
 
             // _coordinator = msg.Coordinator;

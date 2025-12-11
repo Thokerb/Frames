@@ -7,6 +7,11 @@ public class CSuperArena2 : CoupledModel
 
     public CSuperArena2() : base("csuperarena")
     {
+
+    }
+
+    protected override void Initialize()
+    {
         AddModel<BlinkingLightAtomicModelBR, BlinkingLightStateBR>("bl3",
             new BlinkingLightStateBR
             {
@@ -18,6 +23,6 @@ public class CSuperArena2 : CoupledModel
         
         AddCoupling("bl3", BlinkingLightAtomicModelBR.PortOutFinished, "sub-arena", CArena.InArena);
         AddCoupling("sub-arena", CArena.OutArena, "bl3", BlinkingLightAtomicModelBR.PortInFinishedByOther);
+        
     }
-    
 }

@@ -30,6 +30,8 @@
         <PackageReference Include="Petabridge.Cmd.Cluster.Sharding" Version="1.4.4" />
         <PackageReference Include="Petabridge.Cmd.Host" Version="1.4.4" />
         <PackageReference Include="Petabridge.Cmd.Remote" Version="1.4.4" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+        <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.1" />
         <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     </ItemGroup>

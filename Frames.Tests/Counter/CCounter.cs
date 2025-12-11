@@ -7,12 +7,16 @@ public class CCounter : CoupledModel
 {
     public CCounter() : base("CCounter")
     {
+
+    }
+
+    protected override void Initialize()
+    {
         AddModel<CounterAtomicModel, CounterState>("counter", new CounterState()
         {
             Count = 0
         });
         AddModel<BlinkingLightAtomicModel>("blinkingLight");
 
-        AddCoupling("blinkingLight", BlinkingLightAtomicModel.OutPort, "counter", CounterAtomicModel.InPort);
-    }
+        AddCoupling("blinkingLight", BlinkingLightAtomicModel.OutPort, "counter", CounterAtomicModel.InPort);    }
 }

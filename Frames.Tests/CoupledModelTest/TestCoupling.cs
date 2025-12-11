@@ -13,12 +13,9 @@ public class TestCoupling
         // Any coupled model
         // Arrange
         var model = new CSuperArena();
-        model.AddModel<BlinkingLightAtomicModelBR>("source");
-        model.AddModel<BlinkingLightAtomicModelBR>("target");
-        model.AddCoupling("source", "sourcePort", "target", "targetPort");
         
         // Act
-        var receiver = model.GetReceivers("simulator-source","sourcePort");
+        var receiver = model.GetReceivers("simulator-bl3",BlinkingLightAtomicModelBR.PortOutFinished);
         
         // Assert
         Assert.Single(receiver);

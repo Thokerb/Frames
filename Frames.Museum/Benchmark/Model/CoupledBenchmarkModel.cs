@@ -21,22 +21,27 @@ public class CoupledBenchmarkModel : CoupledModel
         NumberActiveNodes = numberActiveNodes;
         CoupleGrouping = coupleGrouping;
         IsRoot = isRoot;
-        var stepSize = coupleGrouping;
-        if (isRoot)
+
+    }
+
+    protected override void Initialize()
+    {
+        var stepSize = CoupleGrouping;
+        if (IsRoot)
         {
             int i = 0;
-            while (i < numberActiveNodes)
+            while (i < NumberActiveNodes)
             {
-                var nodeNumber = Math.Min(stepSize, numberActiveNodes - i);
+                var nodeNumber = Math.Min(stepSize, NumberActiveNodes - i);
                 
                 AddModel(new CoupledBenchmarkModel($"ca_{i}", 0, nodeNumber));
                 i += stepSize;
             }
             
             i = 0;
-            while (i < numberInactiveNodes)
+            while (i < NumberInactiveNodes)
             {
-                var nodeNumber = Math.Min(stepSize, numberInactiveNodes - i);
+                var nodeNumber = Math.Min(stepSize, NumberInactiveNodes - i);
                 
                 AddModel(new CoupledBenchmarkModel($"ci_{i}", nodeNumber, 0));
                 i += stepSize;
@@ -46,22 +51,21 @@ public class CoupledBenchmarkModel : CoupledModel
         }
         
         
-        for (int i = 0; i < numberActiveNodes; i++)
+        for (int i = 0; i < NumberActiveNodes; i++)
         {
-            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{name}_aa_{i}",
+            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{Name}_aa_{i}",
                 new AtomicBenchmarkModelState()
                 {
                     IsActive = true
                 });
         }
 
-        for (int i = 0; i < numberInactiveNodes; i++)
+        for (int i = 0; i < NumberInactiveNodes; i++)
         {
-            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{name}_ai_{i}",
+            AddModel<AtomicBenchmarkModel, AtomicBenchmarkModelState>($"{Name}_ai_{i}",
                 new AtomicBenchmarkModelState()
                 {
                     IsActive = false
                 });
-        }
-    }
+        }    }
 }

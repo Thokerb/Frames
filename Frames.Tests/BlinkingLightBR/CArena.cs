@@ -10,6 +10,11 @@ public class CArena : CoupledModel
 
     public CArena() : base("CArena")
     {
+ 
+    }
+
+    protected override void Initialize()
+    {
         AddModel<BlinkingLightAtomicModelBR, BlinkingLightStateBR>("bl1",
             new BlinkingLightStateBR
             {
@@ -31,13 +36,9 @@ public class CArena : CoupledModel
         // AddCoupling(this.Name, "in-arena", "bl1", BlinkingLightAtomicModelBR.PortInFinishedByOther);
         // AddCoupling(this.Name,"in-arena", "bl2", BlinkingLightAtomicModelBR.PortInFinishedByOther);
         
-        // TODO: is this required or automatically done by the framework?
         AddCouplingOut("bl1", BlinkingLightAtomicModelBR.PortOutFinished, OutArena);
         AddCouplingOut("bl2", BlinkingLightAtomicModelBR.PortOutFinished, OutArena);
         
-        // TODO: is this required or automatically done by the framework?
         AddCouplingFromOutIn( InArena, "bl1",BlinkingLightAtomicModelBR.PortInFinishedByOther);
-        AddCouplingFromOutIn( InArena, "bl2", BlinkingLightAtomicModelBR.PortInFinishedByOther);
-    }
-
+        AddCouplingFromOutIn( InArena, "bl2", BlinkingLightAtomicModelBR.PortInFinishedByOther);    }
 }

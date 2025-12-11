@@ -28,6 +28,11 @@ public class Coupled_HOmod : CoupledModel
         AddAtomicOutPorts = addAtomicOutPorts;
         PrepTime = prepTime;
 
+    }
+
+    protected override void Initialize()
+    {
+
         if (Depth == 1)
         {
             var atomic = new DelayedAtomic(IntDelay, ExtDelay, AddAtomicOutPorts, PrepTime)
@@ -46,7 +51,7 @@ public class Coupled_HOmod : CoupledModel
             AddCouplingFromOutIn(PortConstants.InPort, coupled.Name, PortConstants.InPort);
             AddCouplingOut(coupled.Name, PortConstants.OutPort, PortConstants.OutPort);
 
-            if (width > 2)
+            if (Width > 2)
             {
                 var atomics = new Dictionary<int, List<DelayedAtomic>>();
                 // Generate atomic components
@@ -77,7 +82,7 @@ public class Coupled_HOmod : CoupledModel
                     AddCouplingFromOutIn(PortConstants.InPort2, atomic.Name, PortConstants.InPort);
                 }
 
-                for (int i = 1; i < width; i++)
+                for (int i = 1; i < Width; i++)
                 {
                     var atomicSet = atomics[i];
                     AddCouplingFromOutIn(PortConstants.InPort2, atomicSet[0].Name, PortConstants.InPort);
@@ -107,6 +112,5 @@ public class Coupled_HOmod : CoupledModel
                     }
                 }
             }
-        }
-    }
+        }    }
 }

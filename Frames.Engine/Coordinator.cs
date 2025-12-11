@@ -241,16 +241,14 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             _baseState.Name = msg.Name;
             _baseState.RunId = msg.RunId;
             _baseState._coupledModel = msg.CoupledModel;
+            Serilog.Log.Information("Setting up Coordinator {Name} with parent {Parent} and {ChildCount} children", msg.Name, msg.ParentName, msg.CoupledModel.GetChildren().Count);
             var children = await CreateChildrenAsync(msg.RunId, msg.Name);
 
             foreach (var child in children)
             {
                 _baseState._children.Add(child.Key, child.Value);
             }
-            Persist(_baseState, st =>
-            {
-                _baseState = st;
-            });
+            PersistState();
             Sender.Tell("done");
         });
 

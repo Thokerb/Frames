@@ -5,6 +5,18 @@ public class Coupled_HO : DEVStoneWrapperCoupled
     public Coupled_HO(string name, int depth, int width, int intDelay, int extDelay, bool addAtomicOutPorts,
         int prepTime) : base(name, depth, width, intDelay, extDelay, addAtomicOutPorts, prepTime)
     {
+
+    }
+
+    public override DEVStoneWrapperCoupled GenerateCoupled()
+    {
+        return new Coupled_HO($"Coupled_{Depth - 1}", Depth - 1, Width, IntDelay, ExtDelay, AddAtomicOutPorts,
+            PrepTime);
+    }
+
+    protected override void Initialize()
+    {
+        BaseInitialize();
         var children = GetChildren();
 
         if (!(children.Count > 0))
@@ -40,11 +52,5 @@ public class Coupled_HO : DEVStoneWrapperCoupled
             AddCouplingFromOutIn(PortConstants.InPort2, child.Item1, PortConstants.InPort);
             AddCouplingOut(child.Item1, PortConstants.OutPort, PortConstants.OutPort2);
         }
-    }
-
-    public override DEVStoneWrapperCoupled GenerateCoupled()
-    {
-        return new Coupled_HO($"Coupled_{Depth - 1}", Depth - 1, Width, IntDelay, ExtDelay, AddAtomicOutPorts,
-            PrepTime);
     }
 }

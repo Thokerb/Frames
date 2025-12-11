@@ -52,6 +52,7 @@ public class UnitTest1
         Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
         
         var model = new Coupled_HI("name", 1500, 1500, 20, 20, true, 20);
+        model.Hydrate();
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
@@ -77,9 +78,11 @@ public class UnitTest1
         {
             TypeNameHandling = TypeNameHandling.Objects,
         }).Model as Coupled_HI;
-
+        
+        model2.Hydrate();
+        
         Assert.NotNull(model2);
-        Assert.Equal(model2.GetChildren().Count, model.GetChildren().Count);
+        Assert.Equal(actual: model2.GetChildren().Count,expected: model.GetChildren().Count);
     }
     
     [Fact]
@@ -106,6 +109,7 @@ public class UnitTest1
         
         // this sucks because we run out of stack size for deep recursions
         var model = new Coupled_HO("name", 1500, 1500, 20, 20, true, 20);
+        model.Hydrate();
         
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
@@ -123,7 +127,7 @@ public class UnitTest1
         {
             TypeNameHandling = TypeNameHandling.Objects,
         }).Model as Coupled_HO;
-
+        model2.Hydrate();
         Assert.NotNull(model2);
         Assert.Equal(model2.GetChildren().Count, model.GetChildren().Count);
     }
@@ -138,7 +142,7 @@ public class UnitTest1
         // check if stack size is at least 180000
         Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
         var model = new Coupled_LI("name", 1500, 1500, 20, 20, true, 20);
-        
+        model.Hydrate();
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
         // serialize and deserialize
@@ -156,6 +160,7 @@ public class UnitTest1
             TypeNameHandling = TypeNameHandling.Objects,
         }).Model as Coupled_LI;
 
+        model2.Hydrate();
         Assert.NotNull(model2);
         Assert.Equal(model2.GetChildren().Count, model.GetChildren().Count);
     }
@@ -171,7 +176,7 @@ public class UnitTest1
         Assert.True(int.Parse(stackSize) >= 180000, "Stack size should be at least 180000");
         
         var model = new Coupled_HOmod("name", 10, 10, 20, 20, true, 20);
-        
+        model.Hydrate();
         var msg = new Simulation.CreateModel(model, "test", Guid.NewGuid());
         
         // serialize and deserialize
@@ -189,7 +194,7 @@ public class UnitTest1
         {
             TypeNameHandling = TypeNameHandling.Objects,
         }).Model as Coupled_HOmod;
-
+        model2.Hydrate();
         Assert.NotNull(model2);
         Assert.Equal(model2.GetChildren().Count, model.GetChildren().Count);
     }

@@ -10,6 +10,7 @@ using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
 using Akka.Persistence.Hosting;
 using Akka.Persistence.MongoDb.Hosting;
+using Akka.Persistence.Sql.Config;
 using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using Akka.Serialization;
@@ -81,8 +82,8 @@ public static class AkkaConfiguration
                 };
                 configBuilder.DeadLetterOptions = new DeadLetterOptions()
                 {
-                    ShouldLog = TriStateValue.All,
-                    LogDuringShutdown = false
+                    ShouldLog = TriStateValue.Some,
+                    LogDuringShutdown = false,
                 };
                 configBuilder.AddLoggerFactory();
             })
@@ -174,7 +175,9 @@ public static class AkkaConfiguration
                 Debug.Assert(connectionString != null, nameof(connectionString) + " != null");
                 return builder.WithSqlPersistence(connectionString, providerName: ProviderName.SqlServer2022,
                     journalBuilder: journal => journal.WithHealthCheck(HealthStatus.Degraded),
-                    snapshotBuilder: snapshot => snapshot.WithHealthCheck(HealthStatus.Degraded)
+                    snapshotBuilder: snapshot => snapshot.WithHealthCheck(HealthStatus.Degraded),
+                    tagStorageMode: TagMode.TagTable,
+                    useWriterUuidColumn: true // Use this setting
                     );
             }
             default:

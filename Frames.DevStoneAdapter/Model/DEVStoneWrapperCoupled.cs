@@ -30,15 +30,21 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
         AddAtomicOutPorts = addAtomicOutPorts;
         PrepTime = prepTime;
 
+        
+        
+    }
+
+    protected void BaseInitialize()
+    {
         AddInPort(PortConstants.InPort);
         AddOutPort(PortConstants.OutPort);
 
-        if (depth == 0)
+        if (Depth == 0)
         {
             throw new Exception("should not be possible -> serialize error?");
         }
 
-        if (depth == 1)
+        if (Depth == 1)
         {
             // Add atomic model
             
@@ -60,11 +66,11 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
             AddCouplingFromOutIn(PortConstants.InPort, coupled.Name, PortConstants.InPort);
             AddCouplingOut(coupled.Name,PortConstants.OutPort,PortConstants.OutPort);
             
-            for (int i = 0; i < width; i++)
+            for (int i = 0; i < Width; i++)
             {
                 var atomic = new DelayedAtomic(IntDelay, ExtDelay, AddAtomicOutPorts, PrepTime)
                 {
-                    Name = $"atomic_{Depth - 1}_{i}"
+                    Name = $"atomic_{Depth - 1}_{i}",
                 };
                 
                 AddModel(atomic);
@@ -73,7 +79,6 @@ public abstract class DEVStoneWrapperCoupled : CoupledModel
                 
             }
         }
-        
     }
 
 

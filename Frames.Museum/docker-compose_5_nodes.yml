@@ -76,6 +76,7 @@ services:
       OpenTelemetry__Endpoint: "http://jaeger:4317"
       AkkaSettings__PersistenceMode: "SqlServer"
       SWAGGER_HOST: "http://localhost:8080"
+      SEQ: "http://seq:5341"
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -120,7 +121,7 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__1: "museum3:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum4:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
-
+      SEQ: "http://seq:5341"
       AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
       AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__ServiceName: "akka-management"
@@ -174,7 +175,7 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__1: "museum2:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum4:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
-
+      SEQ: "http://seq:5341"
       AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
       AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
@@ -226,7 +227,7 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__1: "museum2:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum3:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum5:8558"
-
+      SEQ: "http://seq:5341"
       AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
       AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
@@ -278,13 +279,13 @@ services:
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__1: "museum2:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__2: "museum3:8558"
       AkkaSettings__AkkaManagementOptions__ExternalEndpoints__3: "museum4:8558"
-
       AkkaSettings__ShardOptions__PassivateIdleEntityAfter: "00:10:00"
       AkkaSettings__ShardOptions__PassivateIdleEntity: "true"
       AkkaSettings__AkkaManagementOptions__RequiredContactPointsNr: "5"
       AkkaSettings__AkkaManagementOptions__DiscoveryMethod: "Config"
       AkkaSettings__PersistenceMode: "SqlServer"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
+      SEQ: "http://seq:5341"
       SWAGGER_HOST: "http://localhost:8084"
     ports:
       - "8088:8080"
@@ -302,3 +303,16 @@ services:
     environment:
       COLLECTOR_OLTP_ENABLED: true
       QUERY_MAX_CLOCK_SKEW_ADJUSTMENT: 1000000000
+      
+  # SEQ Log Server
+  seq:
+    hostname: seq
+    image: datalust/seq:latest
+    volumes:
+      - ./seq-data:/data
+    ports:
+      - "8020:80"
+      - "5341:5341"
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORD="Password123!"

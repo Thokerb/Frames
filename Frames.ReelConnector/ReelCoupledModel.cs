@@ -6,8 +6,8 @@ namespace Frames.ReelConnector;
 
 public class ReelCoupledModel : CoupledModel
 {
-    private CoupledModelJson CoupledModelJson { get; }
-    
+    private CoupledModelJson CoupledModelJson { get; set; }
+
     // We store the complete ReelJson. This is not very memory efficient, but allows us to recreate nested models easily. Also we dont want to store children generally but dynamically create them from the ReelJson when needed.
     [JsonProperty]
     private ReelJson ReelJson { get; }
@@ -20,25 +20,6 @@ public class ReelCoupledModel : CoupledModel
 
         ReelJson = reelJson;
         CoupledModelRef = coupledModelRef;
-        
-            if (!reelJson.CoupledModels.Exists(m => m.Name == coupledModelRef))
-            {
-                var available = string.Join(", ",
-                    reelJson.CoupledModels.Select(m => m.Name));
-
-                throw new KeyNotFoundException(
-                    $"Coupled model '{coupledModelRef}' was not found. " +
-                    $"Available models: {available}");
-            }
-            CoupledModelJson = reelJson.CoupledModels.First(x => x.Name == coupledModelRef);
-            
-        
-            AddModels(reelJson);
-        
-            AddReelPorts();
-        
-            AddReelCoupling();
-        
     }
 
     private ReelJson TrimReelJson(ReelJson reelJson)
@@ -102,5 +83,25 @@ public class ReelCoupledModel : CoupledModel
                 AddOutPort(port.Name);
             }
         }
+    }
+
+    protected override void Initialize()
+    {
+        if (!ReelJson.CoupledModels.Exists(m => m.Name == CoupledModelRef))
+        {
+            var available = string.Join(", ", ReelJson.CoupledModels.Select(m => m.Name));
+
+            throw new KeyNotFoundException(
+                $"Coupled model '{CoupledModelRef}' was not found. " +
+                $"Available models: {available}");
+        }
+        CoupledModelJson = ReelJson.CoupledModels.First(x => x.Name == CoupledModelRef);
+            
+        
+        AddModels(ReelJson);
+        
+        AddReelPorts();
+        
+        AddReelCoupling();
     }
 }

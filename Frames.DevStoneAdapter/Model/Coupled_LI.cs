@@ -6,6 +6,18 @@ public class Coupled_LI : DEVStoneWrapperCoupled
     public Coupled_LI(string name, int depth, int width, int intDelay, int extDelay, bool addAtomicOutPorts,
         int prepTime) : base(name, depth, width, intDelay, extDelay, addAtomicOutPorts, prepTime)
     {
+
+    }
+
+    public override DEVStoneWrapperCoupled GenerateCoupled()
+    {
+        return new Coupled_LI($"Coupled_{Depth - 1}", Depth - 1, Width, IntDelay, ExtDelay, AddAtomicOutPorts,
+            PrepTime);
+    }
+
+    protected override void Initialize()
+    {
+        BaseInitialize();
         // TODO: why assert in devstone pythonpdevs ?
 
         var children = GetChildren();
@@ -16,11 +28,5 @@ public class Coupled_LI : DEVStoneWrapperCoupled
             AssertIsAtomic(child.Item2);
             AddCouplingFromOutIn(PortConstants.InPort, child.Item1, PortConstants.InPort);
         }
-    }
-
-    public override DEVStoneWrapperCoupled GenerateCoupled()
-    {
-        return new Coupled_LI($"Coupled_{Depth - 1}", Depth - 1, Width, IntDelay, ExtDelay, AddAtomicOutPorts,
-            PrepTime);
     }
 }
