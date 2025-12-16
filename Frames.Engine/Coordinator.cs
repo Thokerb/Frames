@@ -1,11 +1,6 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
-using Akka.Cluster.Sharding;
-using Akka.DependencyInjection;
-using Akka.Dispatch.SysMsg;
+﻿using System.Diagnostics;
 using Akka.Hosting;
 using Akka.Persistence;
-using Akka.Persistence.Journal;
 using Frames.Engine.Akka.Persistence;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
@@ -16,13 +11,12 @@ using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 
 namespace Frames.Engine;
 
 
 // this is only set once at the start of the simulation, therefore we store it in its own class
-public class CoordinatorBaseState
+public record CoordinatorBaseState
 {
         
     public string Name {set; get; }
@@ -42,7 +36,7 @@ public class CoordinatorBaseState
 }
 
 // this is changing during the simulation, therefore it is stored in its own class
-public class CoordinatorState
+public record CoordinatorState
 {
     
     public TimeUnit _timeLast;
@@ -150,14 +144,16 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
     {
         // Create a new actor for each child
         var children = new Dictionary<string, IActorRef>();
+        var tasks = new List<Task>();
         foreach (var child in _baseState._coupledModel.GetChildren())
         {
             IActorRef actor;
+            Task task = null;
             switch (child.Item2)
             {
                 case IAtomicModelBase atomicModel:
                     actor = await ActorRegistry.For(Context.System).GetAsync<Simulator>();
-                    await actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, name){
+                    task = actor.Ask(new EngineMessages.SetupSimulator(atomicModel,  child.Item1, name){
                         ShardId = name,  // Simulator should be in the same shard as the coordinator
                         RunId = runId,
                     });
@@ -165,7 +161,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                     break;
                 case ICoupledModel coupledModel:
                     actor = await ActorRegistry.For(Context.System).GetAsync<Coordinator>();
-                    await actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, name)
+                    task = actor.Ask(new EngineMessages.SetupCoordinator(coupledModel, child.Item1, name)
                     {
                         RunId = runId,
                     });
@@ -173,10 +169,15 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
+            if (task != null)
+            {
+                tasks.Add(task);
+            }
              
             children.Add(child.Item1, actor);
         }
+
+        await Task.WhenAll(tasks);
 
         return children;
     }
@@ -222,6 +223,11 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         Recover<CoordinatorBaseState>(baseState =>
         {
             _baseState = baseState;
+        });        
+        Recover<CoordinatorStateSnapshot>(snap =>
+        {
+            _baseState = snap.BaseState;
+            _state = snap.State;
         });
         Command<DeleteMessagesSuccess>(success =>
         {
@@ -288,11 +294,9 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
             {
                 child.Value.Tell(msg with { EntityName = child.Key, ShardId = ActorHelper.GetShardId(_baseState.Name, child.Key) });
             }
-            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
         Command<PoisonPill>(msg =>
         {
-            PersistState(true);
             Context.Stop(Self);
         });
         Command<Stop>(msg =>
@@ -328,8 +332,11 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         // order in which those events are persisted will be preserved 
         // This means you probably have to modify your actor's in-memory state before
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
-        PersistAsync(_state.DeepCopy(), st =>
+        Persist(new CoordinatorStateSnapshot()
         {
+            BaseState = _baseState,
+            State = _state.DeepCopy(),
+        }, _ => {
             if(++CycleCounter >= PersistenceConfiguration.CyclesUntilSnapshot)
             {
                 CycleCounter = 0;

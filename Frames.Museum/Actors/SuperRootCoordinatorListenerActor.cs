@@ -37,6 +37,7 @@ public class SuperRootCoordinatorListenerActor : ReceiveActor
             
             // this is for benchmarks, because Akka.Persistence DeleteMessages has problems with 20k+ messages
             await DatabaseCleanup.DeleteJournalEntries(connectionString, msg.Id);
+            await DatabaseCleanup.DeleteSnapshots(connectionString, msg.Id);
             
             await HubContext.Clients.All.SendAsync("Completion", msg);
         });

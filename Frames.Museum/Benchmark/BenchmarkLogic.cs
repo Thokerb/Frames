@@ -28,10 +28,10 @@ public static class BenchmarkLogic
 
         var model = new CoupledBenchmarkModel("root2", numberInactiveNodes, numberActiveNodes, request.CoupleGrouping, true);
         
-        var resp = await rootCoordinatorActor.Ask(
+        rootCoordinatorActor.Tell(
             new Simulation.CreateModel(model, "coordinator-topLevel", uniqueId));
         
-        Log.Information("Created model in simulation with id {UniqueId}", resp);
+        Log.Information("Created model in simulation with id {UniqueId}", uniqueId);
         
         // stop after x TimeUnits
         rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(request.TimeUnits), uniqueId));

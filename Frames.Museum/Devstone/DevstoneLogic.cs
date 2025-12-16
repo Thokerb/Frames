@@ -29,11 +29,11 @@ public static class DevstoneLogic
         var rootCoordinatorActor = rootCoordinatorActorRef.ActorRef;
         var uniqueId = Guid.NewGuid();
 
-        var name = $"coordinator-environment-{request.ModelType}-{uniqueId}";
+        var name = $"coordinator-environment-{request.ModelType}";
 
         var model = new DevstoneEnvironment(name, request);
 
-        await rootCoordinatorActor.Ask(
+        rootCoordinatorActor.Tell(
             new Simulation.CreateModel(model, name, uniqueId));
 
 

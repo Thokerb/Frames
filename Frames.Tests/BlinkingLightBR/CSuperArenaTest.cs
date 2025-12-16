@@ -94,6 +94,36 @@ public class CSuperArenaTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         
         Assert.Equivalent( 13,response.ElapsedTime.Value);
     }
+    
+    [Fact]
+    public async Task TestSerialization()
+    {
+        var expectResultsProbe = CreateTestProbe();
+        var uniqueId = Guid.NewGuid();
+
+        // Arrange root coordinator
+        var serviceProviderMock = ServiceProviderMock.CreateMock(_openTelemetryFixture.Instrumentation);
+        var rootProps = Props.Create<Engine.RootCoordinator>(() => new Engine.RootCoordinator("persist",serviceProviderMock));
+        var rootCoordinatorActor = ActorRegistry.Get<RootCoordinator>();
+        var listener = ActorRegistry.Get<DistributedPubSubMediator>();
+        listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
+        
+        ICoupledModel coupledModel = new CSuperArena2();
+        
+        var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(coupledModel,"coordinator-carena",uniqueId)
+        {
+        });        
+        // Act
+        rootCoordinatorActor.Tell(new Simulation.SetStopAfterTime(new TimeUnit(10),uniqueId));
+        rootCoordinatorActor.Tell(new Simulation.StartSimulation(uniqueId));
+        
+        
+        // Assert
+        var response = await expectResultsProbe.ExpectMsgAsync<Simulation.IsCompleted>(TimeSpan.FromSeconds(6));
+
+        
+        Assert.Equivalent( 10,response.ElapsedTime.Value);
+    }
 
 
 }

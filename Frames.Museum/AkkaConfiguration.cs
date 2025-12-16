@@ -5,6 +5,7 @@ using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Discovery.Config.Hosting;
+using Akka.Dispatch.SysMsg;
 using Akka.Logger.Serilog;
 using Akka.Management;
 using Akka.Management.Cluster.Bootstrap;
@@ -26,6 +27,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using LogLevel = Akka.Event.LogLevel;
+using Stop = Frames.Engine.Util.Stop;
 
 
 namespace Frames.Museum;
@@ -191,6 +193,8 @@ public static class AkkaConfiguration
         var settings = serviceProvider.GetRequiredService<AkkaSettings>();
         var extractor = new FramesMessageExtractor();
 
+        settings.ShardOptions.HandOffStopMessage = Stop.Instance;
+
         if (settings.UseClustering)
         {
             return builder
@@ -255,7 +259,6 @@ public static class AkkaConfiguration
                     )
                 ;
         }
-
 
         return builder.WithActors((system, registry, _) =>
         {
@@ -351,9 +354,11 @@ public class FramesMessageExtractor : IMessageExtractor
     /// <exception cref="NotImplementedException"></exception>
     public string ShardId(object message)
     {
+        int maxNumberShards = 50;
+        string? shardId = null;
         if (message is IShardSeperation shardSeparation)
         {
-            return shardSeparation.ShardId + shardSeparation.RunId;
+            shardId = shardSeparation.ShardId + shardSeparation.RunId;
         }
 
         if (message is JObject jObject)
@@ -365,17 +370,31 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            return shardSeparationFromJson.ShardId;
+            shardId = shardSeparationFromJson.ShardId;
         }
+        
+        if (shardId != null)
+        {
+            return shardId;
+            // simple hash function to distribute shards
+            int hash = shardId.GetHashCode();
+            int positiveHash = Math.Abs(hash);
+            int shardNumber = positiveHash % maxNumberShards;
+            return "shard-" + shardNumber;
+        }
+        
 
         throw new NotSupportedException("Message type not supported for hashing: " + message.GetType());
     }
 
     public string ShardId(string entityId, object? messageHint = null)
     {
+        int maxNumberShards = 50;
+        string? shardId = null;
+        
         if (messageHint is IShardSeperation shardSeparation)
         {
-            return shardSeparation.ShardId;
+            shardId = shardSeparation.ShardId;
         }
 
         if (messageHint is JObject jObject)
@@ -387,7 +406,17 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            return shardSeparationFromJson.ShardId + shardSeparationFromJson.RunId;
+            shardId = shardSeparationFromJson.ShardId + shardSeparationFromJson.RunId;
+        }
+        
+        if (shardId != null)
+        {
+            return shardId;
+            // simple hash function to distribute shards
+            int hash = shardId.GetHashCode();
+            int positiveHash = Math.Abs(hash);
+            int shardNumber = positiveHash % maxNumberShards;
+            return "shard-" + shardNumber;
         }
 
         throw new NotSupportedException("Message type not supported for hashing: " + messageHint?.GetType());

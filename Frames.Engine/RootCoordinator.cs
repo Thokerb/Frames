@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Timers;
 using Akka.Cluster.Tools.PublishSubscribe;
-using Akka.Dispatch.SysMsg;
 using Akka.Hosting;
 using Akka.Persistence;
 using Frames.Engine.Akka.Persistence;
@@ -14,7 +13,6 @@ using Frames.Engine.Util;
 using Frames.Model;
 using Frames.Model.ValueTypes;
 using Microsoft.Extensions.DependencyInjection;
-using Timer = System.Timers.Timer;
 
 // ReSharper disable ExplicitCallerInfoArgument
 
@@ -56,6 +54,8 @@ public class RootCoordinatorState
     public bool StopConditionReached { get; set; }
     public string? RestoredCheckpointName { get; set; }
     public readonly SortedList<TimeUnit, string> _checkpoints = new();
+    public bool isInitialized;
+    public bool receivedStart;
     public CompletionType CompletionType { get; set; } = CompletionType.NotCompleted;
 }
 
@@ -307,11 +307,18 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
 
         _baseState.ChildName = arg.Name;
         _baseState._child = actor;
+        _state.isInitialized = true;
 
         Persist(_baseState, st =>
         {
             _baseState = st;
         });
+
+        if (_state.receivedStart)
+        {
+            _state.receivedStart = false;
+            Self.Tell(new Simulation.StartSimulation(_baseState.RunId));
+        }
         
         Sender.Tell(new CreationResponse(_baseState.RunId));
     }
@@ -507,6 +514,12 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         Serilog.Log.Information("[ROOT] Starting simulation");
 
         _state._isCompleted = false;
+
+        if (!_state.isInitialized)
+        {
+            _state.receivedStart = true;
+            return;
+        }
 
 
         if (obj.CheckpointName is not null && obj.CheckpointName != _state.RestoredCheckpointName)

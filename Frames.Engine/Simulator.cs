@@ -1,10 +1,8 @@
 ﻿using System.Diagnostics;
 using Akka.Cluster.Sharding;
-using Akka.Dispatch.SysMsg;
 using Akka.Hosting;
 using Akka.Persistence;
 using Frames.Engine.Akka.Persistence;
-using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
 using Frames.Engine.Monitoring;
@@ -14,7 +12,6 @@ using Frames.Model;
 using Frames.Model.ValueTypes;
 using Frames.ReelConnector;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 
 namespace Frames.Engine;
 
@@ -122,7 +119,16 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         
         Recover<SimulatorState>(state =>
         {
+            Serilog.Log.Information("[{Name} - PERSISTENCE] Recovered simulator state. TimeLast: {TimeLast}, TimeNext: {TimeNext}, TimeElapsed: {TimeElapsed}", 
+                Self.Path.Name, state._timeLast, state._timeNext, state._timeElapsed);
             _state = state;
+        });
+        Recover<AkkaSimulatorSnapshotObject>(state =>
+        {
+            Serilog.Log.Information("[{Name} - PERSISTENCE] Recovered simulator snapshot state. TimeLast: {TimeLast}, TimeNext: {TimeNext}, TimeElapsed: {TimeElapsed}", 
+                Self.Path.Name, state.State._timeLast, state.State._timeNext, state.State._timeElapsed);
+            _state = state.State;
+            _baseState = state.BaseState;
         });
         
         Recover<SimulatorBaseState>(baseState =>
@@ -162,12 +168,10 @@ public class Simulator : ReceivePersistentActor, ILogReceive
 
         Command<Simulation.Cleanup>(msg =>
         {
-            DeleteSnapshots(SnapshotSelectionCriteria.Latest);
-            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
+            Context.Parent.Tell(new Passivate(Stop.Instance));
         });
         Command<PoisonPill>(msg =>
         {
-            PersistState(true);
             Context.Stop(Self);
         });
         Command<Stop>(msg =>
@@ -186,12 +190,19 @@ public class Simulator : ReceivePersistentActor, ILogReceive
             // we only want to persist state if we are stopping the actor, otherwise there are just too many messages
             return;
         }
+        Serilog.Log.Logger.Information("[{Name} - PERSISTENCE] Persisting state. TimeLast: {TimeLast}, TimeNext: {TimeNext}, TimeElapsed: {TimeElapsed}", 
+            Self.Path.Name, _state._timeLast, _state._timeNext, _state._timeElapsed);
+        
         // lower consistency, much higher performance. Doesn't wait for the message to be persisted before processing the next message in the mailbox.
         // order in which those events are persisted will be preserved 
         // This means you probably have to modify your actor's in-memory state before
         // https://stackoverflow.com/questions/65918832/akka-net-with-persistence-dropping-messages-when-cpu-in-under-high-pressure
-        PersistAsync(_state, st =>
+        Persist(new AkkaSimulatorSnapshotObject()
         {
+            // base state never changes but we need it in the snapshot
+            BaseState = _baseState,
+            State = _state,
+        }, _ => {
             if(++CycleCounter >= PersistenceConfiguration.CyclesUntilSnapshot)
             {
                 CycleCounter = 0;
