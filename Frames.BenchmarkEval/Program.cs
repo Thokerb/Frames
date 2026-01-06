@@ -16,28 +16,34 @@ public class Program
 
     public static async Task Main(string[] args)
     {
-        // var config = new BenchmarkConfig
-        // {
-        //     NumberRuns = 40, // 7
-        //     StartTimeUnits = 600,
-        //     TimeUnitIncrement = 0,
-        //     PercentageActive = 70,
-        //     PercentageIncrement = 3.3333,
-        //     NodeIcrement = 0,
-        //     NumberNodes = 3000,
-        //     CsvPath = "results-3-cluster_20gb_noj_4mb_nodes_100_to_3000_by_inc_v5_persistance.csv",
-        //     NumberExecutions = 4
-        // };
+        // --- Normal benchmarks ---
+        if (true)
+        {
+            
+            // await new BenchmarkRunner(TestConf.TestBestN).RunAsync();
+            // // await new BenchmarkRunner(TestConf.TestFrom3000ToMax).RunAsync();
+            await new BenchmarkRunner(TestConf.TestFrom100To3000).RunAsync();
+            await new BenchmarkRunner(TestConf.TestFrom100To3000Percentage).RunAsync();
+            // await new BenchmarkRunner(TestConf.Test150And200).RunAsync();
+            
+        }
 
-        // await new BenchmarkRunner(TestConf.TestBestN).RunAsync();
-        // await new BenchmarkRunner(TestConf.TestFrom100To3000).RunAsync();
-        // await new BenchmarkRunner(TestConf.TestFrom100To3000Percentage).RunAsync();
-        
-        // --- Devstone benchmarks (run AFTER normal ones) ---
-        await new DevstoneBenchmarkRunner(TestConf.ConfigLI).RunAsync();
-        await new DevstoneBenchmarkRunner(TestConf.ConfigHI).RunAsync();
-        await new DevstoneBenchmarkRunner(TestConf.ConfigHO).RunAsync();
-        await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod).RunAsync();
+        if (false)
+        {
+            // --- Devstone benchmarks (run AFTER normal ones) ---
+            await new DevstoneBenchmarkRunner(TestConf.ConfigLI1).RunAsync(); // for 1 node did not work
+            await new DevstoneBenchmarkRunner(TestConf.ConfigLI2).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigLI3).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHI1).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHI2).RunAsync(); 
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHI3).RunAsync(); // problem, for 1 and 3 node did not work
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHO1).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHO2).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHO3).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod1).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod2).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod3).RunAsync();
+        }
 
         Console.WriteLine("✅ ALL BENCHMARKS COMPLETED");
     }
@@ -130,7 +136,7 @@ public class BenchmarkRunner
     {
         if (!File.Exists(_config.CsvPath))
         {
-            File.WriteAllText(_config.CsvPath, "Run,Execution,NumberNodes,TimeUnits,PercentageActive,CompletionType,CoupleGrouping,TimeMs" + Environment.NewLine);
+            File.WriteAllText(_config.CsvPath, "Run,Execution,NumberNodes,TimeUnits,PercentageActive,CompletionType,CoupleGrouping,TimeMs,NumberNodes" + Environment.NewLine);
         }
     }
 
@@ -144,7 +150,8 @@ public class BenchmarkRunner
             request.PercentageActive.ToString(CultureInfo.InvariantCulture),
             result.CompletionType.ToString(),
             request.CoupleGrouping,
-            result.TimeInMilliseconds
+            result.TimeInMilliseconds,
+            result.NumberNodes
         );
         
         Console.WriteLine(

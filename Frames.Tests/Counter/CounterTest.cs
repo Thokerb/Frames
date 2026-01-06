@@ -43,7 +43,7 @@ public class CounterTest : BaseTestKit,  IClassFixture<OpenTelemetryFixture>
         var listener = ActorRegistry.Get<DistributedPubSubMediator>();
         listener.Tell(new Subscribe(RootCoordinator.TopicName, expectResultsProbe));
         
-        ICoupledModel model = new CCounter();
+        ICoupledModel model = new CCounter("blubb");
         
         var coupledModelActor = await rootCoordinatorActor.Ask(new Simulation.CreateModel(model,"coordinator-counter",uniqueId)
         {

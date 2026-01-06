@@ -118,11 +118,11 @@ public class SerializationTest
     [Fact]
     public void TestSerialization5()
     {
-        int numberInactive = 20;
-        int numberActive = 20;
-        var stepSize = 10;
+        int numberInactive = 500;
+        int numberActive = 1500;
+        var stepSize = 150;
         var model = new CoupledBenchmarkModel("root2", numberInactive, numberActive,stepSize, true);
-        Assert.Equal((numberActive + numberInactive) / stepSize, model.GetChildren().Count());
+        Assert.Equal(((numberActive + numberInactive) / stepSize) + 1, model.GetChildren().Count());
         
         // serialize and deserialize
         var serialize = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
@@ -133,7 +133,9 @@ public class SerializationTest
         {
             TypeNameHandling = TypeNameHandling.Objects
         });
-        Assert.Equal((numberActive + numberInactive) / stepSize, modelDeserialized.GetChildren().Count());
+        Assert.Equal((numberActive + numberInactive) / stepSize + 1, modelDeserialized.GetChildren().Count());
+        var lastChild = modelDeserialized.GetChildren().Last().Item2 as CoupledBenchmarkModel;
+        Assert.Equal(50, lastChild.GetChildren().Count());
     }
     
     [Fact]

@@ -3,9 +3,11 @@
 services:
   mongodb:
     image: mongodb/mongodb-community-server:latest
+    container_name: mongodb
     environment:
       - MONGODB_INITDB_ROOT_USERNAME=root
       - MONGODB_INITDB_ROOT_PASSWORD=password
+      - MONGO_REPLICA_SET_NAME=rs0
     ports:
       - "27017:27017"
     volumes:
@@ -24,10 +26,6 @@ services:
       MSSQL_TCP_PORT: 1433
     ports:
       - "1433:1433"
-    volumes:
-      - ./mssql-data:/var/opt/mssql/data
-      - ./log:/var/opt/mssql/log
-      - ./secrets:/var/opt/mssql/secrets
   museum1:
     deploy:
       resources:
@@ -71,6 +69,7 @@ services:
       OpenTelemetry__Endpoint: "http://jaeger:4317"
       AkkaSettings__PersistenceMode: "SqlServer"
       SWAGGER_HOST: "http://localhost:8080"
+      SEQ: "http://seq:5341"
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -120,6 +119,7 @@ services:
       AkkaSettings__PersistenceMode: "SqlServer"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
       SWAGGER_HOST: "http://localhost:8082"
+      SEQ: "http://seq:5341"
     ports:
       - "8082:8080"
       - "8083:8081"
@@ -170,6 +170,7 @@ services:
       AkkaSettings__PersistenceMode: "SqlServer"
       OpenTelemetry__Endpoint: "http://jaeger:4317"
       SWAGGER_HOST: "http://localhost:8084"
+      SEQ: "http://seq:5341"
     ports:
       - "8084:8080"
       - "8085:8081"
@@ -185,3 +186,15 @@ services:
     environment:
       COLLECTOR_OLTP_ENABLED: true
       QUERY_MAX_CLOCK_SKEW_ADJUSTMENT: 1000000000
+  # SEQ Log Server
+  seq:
+    hostname: seq
+    image: datalust/seq:latest
+    volumes:
+      - ./seq-data:/data
+    ports:
+      - "8020:80"
+      - "5341:5341"
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORD="Password123!"

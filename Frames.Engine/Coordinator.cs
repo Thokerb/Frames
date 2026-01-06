@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Akka.Hosting;
 using Akka.Persistence;
+using Akka.Util;
 using Frames.Engine.Akka.Persistence;
 using Frames.Engine.Dto;
 using Frames.Engine.Exceptions;
@@ -106,9 +107,20 @@ public class CoordinatorStateSnapshot
 /// Coordinator class represents a coordinator which is responsible for managing the execution of the coupled model.
 /// Based on the RootCoordinator from Theory of M S by Zeigler.
 /// </summary>
-public class Coordinator : ReceivePersistentActor, ILogReceive
+public class Coordinator : ReceivePersistentActor, ILogReceive, IWithTimers
 {
-    
+    protected override void OnReplaySuccess()
+    {
+        Serilog.Log.Information("[{Name} - PERSISTENCE] Replay successful", Self.Path.Name);
+        base.OnReplaySuccess();
+    }
+
+    protected override void OnPersistFailure(Exception cause, object @event, long sequenceNr)
+    {
+        Serilog.Log.Error(cause, "[{Name} - PERSISTENCE] Persist failure on event {Event} at sequence number {SequenceNr}", Self.Path.Name, @event.GetType().Name, sequenceNr);
+        base.OnPersistFailure(cause, @event, sequenceNr);
+    }
+
     protected override SupervisorStrategy SupervisorStrategy()
     {
         return new OneForOneStrategy(
@@ -226,6 +238,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         });        
         Recover<CoordinatorStateSnapshot>(snap =>
         {
+            Serilog.Log.Information("[{Name} - PERSISTENCE] Recovered from journal", Self.Path.Name);
             _baseState = snap.BaseState;
             _state = snap.State;
         });
@@ -301,8 +314,13 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         });
         Command<Stop>(msg =>
         {
-            PersistState(true);
-            Context.Stop(Self);
+            Serilog.Log.Information("[{Name} - STOP] Received stop command", Self.Path.Name);
+            Timers.StartSingleTimer("StopNow",StopNow.Instance, TimeSpan.FromMilliseconds(ThreadLocalRandom.Current.Next(0,100)));
+        });
+        Command<StopNow>(msg =>
+        {
+            Serilog.Log.Information("[{Name} - STOP] Stopping coordinator", Self.Path.Name);
+            PersistState(fromPoisonPill: true);
         });
     }
 
@@ -346,6 +364,7 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
                     State = _state.DeepCopy(),
                 });
             }
+            Context.Stop(Self);
         });
     }
     
@@ -784,4 +803,5 @@ public class Coordinator : ReceivePersistentActor, ILogReceive
         }
     }
 
+    public ITimerScheduler Timers { get; set; }
 }

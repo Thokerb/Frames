@@ -34,7 +34,9 @@ public static class ActorHelper
     {
         
         var input = pathName.Path.Elements.Last();
-        return input.Substring(0, input.Length - 37); // default 36 characters for a GUID + 1 for the hyphen
+        var key = input.Split("-%5B").First();
+        var result = key.Substring(0, key.Length - 37); // default 36 characters for a GUID + 1 for the hyphen
+        return result;
     }
 }
 

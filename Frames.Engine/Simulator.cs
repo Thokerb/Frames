@@ -2,6 +2,8 @@
 using Akka.Cluster.Sharding;
 using Akka.Hosting;
 using Akka.Persistence;
+using Akka.Streams.Implementation;
+using Akka.Util;
 using Frames.Engine.Akka.Persistence;
 using Frames.Engine.Exceptions;
 using Frames.Engine.Messages;
@@ -57,8 +59,15 @@ public class AkkaSimulatorSnapshotObject
 /// Simulator class represents a simulator which is responsible for managing the execution of an atomic model.
 /// Based on the Simulator from Theory of M S by Zeigler.
 /// </summary>
-public class Simulator : ReceivePersistentActor, ILogReceive
+public class Simulator : ReceivePersistentActor, ILogReceive, IWithTimers
 {
+    protected override void OnReplaySuccess()
+    {
+        Serilog.Log.Information("[{Name} - PERSISTENCE] Replay successful. TimeLast: {TimeLast}, TimeNext: {TimeNext}, TimeElapsed: {TimeElapsed}", 
+            Self.Path.Name, _state._timeLast, _state._timeNext, _state._timeElapsed);
+        base.OnReplaySuccess();
+    }
+
     private IServiceProvider ServiceProvider { get; init; }
     private ISnapshotManager SnapshotManager { get; }
     private ActivitySource ActivitySource { get;  }
@@ -168,18 +177,32 @@ public class Simulator : ReceivePersistentActor, ILogReceive
 
         Command<Simulation.Cleanup>(msg =>
         {
+            MarkedForCleanup = true;
             Context.Parent.Tell(new Passivate(Stop.Instance));
-        });
-        Command<PoisonPill>(msg =>
-        {
-            Context.Stop(Self);
         });
         Command<Stop>(msg =>
         {
-            PersistState(true);
+            Serilog.Log.Information("[{Name} - STOP] Received stop command", Self.Path.Name);
+            startStopTime = DateTime.UtcNow;
+            Timers.StartSingleTimer("StopNow",StopNow.Instance, TimeSpan.FromMilliseconds(500 * ThreadLocalRandom.Current.Next(0,6)));
+        });
+        Command<StopNow>(msg =>
+        {
+            var stopDuration = DateTime.UtcNow - startStopTime;
+            Serilog.Log.Information("[{Name} - STOP] Stopping simulator after {StopDuration} ms", Self.Path.Name, stopDuration.TotalMilliseconds);
+            if(!MarkedForCleanup)
+            {
+                PersistState(fromPoisonPill: true);
+                Serilog.Log.Warning("[{Name} - STOP] Simulator stopped without being marked for cleanup", Self.Path.Name);
+                return;
+            }
+            Serilog.Log.Information("[{Name} - STOP] Simulator stopped and marked for cleanup", Self.Path.Name);
             Context.Stop(Self);
         });
     }
+
+    private bool MarkedForCleanup = false;
+    private DateTime startStopTime;
 
     private int CycleCounter = 0;
     
@@ -213,6 +236,7 @@ public class Simulator : ReceivePersistentActor, ILogReceive
                     State = _state,
                 });
             }
+            Context.Stop(Self);
         });
     }
 
@@ -480,4 +504,5 @@ public class Simulator : ReceivePersistentActor, ILogReceive
         });
     }
 
+    public ITimerScheduler Timers { get; set; }
 }

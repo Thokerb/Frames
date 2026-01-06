@@ -77,7 +77,7 @@ public class DevstoneBenchmarkRunner
         {
             File.WriteAllText(
                 _config.CsvPath,
-                "Width,Depth,ModelType,CompletionType,TimeMs" + Environment.NewLine
+                "Width,Depth,ModelType,CompletionType,TimeMs,NumberNodes" + Environment.NewLine
             );
         }
     }
@@ -93,7 +93,8 @@ public class DevstoneBenchmarkRunner
             depth,
             request.ModelType.ToString(),
             result.CompletionType.ToString(),
-            result.TimeInMilliseconds
+            result.TimeInMilliseconds,
+            result.NumberNodes
         );
 
         File.AppendAllText(_config.CsvPath, csv + Environment.NewLine);

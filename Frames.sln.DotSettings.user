@@ -93,6 +93,7 @@
     &lt;Project Location="D:\Dev\Frames\Frames.BenchmarkTests" Presentation="&amp;lt;Frames.BenchmarkTests&amp;gt;" /&gt;&#xD;
     &lt;TestAncestor&gt;&#xD;
       &lt;TestId&gt;xUnit::E30C999E-F7C1-46E2-9853-D164D043F8BE::net9.0::Frames.Tests.CoupledModelTest.TestCoupling&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.SerializationTest.TestSerialization5&lt;/TestId&gt;&#xD;
     &lt;/TestAncestor&gt;&#xD;
     &lt;Project Location="D:\Dev\Frames\Frames.Tests" Presentation="&amp;lt;Frames.Tests&amp;gt;" /&gt;&#xD;
   &lt;/Or&gt;&#xD;
@@ -127,25 +128,30 @@
   &lt;/Or&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=ec6cc56d_002D086a_002D4399_002Db7ff_002De2e0d07a2061/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;And&gt;&#xD;
-    &lt;Or&gt;&#xD;
-      &lt;Project Location="D:\Dev\Frames\Frames.Tests" Presentation="&amp;lt;Frames.Tests&amp;gt;" /&gt;&#xD;
+  &lt;Or&gt;&#xD;
+    &lt;And&gt;&#xD;
+      &lt;Or&gt;&#xD;
+        &lt;Project Location="D:\Dev\Frames\Frames.Tests" Presentation="&amp;lt;Frames.Tests&amp;gt;" /&gt;&#xD;
+        &lt;TestAncestor&gt;&#xD;
+          &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ParseReel.ParseReelFile&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.CreateReelAtomicModel&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.ReelAtomicModelInternalTransitionTest&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.ReelAtomicModelExternalTransitionTest&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelCoupledModelTest.ReelCoupledModel_Creation_Success&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC::net9.0::Frames.BenchmarkTests.UnitTest1.Test1&lt;/TestId&gt;&#xD;
+          &lt;TestId&gt;xUnit::5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC::net9.0::Frames.BenchmarkTests.UnitTest1&lt;/TestId&gt;&#xD;
+        &lt;/TestAncestor&gt;&#xD;
+        &lt;Project Location="D:\Dev\Frames\Frames.ReelTests" Presentation="&amp;lt;Frames.ReelTests&amp;gt;" /&gt;&#xD;
+      &lt;/Or&gt;&#xD;
       &lt;TestAncestor&gt;&#xD;
-        &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ParseReel.ParseReelFile&lt;/TestId&gt;&#xD;
-        &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.CreateReelAtomicModel&lt;/TestId&gt;&#xD;
-        &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.ReelAtomicModelInternalTransitionTest&lt;/TestId&gt;&#xD;
-        &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest.ReelAtomicModelExternalTransitionTest&lt;/TestId&gt;&#xD;
-        &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelAtomicModelTest&lt;/TestId&gt;&#xD;
-        &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.ReelCoupledModelTest.ReelCoupledModel_Creation_Success&lt;/TestId&gt;&#xD;
-        &lt;TestId&gt;xUnit::5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC::net9.0::Frames.BenchmarkTests.UnitTest1.Test1&lt;/TestId&gt;&#xD;
         &lt;TestId&gt;xUnit::5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC::net9.0::Frames.BenchmarkTests.UnitTest1&lt;/TestId&gt;&#xD;
       &lt;/TestAncestor&gt;&#xD;
-      &lt;Project Location="D:\Dev\Frames\Frames.ReelTests" Presentation="&amp;lt;Frames.ReelTests&amp;gt;" /&gt;&#xD;
-    &lt;/Or&gt;&#xD;
+    &lt;/And&gt;&#xD;
     &lt;TestAncestor&gt;&#xD;
-      &lt;TestId&gt;xUnit::5C30A9A8-ED4A-477F-84C6-F1AC542EFEEC::net9.0::Frames.BenchmarkTests.UnitTest1&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;xUnit::B716AC48-9CCE-41E8-93D4-10A638DCD284::net9.0::Frames.Test2.SerializationTest.TestSerialization5&lt;/TestId&gt;&#xD;
     &lt;/TestAncestor&gt;&#xD;
-  &lt;/And&gt;&#xD;
+  &lt;/Or&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestRunner/EnvironmentVariablesIndexed/=DOTNET_005FDefaultStackSize/@EntryIndexedValue">200000</s:String>
 	

@@ -26,10 +26,6 @@ services:
       MSSQL_TCP_PORT: 1433
     ports:
       - "1433:1433"
-    volumes:
-      - ./mssql-data:/var/opt/mssql/data
-      - ./log:/var/opt/mssql/log
-      - ./secrets:/var/opt/mssql/secrets
   museum1:
     hostname: museum1
     deploy:

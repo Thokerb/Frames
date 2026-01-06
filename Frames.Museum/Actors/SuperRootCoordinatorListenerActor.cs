@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Cluster;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Frames.Engine;
@@ -21,10 +22,12 @@ public class SuperRootCoordinatorListenerActor : ReceiveActor
 
         _log.Info(Self.Path.Address.System);
         Receive<SubscribeAck>(ack => Console.WriteLine($"Subscribed to '{ack.Subscribe.Topic}'"));
+        ReceiveAsync<ClusterEvent.MemberUp>(async msg => await HandleMemberUp(msg));
 
         ReceiveAsync<Simulation.IsCompleted>(async msg =>
         {
             _log.Info($"sending simulation completed {msg}");
+            Serilog.Log.Logger.Information("Simulation completed: {Msg}", msg);
             
             // deleting messages here
             var connectionString = Configuration.GetConnectionString("SqlServer");
@@ -36,17 +39,36 @@ public class SuperRootCoordinatorListenerActor : ReceiveActor
             }
             
             // this is for benchmarks, because Akka.Persistence DeleteMessages has problems with 20k+ messages
-            await DatabaseCleanup.DeleteJournalEntries(connectionString, msg.Id);
-            await DatabaseCleanup.DeleteSnapshots(connectionString, msg.Id);
-            
+            try
+            {
+
+                await DatabaseCleanup.DeleteJournalEntries(connectionString, msg.Id);
+                await DatabaseCleanup.DeleteSnapshots(connectionString, msg.Id);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            msg = msg with
+            {
+                NumberNodes = Configuration.GetValue<int>("AkkaSettings:AkkaManagementOptions:RequiredContactPointsNr")
+            };
             await HubContext.Clients.All.SendAsync("Completion", msg);
         });
+    }
+
+    private async Task HandleMemberUp(ClusterEvent.MemberUp msg)
+    {
+        var mediator = DistributedPubSub.Get(Context.System);
+        mediator.Mediator.Tell(new Subscribe(RootCoordinator.TopicName, Self)); // this is to avoid race conditions when the actor starts before the cluster is formed
     }
 
     protected override void PreStart()
     {
         base.PreStart();
         _log.Info(Self.Path.Address.System);
+        Cluster.Get(Context.System).Subscribe(Self, new[] { typeof(ClusterEvent.IMemberEvent) });
         var mediator = DistributedPubSub.Get(Context.System);
         mediator.Mediator.Tell(new Subscribe(RootCoordinator.TopicName, Self));
         _log.Info("subscribed to topic " + RootCoordinator.TopicName);

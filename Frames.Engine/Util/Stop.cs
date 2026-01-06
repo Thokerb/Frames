@@ -9,3 +9,10 @@ public class Stop
 
     private Stop() { }
 }
+
+public class StopNow
+{
+    public static StopNow Instance = new();
+
+    private StopNow() { }
+}

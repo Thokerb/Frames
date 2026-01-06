@@ -3,7 +3,7 @@
 // so that we don't have to add a dependency to Frames.Model just for this
 public class Simulation
 {
-    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id, long TimeInMilliseconds);
+    public sealed record IsCompleted(TimeUnit ElapsedTime, CompletionType CompletionType, Guid Id, long TimeInMilliseconds, int NumberNodes);
     
     public enum CompletionType
     {

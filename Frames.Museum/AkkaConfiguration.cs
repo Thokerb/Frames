@@ -305,7 +305,7 @@ public class FramesMessageExtractor : IMessageExtractor
     {
         if (message is IShardSeperation shardSeparation)
         {
-            return $"{shardSeparation.EntityName}-{shardSeparation.RunId}";
+            return $"{shardSeparation.EntityName}-{shardSeparation.RunId}-[{shardSeparation.ShardId}-{shardSeparation.RunId}]";
         }
 
         if (message is JObject jObject)
@@ -317,7 +317,7 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            return $"{shardSeparationFromJson.EntityName}-{shardSeparationFromJson.RunId}";
+            return $"{shardSeparationFromJson.EntityName}-{shardSeparationFromJson.RunId}-[{shardSeparationFromJson.ShardId}-{shardSeparationFromJson.RunId}]";
         }
 
         // this is a hack, since publish messages do not implement IShardSeperation and this only occurs in non cluster mode
@@ -358,7 +358,7 @@ public class FramesMessageExtractor : IMessageExtractor
         string? shardId = null;
         if (message is IShardSeperation shardSeparation)
         {
-            shardId = shardSeparation.ShardId + shardSeparation.RunId;
+            shardId = shardSeparation.ShardId + "-" + shardSeparation.RunId;
         }
 
         if (message is JObject jObject)
@@ -370,7 +370,7 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            shardId = shardSeparationFromJson.ShardId;
+            shardId = shardSeparationFromJson.ShardId + "-" + shardSeparationFromJson.RunId;
         }
         
         if (shardId != null)
@@ -394,7 +394,7 @@ public class FramesMessageExtractor : IMessageExtractor
         
         if (messageHint is IShardSeperation shardSeparation)
         {
-            shardId = shardSeparation.ShardId;
+            shardId = shardSeparation.ShardId + "-"+ shardSeparation.RunId;
         }
 
         if (messageHint is JObject jObject)
@@ -406,7 +406,25 @@ public class FramesMessageExtractor : IMessageExtractor
                 throw new Exception("Unable to deserialize shard seperation");
             }
 
-            shardId = shardSeparationFromJson.ShardId + shardSeparationFromJson.RunId;
+            shardId = shardSeparationFromJson.ShardId + "-"+ shardSeparationFromJson.RunId;
+        }
+
+        // this warning is wrong, I think it only holds for HashMessageExtractor from Akka and not for our custom one
+#pragma warning disable AK2001
+        if (messageHint is ShardRegion.StartEntity se)
+#pragma warning restore AK2001
+        {
+            // shardId is at the end in []
+            var startIndex = se.EntityId.LastIndexOf('[');
+            var endIndex = se.EntityId.LastIndexOf(']');
+            if (startIndex >= 0 && endIndex > startIndex)
+            {
+                shardId = se.EntityId.Substring(startIndex + 1, endIndex - startIndex - 1);
+            }
+            else
+            {
+                throw new Exception("Unable to extract shardId from StartEntity message");
+            }
         }
         
         if (shardId != null)

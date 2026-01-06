@@ -193,6 +193,7 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         Command<Exception>(ex =>
         {
             Log.Error(ex, "[ROOT] Exception in RootCoordinator");
+            Serilog.Log.Error("[ROOT] Exception in RootCoordinator: {Exception}", ex.Message);
             Timers?.Cancel(TimeoutKey);
             _state._isCompleted = true;
             _state.CompletionType = CompletionType.Error;
@@ -203,10 +204,12 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
             var mediator = Context.System.Settings.HasCluster ? DistributedPubSub.Get(Context.System).Mediator : ActorRegistry.For(Context.System).Get<DistributedPubSubMediator>();
             if (mediator == null)
             {
-                Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
+                Serilog.Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
                 return;
             }
-            mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId, _benchmarkStopwatch.ElapsedMilliseconds) ));
+            // this way publish is kept in buffer when there is no subscriber yet
+            // this can happen when the cluster is under stress and therefore the pubsub subscriber is not available for a short time (should be under 5 seconds)
+            mediator.Tell(new PublishWithAck(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId, _benchmarkStopwatch.ElapsedMilliseconds), TimeSpan.FromSeconds(30) ));
         });
     }
 
@@ -271,9 +274,10 @@ public class RootCoordinator : ReceivePersistentActor, ILogReceive, IWithTimers
         if (mediator == null )
         {
             Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
+            Serilog.Log.Error("[ROOT] Mediator is null or terminated, cannot publish completion message");
             return;
         }
-        mediator.Tell(new Publish(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId, _benchmarkStopwatch.ElapsedMilliseconds) ));
+        mediator.Tell(new PublishWithAck(RootCoordinator.TopicName,new Simulation.IsCompleted(_state._currentTime, _state.CompletionType, _baseState.RunId, _benchmarkStopwatch.ElapsedMilliseconds), TimeSpan.FromSeconds(30) ));
     }
 
     private async Task ReceiveCreateModelAsync(Simulation.CreateModel arg)
