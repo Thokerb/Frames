@@ -1,3 +1,10 @@
+# Master thesis Artifact
+This repository contains the artifact developed for the master’s thesis “Frames: A Novel Framework for Parallel DEVS based on Actors.”
+Please note that this repository is no longer actively maintained.
+
+For a potentially newer and actively maintained version, refer to the University of Innsbruck QE Repository:
+👉 [Frames](https://git.uibk.ac.at/informatik/qe/sim-team/frames)
+
 # Frames
 
 [![.NET](https://github.com/Thokerb/Frames/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Thokerb/Frames/actions/workflows/dotnet.yml)
