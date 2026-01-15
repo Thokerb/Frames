@@ -44,7 +44,7 @@ public class UnitTest1
         Assert.True(true);
     }
     
-    [Fact]
+    [SkipForGithubAction]
     public void TestSerializationHI()
     {
         var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
