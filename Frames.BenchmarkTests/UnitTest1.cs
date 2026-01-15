@@ -175,7 +175,7 @@ public class UnitTest1
     }
     
     
-    [Fact]
+    [SkipForGithubAction]
     public void TestSerializationLI()
     {
         var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
