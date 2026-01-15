@@ -17,7 +17,7 @@ public class Program
     public static async Task Main(string[] args)
     {
         // --- Normal benchmarks ---
-        if (true)
+        if (false)
         {
             
             // await new BenchmarkRunner(TestConf.TestBestN).RunAsync();
@@ -28,7 +28,7 @@ public class Program
             
         }
 
-        if (false)
+        if (true)
         {
             // --- Devstone benchmarks (run AFTER normal ones) ---
             await new DevstoneBenchmarkRunner(TestConf.ConfigLI1).RunAsync(); // for 1 node did not work
@@ -43,6 +43,14 @@ public class Program
             await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod1).RunAsync();
             await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod2).RunAsync();
             await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod3).RunAsync();
+        }
+
+        if (false)
+        {
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHO3).RunAsync();
+            // await new DevstoneBenchmarkRunner(TestConf.ConfigHI3).RunAsync();
+            await new DevstoneBenchmarkRunner(TestConf.ConfigHOmod3).RunAsync();
+
         }
 
         Console.WriteLine("✅ ALL BENCHMARKS COMPLETED");

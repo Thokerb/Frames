@@ -15,6 +15,7 @@ public class DevstoneBenchmarkRunner
     public DevstoneBenchmarkRunner(DevstoneBenchmarkConfig config)
     {
         _config = config;
+        _config.CsvPath = _config.CsvPath.Replace(".csv", "_3_3.csv");
     }
 
     public async Task RunAsync()

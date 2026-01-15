@@ -19,7 +19,7 @@ public static class TestConf
     
     public static readonly BenchmarkConfig TestFrom100To3000 = new ()
     {
-        CsvPath = "TestFrom100To3000_final5.csv",
+        CsvPath = "TestFrom100To3000_final1.csv",
         NodeIcrement = 100,
         NumberExecutions = 4,
         NumberNodes = 100,
@@ -33,7 +33,7 @@ public static class TestConf
     
     public static readonly BenchmarkConfig TestFrom100To3000Percentage = new ()
     {
-        CsvPath = "TestFrom100To3000Percentage_final5.csv",
+        CsvPath = "TestFrom100To3000Percentage_final1.csv",
         NodeIcrement = 0,
         NumberExecutions = 4,
         NumberNodes = 3000,
@@ -120,12 +120,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigLI1 = new()
     {
         CsvPath = "Devstone_LI_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.LI,
-        WidthStart = 200,
-        WidthIncrement = 0, // From 200 to 40 (increment size)
-        DepthStart = 200,
-        DepthIncrement = 0, // Depth remains constant at 200
+        WidthStart = 100,
+        WidthIncrement = 0, // From 100 to 20 (increment size)
+        DepthStart = 100,
+        DepthIncrement = 0, // Depth remains constant at 100
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -134,12 +134,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigLI2 = new()
     {
         CsvPath = "Devstone_LI_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.LI,
-        WidthStart = 200,
-        WidthIncrement = 0, // From 200 to 40 (increment size)
-        DepthStart = 40,
-        DepthIncrement = 0, // Depth remains constant at 40
+        WidthStart = 100,
+        WidthIncrement = 0, // From 100 to 20 (increment size)
+        DepthStart = 20,
+        DepthIncrement = 0, // Depth remains constant at 20
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -148,12 +148,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigLI3 = new()
     {
         CsvPath = "Devstone_LI_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.LI,
-        WidthStart = 40,
-        WidthIncrement = 0, // Width stays at 40
-        DepthStart = 200,
-        DepthIncrement = 0, // Depth remains constant at 200
+        WidthStart = 20,
+        WidthIncrement = 0, // Width stays at 20
+        DepthStart = 100,
+        DepthIncrement = 0, // Depth remains constant at 100
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -163,12 +163,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHI1 = new()
     {
         CsvPath = "Devstone_HI_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HI,
-        WidthStart = 200,
-        WidthIncrement = 0, // From 200 to 40 (increment size)
-        DepthStart = 40,
-        DepthIncrement = 0, // Depth remains constant at 40
+        WidthStart = 100,
+        WidthIncrement = 0, // From 100 to 20 (increment size)
+        DepthStart = 20,
+        DepthIncrement = 0, // Depth remains constant at 20
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -177,12 +177,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHI2 = new()
     {
         CsvPath = "Devstone_HI_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HI,
-        WidthStart = 40,
-        WidthIncrement = 0, // Width stays at 40
-        DepthStart = 200,
-        DepthIncrement = 0, // Depth remains constant at 200
+        WidthStart = 20,
+        WidthIncrement = 0, // Width stays at 20
+        DepthStart = 100,
+        DepthIncrement = 0, // Depth remains constant at 100
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -191,12 +191,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHI3 = new()
     {
         CsvPath = "Devstone_HI_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HI,
-        WidthStart = 200,
-        WidthIncrement = 0, // Width remains constant at 200
-        DepthStart = 200,
-        DepthIncrement = 0, // Depth remains constant at 200
+        WidthStart = 100,
+        WidthIncrement = 0, // Width remains constant at 100
+        DepthStart = 100,
+        DepthIncrement = 0, // Depth remains constant at 100
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -205,12 +205,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHO1 = new()
     {
         CsvPath = "Devstone_HO_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HO,
-        WidthStart = 200,
-        WidthIncrement = 0, // From 200 to 40 (increment size)
-        DepthStart = 40,
-        DepthIncrement = 0, // Depth remains constant at 40
+        WidthStart = 100,
+        WidthIncrement = 0, // From 100 to 20 (increment size)
+        DepthStart = 20,
+        DepthIncrement = 0, // Depth remains constant at 20
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -219,12 +219,12 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHO2 = new()
     {
         CsvPath = "Devstone_HO_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HO,
-        WidthStart = 40,
-        WidthIncrement = 0, // Width stays at 40
-        DepthStart = 200,
-        DepthIncrement = 0, // Depth remains constant at 200
+        WidthStart = 20,
+        WidthIncrement = 0, // Width stays at 20
+        DepthStart = 100,
+        DepthIncrement = 0, // Depth remains constant at 100
         IntCycles = 1000,
         ExtCycles = 1000,
         PrepTime = 1
@@ -233,11 +233,11 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHO3 = new()
     {
         CsvPath = "Devstone_HO_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HO,
-        WidthStart = 200,
+        WidthStart = 100,
         WidthIncrement = 0, // Width stays at 20
-        DepthStart = 200,
+        DepthStart = 100,
         DepthIncrement = 0, // Depth remains constant at 20
         IntCycles = 1000,
         ExtCycles = 1000,
@@ -247,7 +247,7 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHOmod1 = new()
     {
         CsvPath = "Devstone_HOmod_Results_1.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HOmod,
         WidthStart = 20,
         WidthIncrement = 0, // From 20 to 4 (increment size)
@@ -261,7 +261,7 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHOmod2 = new()
     {
         CsvPath = "Devstone_HOmod_Results_2.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HOmod,
         WidthStart = 4,
         WidthIncrement = 0, // Width stays at 4
@@ -274,7 +274,7 @@ public static class TestConf
     public static readonly DevstoneBenchmarkConfig ConfigHOmod3 = new()
     {
         CsvPath = "Devstone_HOmod_Results_2.csv",
-        NumberExecutions = 5,
+        NumberExecutions = 10,
         ModelType = DevstoneModelType.HOmod,
         WidthStart = 20,
         WidthIncrement = 0, // Width stays at 4

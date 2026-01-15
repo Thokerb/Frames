@@ -5,6 +5,7 @@ using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Discovery.Config.Hosting;
+using Akka.Dispatch;
 using Akka.Dispatch.SysMsg;
 using Akka.Logger.Serilog;
 using Akka.Management;
