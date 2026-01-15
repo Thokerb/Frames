@@ -21,6 +21,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Frames.DevStoneAdapter\Frames.DevStoneAdapter.csproj" />
       <ProjectReference Include="..\Frames.Engine\Frames.Engine.csproj" />
+      <ProjectReference Include="..\Frames.Tests\Frames.Tests.csproj" />
     </ItemGroup>
 
 </Project>

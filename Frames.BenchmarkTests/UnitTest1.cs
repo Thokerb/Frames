@@ -2,6 +2,7 @@
 using Frames.DevStoneAdapter.Model;
 using Frames.Engine.Messages;
 using Frames.Model;
+using Frames.Tests.TestUtils;
 using Newtonsoft.Json;
 
 namespace Frames.BenchmarkTests;
@@ -86,7 +87,7 @@ public class UnitTest1
         Assert.Equal(actual: model2.GetChildren().Count,expected: model.GetChildren().Count);
     }
     
-    [Fact]
+    [SkipForGithubAction]
     public void TestSerializationHO()
     {
         var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
@@ -133,7 +134,7 @@ public class UnitTest1
         Assert.Equal(model2.GetChildren().Count, model.GetChildren().Count);
     }
     
-    [Fact]
+    [SkipForGithubAction]
     public void TestSerializationHO2()
     {
         var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
@@ -207,7 +208,7 @@ public class UnitTest1
     }
     
     
-    [Fact]
+    [SkipForGithubAction]
     public void TestSerializationHOmod()
     {
         var stackSize = Environment.GetEnvironmentVariable("DOTNET_DefaultStackSize");
